@@ -2,7 +2,6 @@ package hasjamon.block4block.Listeners;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
-import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -13,7 +12,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 
-import java.util.Arrays;
 
 public class BlockBreak implements Listener {
     // This Class is for the block break event (This runs every time a player breaks a block)
