@@ -36,7 +36,7 @@ public class BlockBreak implements Listener {
                     }
 
                     // If the chunk is claimed, you're not a member, and 'can-break-in-others-claims' isn't on
-                    if (!cfg.getBoolean("Break-Blocks-Freely")) {
+                    if (!cfg.getBoolean("can-break-in-others-claims")) {
                         e.setCancelled(true); // Cancel BlockBreakEvent, i.e., prevent block from breaking
                         p.sendMessage(utils.chat("&cYou cannot break blocks in this claim"));
                         return;
