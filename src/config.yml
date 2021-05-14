@@ -1,4 +1,5 @@
-Break-Blocks-Freely: true
+# Allows players to break blocks in others' claims
+can-break-in-others-claims: true
 
 blacklisted-claim-blocks:
 - PISTON
