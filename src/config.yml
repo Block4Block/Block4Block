@@ -93,6 +93,7 @@ blacklisted-claim-blocks:
 - WITHER_SKELETON_WALL_SKULL
 
 blacklisted-blocks:
+- STONE
 - SCAFFOLDING
 - FIRE
 - POTATOES
