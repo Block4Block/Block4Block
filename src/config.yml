@@ -109,7 +109,7 @@ blacklisted-blocks:
 - GRASS
 - FERN
 - TALL_GRASS
-- SEA_GRASS
+- SEAGRASS
 - TALL_SEAGRASS
 - LARGE_FERN
 - WHEAT
