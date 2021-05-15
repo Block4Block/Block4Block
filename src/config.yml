@@ -99,7 +99,6 @@ blacklisted-claim-blocks:
 - BEEHIVE
 
 blacklisted-blocks:
-- STONE
 - SCAFFOLDING
 - FIRE
 - POTATOES
