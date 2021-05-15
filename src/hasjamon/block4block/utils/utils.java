@@ -158,6 +158,8 @@ public class utils {
         specialTypes.put(Material.RED_WALL_BANNER, Material.RED_BANNER);
         specialTypes.put(Material.WHITE_WALL_BANNER, Material.WHITE_BANNER);
         specialTypes.put(Material.YELLOW_WALL_BANNER, Material.YELLOW_BANNER);
+        specialTypes.put(Material.TRAPPED_CHEST, Material.CHEST);
+
 
         if(requiresBlock) {
             Material requiredType = b.getType();
