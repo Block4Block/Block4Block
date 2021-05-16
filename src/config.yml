@@ -3,6 +3,7 @@ can-break-in-others-claims: true
 
 blacklisted-claim-blocks:
 - PISTON
+- OBSERVER
 - DISPENSER
 - HOPPER
 - DROPPER
@@ -219,6 +220,10 @@ blacklisted-blocks:
 - DARK_OAK_LEAVES
 - COCOA
 - VINE
+- MELON_STEM
+- ATTACHED_MELON_STEM
+- PUMPKIN_STEM
+- ATTACHED_PUMPKIN_STEM
 
 no-loot-on-break:
 - ACACIA_BUTTON
