@@ -14,7 +14,7 @@ public class LavaCasting implements Listener {
     public void onCobbleFormation(BlockFormEvent e) {
         Block b = e.getBlock();
 
-        b.setType(Material.AIR);
+        b.setType(Material.ANDESITE);
         e.setCancelled(true);
     }
 }

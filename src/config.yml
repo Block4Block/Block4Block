@@ -117,6 +117,7 @@ blacklisted-claim-blocks:
 - WARPED_WALL_SIGN
 
 blacklisted-blocks:
+- ANDESITE
 - SCAFFOLDING
 - FIRE
 - POTATOES
