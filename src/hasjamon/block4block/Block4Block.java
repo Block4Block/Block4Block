@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 public class Block4Block extends JavaPlugin{
-    public HashMap<UUID, Boolean> notify = new HashMap<UUID, Boolean>();
+    public HashMap<UUID, Boolean> notify = new HashMap<>();
     public ConfigManager cfg;
     public static Block4Block instance;
 
@@ -38,6 +38,7 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new LecternBreak(), this);
         pluginManager.registerEvents(new LecternInteract(), this);
         pluginManager.registerEvents(new BlockPlace(), this);
+        pluginManager.registerEvents(new LavaCasting(), this);
     }
 
     public void loadconfigmanager() {
@@ -52,11 +53,8 @@ public class Block4Block extends JavaPlugin{
         return instance;
     }
 
-
     @Override
     public void onDisable() {
 
     }
-
-
 }
