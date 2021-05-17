@@ -1,7 +1,9 @@
 package hasjamon.block4block;
 
+import hasjamon.block4block.command.*;
 import hasjamon.block4block.listener.*;
 import hasjamon.block4block.files.ConfigManager;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -17,7 +19,15 @@ public class Block4Block extends JavaPlugin{
     public void onEnable() {
         instance = this; // Creates instance of the plugin
         registerEvents(); // Registers all the listeners
+        setCommandExecutors(); // Registers all the commands
         loadconfigmanager(); // Setup config
+    }
+
+    private void setCommandExecutors() {
+        PluginCommand cmd = this.getCommand("die");
+
+        if(cmd != null)
+            cmd.setExecutor(new DieCommand());
     }
 
     private void registerEvents() {
