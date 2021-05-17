@@ -1,7 +1,8 @@
 package hasjamon.block4block;
 
-import hasjamon.block4block.Listeners.*;
+import hasjamon.block4block.listener.*;
 import hasjamon.block4block.files.ConfigManager;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
@@ -14,17 +15,19 @@ public class Block4Block extends JavaPlugin{
 
     @Override
     public void onEnable() {
-        instance = this; //creates instance of the plugin
-        registerEvents(); //registers all the listeners
-        loadconfigmanager(); //setup config
+        instance = this; // Creates instance of the plugin
+        registerEvents(); // Registers all the listeners
+        loadconfigmanager(); // Setup config
     }
 
     private void registerEvents() {
-        getServer().getPluginManager().registerEvents(new BlockBreak(), this);
-        getServer().getPluginManager().registerEvents(new LecternPlace(), this);
-        getServer().getPluginManager().registerEvents(new LecternBreak(), this);
-        getServer().getPluginManager().registerEvents(new LecternInteract(), this);
-        getServer().getPluginManager().registerEvents(new BlockPlace(), this);
+        PluginManager pluginManager = getServer().getPluginManager();
+
+        pluginManager.registerEvents(new BlockBreak(), this);
+        pluginManager.registerEvents(new LecternPlace(), this);
+        pluginManager.registerEvents(new LecternBreak(), this);
+        pluginManager.registerEvents(new LecternInteract(), this);
+        pluginManager.registerEvents(new BlockPlace(), this);
     }
 
     public void loadconfigmanager() {
