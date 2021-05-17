@@ -12,6 +12,7 @@ import java.util.UUID;
 
 public class Block4Block extends JavaPlugin{
     public HashMap<UUID, Boolean> notify = new HashMap<>();
+    public PluginManager pluginManager = getServer().getPluginManager();
     public ConfigManager cfg;
     public static Block4Block instance;
 
@@ -31,14 +32,13 @@ public class Block4Block extends JavaPlugin{
     }
 
     private void registerEvents() {
-        PluginManager pluginManager = getServer().getPluginManager();
-
         pluginManager.registerEvents(new BlockBreak(), this);
         pluginManager.registerEvents(new LecternPlace(), this);
         pluginManager.registerEvents(new LecternBreak(), this);
         pluginManager.registerEvents(new LecternInteract(), this);
         pluginManager.registerEvents(new BlockPlace(), this);
         pluginManager.registerEvents(new LavaCasting(), this);
+        pluginManager.registerEvents(new Interact(), this);
     }
 
     public void loadconfigmanager() {
