@@ -117,6 +117,8 @@ blacklisted-claim-blocks:
 - WARPED_WALL_SIGN
 
 blacklisted-blocks:
+- CRIMSON_NYLIUM
+- WARPED_NYLIUM
 - ANDESITE
 - SCAFFOLDING
 - FIRE
