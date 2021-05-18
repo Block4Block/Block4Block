@@ -11,7 +11,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 
 public class BlockPlace implements Listener {
-    // Event called when a block is placed by a player
+    // Prevent blocks from being placed in someone else's claim
     @EventHandler
     public void onPlace(BlockPlaceEvent e) {
         Block b = e.getBlock();
@@ -21,14 +21,14 @@ public class BlockPlace implements Listener {
             return;
 
         // If the block was placed in a claimed chunk
-        if (Block4Block.getInstance().cfg.getclaimdata().contains(utils.getChunkID(e.getBlockPlaced().getChunk()))) {
+        if (Block4Block.getInstance().cfg.getClaimData().contains(utils.getChunkID(e.getBlockPlaced().getChunk()))) {
             String[] members = utils.getMembers(b.getChunk());
 
             if (!utils.isClaimBlock(b)){
-                // Loops through all members
-                if (members != null)// If there are members in the claim
+                // If the player placing the block is a member: Don't prevent block placement
+                if (members != null)
                     for (String member : members)
-                        if (member.equalsIgnoreCase(p.getName())) // If the player placing the block is a member
+                        if (member.equalsIgnoreCase(p.getName()))
                             return;
 
                 e.setCancelled(true);
@@ -43,7 +43,7 @@ public class BlockPlace implements Listener {
         Player p = e.getPlayer();
         Material bucket = e.getBucket();
 
-        if(Block4Block.getInstance().cfg.getclaimdata().contains(utils.getChunkID(b.getChunk()))){
+        if(Block4Block.getInstance().cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))){
             String[] members = utils.getMembers(b.getChunk());
             if (members != null) {
                 for (String member : members)

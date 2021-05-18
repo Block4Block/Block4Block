@@ -14,19 +14,18 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 public class LecternBreak implements Listener {
     Block4Block plugin = Block4Block.getInstance();
 
-    // Event called if a block is broken
     @EventHandler
     public void onBreak(BlockBreakEvent e){
-        if(plugin.cfg.getclaimdata().contains(utils.getChunkID(e.getBlock().getChunk()))) { //if the block broken is in a claimed chunk
+        if(plugin.cfg.getClaimData().contains(utils.getChunkID(e.getBlock().getChunk()))) { //if the block broken is in a claimed chunk
             Player p = e.getPlayer();
-            if (e.getBlock().getType() == Material.LECTERN){ //if the block is a lectern
+
+            if (e.getBlock().getType() == Material.LECTERN)
                 if(utils.isClaimBlock(e.getBlock()))
                     utils.unclaimChunk(p,e.getBlock(),false);
-            }
         }
     }
 
-
+    // If a lectern is destroyed in an explosion: Inform the members of the claim
     @EventHandler
     public void onExplosion(EntityExplodeEvent e) {
         for (Block block : e.blockList()) {

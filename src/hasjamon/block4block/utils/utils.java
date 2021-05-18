@@ -8,109 +8,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
-import org.bukkit.util.BlockIterator;
 import java.util.*;
 
 public class utils {
     public static Block4Block plugin = Block4Block.getInstance();
+    private static final Map<Material, Material> specialTypes;
 
-    public static String chat(String message) {
-        return ChatColor.translateAlternateColorCodes('&', message);
-    }
-
-    public static String getChunkID(Chunk chunk) {
-        return chunk.getX() + "," + chunk.getZ();
-    }
-
-    public static String[] getMembers(Chunk chunk) {
-        String members = plugin.cfg.getclaimdata().getString(getChunkID(chunk) + ".members");
-
-        if (members != null)
-            return members.split("\\n");
-        else
-            return null;
-    }
-
-
-    public static Block getTargetBlock(Player player, int range) {
-        BlockIterator iter = new BlockIterator(player, range);
-        Block lastBlock = iter.next();
-
-        while (iter.hasNext()) {
-            lastBlock = iter.next();
-            if (lastBlock.getType() != Material.AIR)
-                break;
-        }
-        return lastBlock;
-    }
-
-    public static boolean isClaimBlock(Block b) {
-        FileConfiguration claimdata = plugin.cfg.getclaimdata();
-
-        if (claimdata.get(getChunkID(b.getChunk()) + ".location.X").equals(b.getLocation().getX()))
-            if (claimdata.get(getChunkID(b.getChunk()) + ".location.Y").equals(b.getLocation().getY()))
-                if (claimdata.get(getChunkID(b.getChunk()) + ".location.Z").equals(b.getLocation().getZ()))
-                    return true;
-        return false;
-    }
-
-    public static void claimChunk(Block block, Player p, ItemStack book) {
-        BookMeta bookmeta = (BookMeta) book.getItemMeta();
-
-        if (bookmeta != null) {
-            List<String> pages = bookmeta.getPages();
-            List<String> members = new ArrayList<String>();
-
-            // Collect a list of members
-            for (String page : pages) {
-                // If it isn't a claim page, stop looking for members
-                if (!page.substring(0, 5).equalsIgnoreCase("claim"))
-                    break;
-
-                String[] lines = page.split("\\n");
-
-                for (int i = 1; i < lines.length; i++) {
-                    String member = lines[i].trim();
-
-                    // If the member name is valid
-                    if(!member.contains(" ") && !member.isEmpty())
-                        members.add(member);
-                }
-            }
-
-            if(members.size() > 0) {
-                FileConfiguration claimData = plugin.cfg.getclaimdata();
-                Location blockLoc = block.getLocation();
-                String chunkID = utils.getChunkID(block.getChunk());
-                String membersString = String.join("\n", members);
-
-                claimData.set(chunkID + ".location.X", blockLoc.getX());
-                claimData.set(chunkID + ".location.Y", blockLoc.getY());
-                claimData.set(chunkID + ".location.Z", blockLoc.getZ());
-                claimData.set(chunkID + ".members", membersString);
-                plugin.cfg.saveclaimdata(); // Save members to claimdata.yml
-
-                p.sendMessage(utils.chat("&aThis chunk has now been claimed!"));
-                p.sendMessage(utils.chat("&aMembers who can access this chunk:"));
-                for (String member : members)
-                    p.sendMessage(ChatColor.GRAY + " - " + member);
-            }else{
-                p.sendMessage(utils.chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
-            }
-        }
-    }
-
-    public static void unclaimChunk(Player p, Block block, Boolean wasExploded) {
-        plugin.cfg.getclaimdata().set(utils.getChunkID(block.getChunk()), null);
-        plugin.cfg.saveclaimdata();
-        if (p != null)
-            if (!wasExploded)
-                p.sendMessage(utils.chat("&aYou have removed this claim!"));
-    }
-
-
-    public static void substituteBlock(Player p, Block b, BlockBreakEvent e, Boolean noloot, boolean requiresBlock) {
-        Hashtable<Material, Material> specialTypes = new Hashtable<Material, Material>();
+    static {
+        specialTypes = new HashMap<>();
         specialTypes.put(Material.REDSTONE_WIRE, Material.REDSTONE);
         specialTypes.put(Material.WALL_TORCH, Material.TORCH);
         specialTypes.put(Material.REDSTONE_WALL_TORCH, Material.REDSTONE_TORCH);
@@ -159,8 +64,90 @@ public class utils {
         specialTypes.put(Material.WHITE_WALL_BANNER, Material.WHITE_BANNER);
         specialTypes.put(Material.YELLOW_WALL_BANNER, Material.YELLOW_BANNER);
         specialTypes.put(Material.TRAPPED_CHEST, Material.CHEST);
+    }
 
+    public static String chat(String message) {
+        return ChatColor.translateAlternateColorCodes('&', message);
+    }
 
+    public static String getChunkID(Chunk chunk) {
+        return chunk.getX() + "," + chunk.getZ();
+    }
+
+    public static String[] getMembers(Chunk chunk) {
+        String members = plugin.cfg.getClaimData().getString(getChunkID(chunk) + ".members");
+
+        if (members != null)
+            return members.split("\\n");
+        else
+            return null;
+    }
+
+    public static boolean isClaimBlock(Block b) {
+        FileConfiguration claimData = plugin.cfg.getClaimData();
+        String cID = getChunkID(b.getChunk());
+
+        if (claimData.get(cID + ".location.X").equals(b.getLocation().getX()))
+            if (claimData.get(cID + ".location.Y").equals(b.getLocation().getY()))
+                if (claimData.get(cID + ".location.Z").equals(b.getLocation().getZ()))
+                    return true;
+        return false;
+    }
+
+    public static void claimChunk(Block block, Player p, ItemStack book) {
+        BookMeta bookmeta = (BookMeta) book.getItemMeta();
+
+        if (bookmeta != null) {
+            List<String> pages = bookmeta.getPages();
+            List<String> members = new ArrayList<String>();
+
+            // Collect a list of members
+            for (String page : pages) {
+                // If it isn't a claim page, stop looking for members
+                if (!page.substring(0, 5).equalsIgnoreCase("claim"))
+                    break;
+
+                String[] lines = page.split("\\n");
+
+                for (int i = 1; i < lines.length; i++) {
+                    String member = lines[i].trim();
+
+                    // If the member name is valid
+                    if(!member.contains(" ") && !member.isEmpty())
+                        members.add(member);
+                }
+            }
+
+            if(members.size() > 0) {
+                FileConfiguration claimData = plugin.cfg.getClaimData();
+                Location blockLoc = block.getLocation();
+                String chunkID = utils.getChunkID(block.getChunk());
+                String membersString = String.join("\n", members);
+
+                claimData.set(chunkID + ".location.X", blockLoc.getX());
+                claimData.set(chunkID + ".location.Y", blockLoc.getY());
+                claimData.set(chunkID + ".location.Z", blockLoc.getZ());
+                claimData.set(chunkID + ".members", membersString);
+                plugin.cfg.saveClaimData(); // Save members to claimdata.yml
+
+                p.sendMessage(utils.chat("&aThis chunk has now been claimed!"));
+                p.sendMessage(utils.chat("&aMembers who can access this chunk:"));
+                for (String member : members)
+                    p.sendMessage(ChatColor.GRAY + " - " + member);
+            }else{
+                p.sendMessage(utils.chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
+            }
+        }
+    }
+
+    public static void unclaimChunk(Player p, Block block, Boolean wasExploded) {
+        plugin.cfg.getClaimData().set(utils.getChunkID(block.getChunk()), null);
+        plugin.cfg.saveClaimData();
+        if (p != null && !wasExploded)
+            p.sendMessage(utils.chat("&aYou have removed this claim!"));
+    }
+
+    public static void b4bCheck(Player p, Block b, BlockBreakEvent e, Boolean noloot, boolean requiresBlock) {
         if(requiresBlock) {
             Material requiredType = b.getType();
 
@@ -170,11 +157,12 @@ public class utils {
             if (p.getInventory().getItemInOffHand().getType() == requiredType) {
                 p.getInventory().getItemInOffHand().setAmount(p.getInventory().getItemInOffHand().getAmount() - 1);
             } else {
-                Boolean itemInInventory = false;
+                boolean itemInInventory = false;
                 for (int i = 0; i < 9; i++) {
-                    if (p.getInventory().getItem(i) != null) {
-                        if (p.getInventory().getItem(i).getType() == requiredType) {
-                            p.getInventory().getItem(i).setAmount(p.getInventory().getItem(i).getAmount() - 1);
+                    ItemStack item = p.getInventory().getItem(i);
+                    if (item != null) {
+                        if (item.getType() == requiredType) {
+                            item.setAmount(item.getAmount() - 1);
                             itemInInventory = true;
                             break;
                         }

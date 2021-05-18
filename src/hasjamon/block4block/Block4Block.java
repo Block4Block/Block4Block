@@ -7,21 +7,17 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.HashMap;
-import java.util.UUID;
-
 public class Block4Block extends JavaPlugin{
-    public HashMap<UUID, Boolean> notify = new HashMap<>();
     public PluginManager pluginManager = getServer().getPluginManager();
     public ConfigManager cfg;
-    public static Block4Block instance;
+    private static Block4Block instance;
 
     @Override
     public void onEnable() {
         instance = this; // Creates instance of the plugin
+        cfg = new ConfigManager(); // Initializes config
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
-        loadconfigmanager(); // Setup config
     }
 
     private void setCommandExecutors() {
@@ -35,25 +31,12 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new BlockBreak(), this);
         pluginManager.registerEvents(new LecternPlace(), this);
         pluginManager.registerEvents(new LecternBreak(), this);
-        pluginManager.registerEvents(new LecternInteract(), this);
+        pluginManager.registerEvents(new EditBook(), this);
         pluginManager.registerEvents(new BlockPlace(), this);
         pluginManager.registerEvents(new LavaCasting(), this);
     }
 
-    public void loadconfigmanager() {
-        this.cfg = new ConfigManager();
-        getConfig().options().copyDefaults(true);
-        saveConfig();
-        this.cfg.setupclaimdata();
-        this.cfg.saveclaimdata();
-    }
-
     public static Block4Block getInstance(){
         return instance;
-    }
-
-    @Override
-    public void onDisable() {
-
     }
 }

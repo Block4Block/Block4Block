@@ -22,8 +22,9 @@ public class LecternPlace implements Listener {
         // If you're placing something on a lectern
         if(b.getType() == Material.LECTERN){
             // If the lectern is in a claimed chunk
-            if(plugin.cfg.getclaimdata().contains(utils.getChunkID(b.getChunk()))){
+            if(plugin.cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))){
                 String[] members = utils.getMembers(b.getChunk());
+
                 // If you're placing something other than a book
                 if(e.getItemInHand().getType() != Material.WRITTEN_BOOK && e.getItemInHand().getType() != Material.WRITABLE_BOOK){
                     if(members != null){
@@ -34,8 +35,7 @@ public class LecternPlace implements Listener {
                         e.setCancelled(true);
                         p.sendMessage(utils.chat("&cYou cannot place blocks in this claim"));
                     }
-                // If you're placing a book
-                }else{
+                }else{ // If you're placing a book
                     BookMeta bookmeta = (BookMeta) e.getItemInHand().getItemMeta();
                     if(bookmeta != null && bookmeta.getPageCount() > 0){
                         if(bookmeta.getPage(1).substring(0, 5).equalsIgnoreCase("claim")) {
@@ -50,11 +50,11 @@ public class LecternPlace implements Listener {
         }
     }
 
-    // Runs if a player takes the book out of the lectern
+    // Runs if a player takes a book from a lectern, then unclaims the chunk if it's a claim book
     @EventHandler
     public void onBookTake(PlayerTakeLecternBookEvent e){
-        if(plugin.cfg.getclaimdata().contains(utils.getChunkID(e.getLectern().getChunk()))) // If the chunk is claimed
-            if(utils.isClaimBlock(e.getLectern().getBlock())) // Checks if the lectern is the claim block
-                utils.unclaimChunk(e.getPlayer(),e.getLectern().getBlock(), false); // Unclaims the chunk
+        if(plugin.cfg.getClaimData().contains(utils.getChunkID(e.getLectern().getChunk())))
+            if(utils.isClaimBlock(e.getLectern().getBlock()))
+                utils.unclaimChunk(e.getPlayer(),e.getLectern().getBlock(), false);
     }
 }

@@ -3,79 +3,54 @@ package hasjamon.block4block.files;
 import hasjamon.block4block.Block4Block;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 public class ConfigManager {
-    public static ConfigManager conf;
-    private Block4Block plugin = (Block4Block) Block4Block.getPlugin(Block4Block.class);
-    public FileConfiguration cfg;
-    public File configfile;
-    public FileConfiguration claimdatacfg;
-    public File claimdatafile;
+    private final Block4Block plugin = Block4Block.getPlugin(Block4Block.class);
+    private final ConsoleCommandSender consoleSender = Bukkit.getServer().getConsoleSender();
+    private final File claimDataFile = new File(this.plugin.getDataFolder(), "claimdata.yml");
+    private final FileConfiguration claimDataCfg = YamlConfiguration.loadConfiguration(claimDataFile);
 
-    public void setupConfig() {
+    public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
-            this.plugin.getDataFolder().mkdir();
-        this.configfile = new File(this.plugin.getDataFolder(), "config.yml");
-        if (!this.configfile.exists()) {
+            if(!this.plugin.getDataFolder().mkdir())
+                consoleSender.sendMessage("Failed to create data folder.");
+
+        saveDefaultConfig();
+        saveClaimData();
+    }
+
+    // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
+    private void saveDefaultConfig() {
+        File defaultFile = new File(this.plugin.getDataFolder(), "default.yml");
+        InputStream cfgStream = plugin.getResource("config.yml");
+
+        if(cfgStream != null) {
             try {
-                this.configfile.createNewFile();
+                Files.copy(cfgStream, defaultFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
-                Bukkit.getServer().getConsoleSender().sendMessage("not create config.yml file.");
+                consoleSender.sendMessage(ChatColor.RED + "Failed to save default.yml");
             }
         }
-        this.cfg = (FileConfiguration) YamlConfiguration.loadConfiguration(this.configfile);
-        Bukkit.getServer().getConsoleSender().sendMessage("created!");
     }
 
-    public FileConfiguration getConfig() {
-        return this.cfg;
+    public FileConfiguration getClaimData() {
+        return this.claimDataCfg;
     }
 
-    public void saveConfig() {
-        this.plugin.saveConfig();
-        Bukkit.getServer().getConsoleSender().sendMessage("has been saved!");
-    }
-
-    public void reloadConfig() {
-        this.plugin.saveConfig();
-        this.cfg = (FileConfiguration)YamlConfiguration.loadConfiguration(this.configfile);
-        Bukkit.getServer().getConsoleSender().sendMessage("has been reloaded!");
-    }
-
-    public void setupclaimdata() {
-        if (!this.plugin.getDataFolder().exists())
-            this.plugin.getDataFolder().mkdir();
-        this.claimdatafile = new File(this.plugin.getDataFolder(), "claimdata.yml");
-        if (!this.claimdatafile.exists())
-            try {
-                this.claimdatafile.createNewFile();
-                Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "The claimdata.yml file has been created");
-            } catch (IOException e) {
-                Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.RED + "Could not create the claimdata.yml file");
-            }
-        this.claimdatacfg = (FileConfiguration)YamlConfiguration.loadConfiguration(this.claimdatafile);
-    }
-
-    public FileConfiguration getclaimdata() {
-        return this.claimdatacfg;
-    }
-
-    public void saveclaimdata() {
+    public void saveClaimData() {
         try {
-            this.claimdatacfg.save(this.claimdatafile);
-            Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "The claimdata.yml file has been saved");
+            this.claimDataCfg.save(this.claimDataFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Claim data has been saved to claimdata.yml");
         } catch (IOException e) {
-            Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.RED + "Could not save the claimdata.yml file");
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save claim data to claimdata.yml");
         }
-    }
-
-    public void reloadclaimdata() {
-        saveclaimdata();
-        this.claimdatacfg = (FileConfiguration)YamlConfiguration.loadConfiguration(this.claimdatafile);
-        Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.BLUE + "The claimdata.yml file has been reload");
     }
 }

@@ -13,6 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+import java.util.List;
 
 
 public class BlockBreak implements Listener {
@@ -28,16 +29,15 @@ public class BlockBreak implements Listener {
         if (b.getType() == Material.LECTERN) return;
         if (p.getGameMode() == GameMode.CREATIVE) return;
 
-        if (Block4Block.getInstance().cfg.getclaimdata().contains(utils.getChunkID(b.getChunk()))) { //if claimed
+        if (Block4Block.getInstance().cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))) { //if claimed
             if (!utils.isClaimBlock(b)) {
                 String[] members = utils.getMembers(b.getChunk());
-                if (members != null) {  // If there is members in the claim
-                    for (String member : members) { //Loops through all members
-                        if (member.equalsIgnoreCase(p.getName())) { //if one of the members equal to the player that broke the block
-                            if (cfg.getList("blacklisted-claim-blocks").contains(b.getType().toString())) // If this block type can be broken by members of the claim
+                List<?> claimBlacklist = cfg.getList("blacklisted-claim-blocks");
+                if (members != null && claimBlacklist != null) {  // If there is members in the claim
+                    for (String member : members) //Loops through all members
+                        if (member.equalsIgnoreCase(p.getName())) //if one of the members equal to the player that broke the block
+                            if (claimBlacklist.contains(b.getType().toString())) // If this block type can be broken by members of the claim
                                 return; // Don't apply Block4Block rules
-                        }
-                    }
 
                     // If the chunk is claimed, you're not a member, and 'can-break-in-others-claims' isn't on
                     if (!cfg.getBoolean("can-break-in-others-claims")) {
@@ -67,34 +67,35 @@ public class BlockBreak implements Listener {
             return;
         }
 
-        // Does Block4Block apply, i.e., has the block type not been exempted from Block4Block through the blacklist
-        Boolean requiresBlock = !cfg.getList("blacklisted-blocks").contains(b.getType().toString());
-        // Are drops disabled for this block type
-        Boolean noloot = cfg.getList("no-loot-on-break").contains(b.getType().toString());
-        utils.substituteBlock(p, b, e, noloot, requiresBlock);
+        List<?> blacklistedBlocks = cfg.getList("blacklisted-blocks");
+        List<?> lootDisabled = cfg.getList("no-loot-on-break");
+
+        if(blacklistedBlocks != null && lootDisabled != null) {
+            // Does Block4Block apply, i.e., has the block type not been exempted from Block4Block through the blacklist
+            boolean requiresBlock = !blacklistedBlocks.contains(b.getType().toString());
+            // Are drops disabled for this block type
+            boolean noloot = lootDisabled.contains(b.getType().toString());
+            utils.b4bCheck(p, b, e, noloot, requiresBlock);
+        }
     }
 
 
     @EventHandler
-    public void bucketfill(PlayerBucketFillEvent e) {
+    public void onBucketFill(PlayerBucketFillEvent e) {
         Player p = e.getPlayer();
         Block b = e.getBlock();
 
-        if (Block4Block.getInstance().cfg.getclaimdata().contains(utils.getChunkID(b.getChunk()))) {
+        if (Block4Block.getInstance().cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))) {
             String[] members = utils.getMembers(b.getChunk());
             if (members != null) {
-                for (String member : members) {
-                    if (member.equalsIgnoreCase(p.getName())) {
-                        if (b.getType() == Material.LAVA || b.getType() == Material.WATER) {
+                for (String member : members)
+                    if (member.equalsIgnoreCase(p.getName()))
+                        if (b.getType() == Material.LAVA || b.getType() == Material.WATER)
                             return;
-                        }
 
-                    }
-                }
                 p.sendMessage(utils.chat("&cYou cannot take Lava/Water inside this claim"));
                 e.setCancelled(true);
             }
-
         }
     }
 }
