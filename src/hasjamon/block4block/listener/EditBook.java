@@ -8,13 +8,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import java.util.ArrayList;
-import java.util.UUID;
 
 public class EditBook implements Listener {
-    private final ArrayList<UUID> hasSeenClaimInstructions = new ArrayList<>();
-
-    // If the player interacts (clicks)
     @EventHandler
     public void onInteract(PlayerInteractEvent e){
         Player p = e.getPlayer();
@@ -26,11 +21,8 @@ public class EditBook implements Listener {
             // If player is holding a book and quill
             if(item != null && item.getType() == Material.WRITABLE_BOOK){
                 // Send the player instruction on what to do with the book
-                e.getPlayer().sendMessage(utils.chat("&aWrite a player's ign on each line to add a member!"));
-                if(!hasSeenClaimInstructions.contains(p.getUniqueId())){
-                    p.sendMessage(utils.chat("&cNOTE: &7To make a claim book, type&a \"claim\" &7at the top of your book!"));
-                    hasSeenClaimInstructions.add(p.getUniqueId());
-                }
+                p.sendMessage(utils.chat("&aWrite a player's ign on each line to add a member!"));
+                p.sendMessage(utils.chat("&cNOTE: &7To make a claim book, type&a \"claim\" &7at the top of your book!"));
             }
         }
     }

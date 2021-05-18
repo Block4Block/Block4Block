@@ -11,7 +11,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerTakeLecternBookEvent;
 import org.bukkit.inventory.meta.BookMeta;
 
-public class LecternPlace implements Listener {
+public class BookPlaceTake implements Listener {
     Block4Block plugin = Block4Block.getInstance();
 
     @EventHandler

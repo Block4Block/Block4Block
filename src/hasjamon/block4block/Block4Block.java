@@ -29,7 +29,7 @@ public class Block4Block extends JavaPlugin{
 
     private void registerEvents() {
         pluginManager.registerEvents(new BlockBreak(), this);
-        pluginManager.registerEvents(new LecternPlace(), this);
+        pluginManager.registerEvents(new BookPlaceTake(), this);
         pluginManager.registerEvents(new LecternBreak(), this);
         pluginManager.registerEvents(new EditBook(), this);
         pluginManager.registerEvents(new BlockPlace(), this);
