@@ -38,7 +38,6 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new LecternInteract(), this);
         pluginManager.registerEvents(new BlockPlace(), this);
         pluginManager.registerEvents(new LavaCasting(), this);
-        pluginManager.registerEvents(new Interact(), this);
     }
 
     public void loadconfigmanager() {

@@ -2,10 +2,12 @@ package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
+import net.minecraft.server.v1_16_R3.BlockPosition;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,6 +16,8 @@ import org.bukkit.event.player.PlayerBucketFillEvent;
 
 
 public class BlockBreak implements Listener {
+    private long andesiteLatestBreak = 0;
+
     // This Class is for the block break event (This runs every time a player breaks a block)
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
@@ -43,6 +47,24 @@ public class BlockBreak implements Listener {
                     }
                 }
             }
+        }
+
+        if(b.getType() == Material.ANDESITE) {
+            // If it's been at least 0.1 second since the last time andesite was broken (to avoid chain reaction)
+            if(System.nanoTime() - andesiteLatestBreak > 1E8) {
+                andesiteLatestBreak = System.nanoTime();
+                for (int x = -1; x <= 1; x++) {
+                    for (int y = -1; y <= 1; y++) {
+                        for (int z = -1; z <= 1; z++) {
+                            if (b.getRelative(x, y, z).getType() == Material.ANDESITE) {
+                                BlockPosition pos = new BlockPosition(b.getX() + x, b.getY() + y, b.getZ() + z);
+                                ((CraftPlayer) p).getHandle().playerInteractManager.breakBlock(pos);
+                            }
+                        }
+                    }
+                }
+            }
+            return;
         }
 
         // Does Block4Block apply, i.e., has the block type not been exempted from Block4Block through the blacklist
