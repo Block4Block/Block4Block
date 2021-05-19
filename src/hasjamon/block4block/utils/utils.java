@@ -65,6 +65,12 @@ public class utils {
         specialTypes.put(Material.YELLOW_WALL_BANNER, Material.YELLOW_BANNER);
         specialTypes.put(Material.TRAPPED_CHEST, Material.CHEST);
         specialTypes.put(Material.SWEET_BERRY_BUSH, Material.SWEET_BERRIES);
+        specialTypes.put(Material.INFESTED_STONE, Material.STONE);
+        specialTypes.put(Material.INFESTED_COBBLESTONE, Material.COBBLESTONE);
+        specialTypes.put(Material.INFESTED_STONE_BRICKS, Material.STONE_BRICKS);
+        specialTypes.put(Material.INFESTED_CRACKED_STONE_BRICKS, Material.CRACKED_STONE_BRICKS);
+        specialTypes.put(Material.INFESTED_MOSSY_STONE_BRICKS, Material.MOSSY_STONE_BRICKS);
+        specialTypes.put(Material.INFESTED_CHISELED_STONE_BRICKS, Material.CHISELED_STONE_BRICKS);
     }
 
     public static String chat(String message) {
