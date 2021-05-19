@@ -64,6 +64,7 @@ public class utils {
         specialTypes.put(Material.WHITE_WALL_BANNER, Material.WHITE_BANNER);
         specialTypes.put(Material.YELLOW_WALL_BANNER, Material.YELLOW_BANNER);
         specialTypes.put(Material.TRAPPED_CHEST, Material.CHEST);
+        specialTypes.put(Material.SWEET_BERRY_BUSH, Material.SWEET_BERRIES);
     }
 
     public static String chat(String message) {
