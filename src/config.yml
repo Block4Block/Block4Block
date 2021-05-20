@@ -892,3 +892,6 @@ no-loot-on-break:
 - YELLOW_TERRACOTTA
 - YELLOW_WOOL
 
+hints:
+- "Hint #1: Leaves and Logs can be broken normally. Logs are a good choice for temporary blocks!"
+- "Hint #13: You can prevent others from placing blocks within a chunk by claiming it! Write a book with \"claim\" and your name in it, then place it on a lectern!"
