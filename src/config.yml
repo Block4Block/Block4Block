@@ -893,7 +893,7 @@ no-loot-on-break:
 - YELLOW_WOOL
 
 hints:
-- "Hint #0: Join the discussion on Discord: §nhttps://discord.gg/xR9FJGTK"
+- "Hint #0: Join the discussion on Discord: §1§nhttps://discord.gg/xR9FJGTK"
 - "Hint #1: Ores, Leaves and Logs can be broken normally. Logs are a good choice for temporary blocks when building!"
 - "Hint #2: Pigs are dirty so they drop dirt now!"
 - "Hint #3: Grassblocks can be hard to break, but there are several ways to turn them into dirt blocks. Try a hoe or a solid block!"
