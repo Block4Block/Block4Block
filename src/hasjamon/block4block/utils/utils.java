@@ -3,6 +3,7 @@ package hasjamon.block4block.utils;
 import hasjamon.block4block.Block4Block;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -101,12 +102,12 @@ public class utils {
         return false;
     }
 
-    public static void claimChunk(Block block, Player p, ItemStack book) {
+    public static boolean claimChunk(Block block, Player p, ItemStack book) {
         BookMeta bookmeta = (BookMeta) book.getItemMeta();
 
         if (bookmeta != null) {
             List<String> pages = bookmeta.getPages();
-            List<String> members = new ArrayList<String>();
+            Set<String> members = new HashSet<>();
 
             // Collect a list of members
             for (String page : pages) {
@@ -125,7 +126,20 @@ public class utils {
                 }
             }
 
+            // If it's a valid claim book
             if(members.size() > 0) {
+                // If the lectern is next to bedrock: Cancel
+                for (int x = -1; x <= 1; x++) {
+                    for (int y = -1; y <= 1; y++) {
+                        for (int z = -1; z <= 1; z++) {
+                            if (block.getRelative(x, y, z).getType() == Material.BEDROCK) {
+                                p.sendMessage(utils.chat("&cYou cannot place a claim next to bedrock"));
+                                return false;
+                            }
+                        }
+                    }
+                }
+
                 FileConfiguration claimData = plugin.cfg.getClaimData();
                 Location blockLoc = block.getLocation();
                 String chunkID = utils.getChunkID(block.getChunk());
@@ -137,21 +151,65 @@ public class utils {
                 claimData.set(chunkID + ".members", membersString);
                 plugin.cfg.saveClaimData(); // Save members to claimdata.yml
 
+                // Inform the player of the claim and its members
                 p.sendMessage(utils.chat("&aThis chunk has now been claimed!"));
                 p.sendMessage(utils.chat("&aMembers who can access this chunk:"));
                 for (String member : members)
                     p.sendMessage(ChatColor.GRAY + " - " + member);
+
+                updateClaimCount();
             }else{
                 p.sendMessage(utils.chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
             }
         }
+
+        return true;
     }
 
     public static void unclaimChunk(Player p, Block block, Boolean wasExploded) {
-        plugin.cfg.getClaimData().set(utils.getChunkID(block.getChunk()), null);
+        FileConfiguration claimData = plugin.cfg.getClaimData();
+        String chunkID = utils.getChunkID(block.getChunk());
+
+        claimData.set(chunkID, null);
         plugin.cfg.saveClaimData();
-        if (p != null && !wasExploded)
+
+        if (!wasExploded)
             p.sendMessage(utils.chat("&aYou have removed this claim!"));
+
+        updateClaimCount();
+    }
+
+    // Update tablist with current number of claims for each player
+    public static void updateClaimCount() {
+        HashMap<String, Integer> membersNumClaims = countMemberClaims();
+
+        for(Player p : Bukkit.getOnlinePlayers()) {
+            Integer pClaims = membersNumClaims.get(p.getName().toLowerCase());
+
+            if(pClaims == null)
+                p.setPlayerListName(p.getName() + utils.chat(" - &c0"));
+            else
+                p.setPlayerListName(p.getName() + utils.chat(" - &c" + pClaims + ""));
+        }
+    }
+
+    // Returns a HashMap of player name (lowercase) and number of claims
+    public static HashMap<String, Integer> countMemberClaims() {
+        FileConfiguration claimData = plugin.cfg.getClaimData();
+        HashMap<String, Integer> count = new HashMap<>();
+
+        for(String key : claimData.getKeys(false)){
+            ConfigurationSection chunk = claimData.getConfigurationSection(key);
+
+            if(chunk != null){
+                String currentMembers = chunk.getString("members");
+                if(currentMembers != null)
+                    for (String cm : currentMembers.toLowerCase().split("\\n"))
+                        count.merge(cm, 1, Integer::sum);
+            }
+        }
+
+        return count;
     }
 
     public static void b4bCheck(Player p, Block b, BlockBreakEvent e, Boolean noloot, boolean requiresBlock) {

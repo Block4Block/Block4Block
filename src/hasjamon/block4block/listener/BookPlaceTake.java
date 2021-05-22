@@ -45,20 +45,10 @@ public class BookPlaceTake implements Listener {
                     }
                 }
             }else if(e.getItemInHand().getType() == Material.WRITABLE_BOOK || e.getItemInHand().getType() == Material.WRITTEN_BOOK){
-                // If the lectern is next to bedrock: Cancel
-                for (int x = -1; x <= 1; x++) {
-                    for (int y = -1; y <= 1; y++) {
-                        for (int z = -1; z <= 1; z++) {
-                            if (b.getRelative(x, y, z).getType() == Material.BEDROCK) {
-                                p.sendMessage(utils.chat("&cYou cannot place a claim next to bedrock"));
-                                e.setCancelled(true);
-                                return;
-                            }
-                        }
-                    }
-                }
+                boolean canPlaceBook = utils.claimChunk(b, p, e.getItemInHand());
 
-                utils.claimChunk(b, p, e.getItemInHand());
+                if(!canPlaceBook)
+                    e.setCancelled(true);
             }
         }
     }

@@ -72,6 +72,7 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new EditBook(), this);
         pluginManager.registerEvents(new BlockPlace(), this);
         pluginManager.registerEvents(new LavaCasting(), this);
+        pluginManager.registerEvents(new PlayerJoin(), this);
     }
 
     public static Block4Block getInstance(){
