@@ -13,10 +13,10 @@ import java.util.*;
 
 public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
-    private static final Map<Material, Material> specialTypes;
+    private static final Map<Material, Material> specialTypes = new HashMap<>();
+    private static final List<Material> spawnEggs = new ArrayList<>();
 
     static {
-        specialTypes = new HashMap<>();
         specialTypes.put(Material.REDSTONE_WIRE, Material.REDSTONE);
         specialTypes.put(Material.WALL_TORCH, Material.TORCH);
         specialTypes.put(Material.REDSTONE_WALL_TORCH, Material.REDSTONE_TORCH);
@@ -72,6 +72,71 @@ public class utils {
         specialTypes.put(Material.INFESTED_CRACKED_STONE_BRICKS, Material.CRACKED_STONE_BRICKS);
         specialTypes.put(Material.INFESTED_MOSSY_STONE_BRICKS, Material.MOSSY_STONE_BRICKS);
         specialTypes.put(Material.INFESTED_CHISELED_STONE_BRICKS, Material.CHISELED_STONE_BRICKS);
+
+        spawnEggs.add(Material.BAT_SPAWN_EGG);
+        spawnEggs.add(Material.BEE_SPAWN_EGG);
+        spawnEggs.add(Material.BLAZE_SPAWN_EGG);
+        spawnEggs.add(Material.CAT_SPAWN_EGG);
+        spawnEggs.add(Material.CAVE_SPIDER_SPAWN_EGG);
+        spawnEggs.add(Material.CHICKEN_SPAWN_EGG);
+        spawnEggs.add(Material.COD_SPAWN_EGG);
+        spawnEggs.add(Material.COW_SPAWN_EGG);
+        spawnEggs.add(Material.CREEPER_SPAWN_EGG);
+        spawnEggs.add(Material.DOLPHIN_SPAWN_EGG);
+        spawnEggs.add(Material.DONKEY_SPAWN_EGG);
+        spawnEggs.add(Material.DROWNED_SPAWN_EGG);
+        spawnEggs.add(Material.ELDER_GUARDIAN_SPAWN_EGG);
+        spawnEggs.add(Material.ENDERMAN_SPAWN_EGG);
+        spawnEggs.add(Material.ENDERMITE_SPAWN_EGG);
+        spawnEggs.add(Material.EVOKER_SPAWN_EGG);
+        spawnEggs.add(Material.FOX_SPAWN_EGG);
+        spawnEggs.add(Material.GHAST_SPAWN_EGG);
+        spawnEggs.add(Material.GUARDIAN_SPAWN_EGG);
+        spawnEggs.add(Material.HOGLIN_SPAWN_EGG);
+        spawnEggs.add(Material.HORSE_SPAWN_EGG);
+        spawnEggs.add(Material.HUSK_SPAWN_EGG);
+        spawnEggs.add(Material.LLAMA_SPAWN_EGG);
+        spawnEggs.add(Material.MAGMA_CUBE_SPAWN_EGG);
+        spawnEggs.add(Material.MOOSHROOM_SPAWN_EGG);
+        spawnEggs.add(Material.MULE_SPAWN_EGG);
+        spawnEggs.add(Material.OCELOT_SPAWN_EGG);
+        spawnEggs.add(Material.PANDA_SPAWN_EGG);
+        spawnEggs.add(Material.PARROT_SPAWN_EGG);
+        spawnEggs.add(Material.PHANTOM_SPAWN_EGG);
+        spawnEggs.add(Material.PIG_SPAWN_EGG);
+        spawnEggs.add(Material.PIGLIN_BRUTE_SPAWN_EGG);
+        spawnEggs.add(Material.PIGLIN_SPAWN_EGG);
+        spawnEggs.add(Material.PILLAGER_SPAWN_EGG);
+        spawnEggs.add(Material.POLAR_BEAR_SPAWN_EGG);
+        spawnEggs.add(Material.PUFFERFISH_SPAWN_EGG);
+        spawnEggs.add(Material.RABBIT_SPAWN_EGG);
+        spawnEggs.add(Material.RAVAGER_SPAWN_EGG);
+        spawnEggs.add(Material.SALMON_SPAWN_EGG);
+        spawnEggs.add(Material.SHEEP_SPAWN_EGG);
+        spawnEggs.add(Material.SHULKER_SPAWN_EGG);
+        spawnEggs.add(Material.SILVERFISH_SPAWN_EGG);
+        spawnEggs.add(Material.SKELETON_HORSE_SPAWN_EGG);
+        spawnEggs.add(Material.SKELETON_SPAWN_EGG);
+        spawnEggs.add(Material.SLIME_SPAWN_EGG);
+        spawnEggs.add(Material.SPIDER_SPAWN_EGG);
+        spawnEggs.add(Material.SQUID_SPAWN_EGG);
+        spawnEggs.add(Material.STRAY_SPAWN_EGG);
+        spawnEggs.add(Material.STRIDER_SPAWN_EGG);
+        spawnEggs.add(Material.TRADER_LLAMA_SPAWN_EGG);
+        spawnEggs.add(Material.TROPICAL_FISH_SPAWN_EGG);
+        spawnEggs.add(Material.TURTLE_SPAWN_EGG);
+        spawnEggs.add(Material.VEX_SPAWN_EGG);
+        spawnEggs.add(Material.VILLAGER_SPAWN_EGG);
+        spawnEggs.add(Material.VINDICATOR_SPAWN_EGG);
+        spawnEggs.add(Material.WANDERING_TRADER_SPAWN_EGG);
+        spawnEggs.add(Material.WITCH_SPAWN_EGG);
+        spawnEggs.add(Material.WITHER_SKELETON_SPAWN_EGG);
+        spawnEggs.add(Material.WOLF_SPAWN_EGG);
+        spawnEggs.add(Material.ZOGLIN_SPAWN_EGG);
+        spawnEggs.add(Material.ZOMBIE_HORSE_SPAWN_EGG);
+        spawnEggs.add(Material.ZOMBIE_SPAWN_EGG);
+        spawnEggs.add(Material.ZOMBIE_VILLAGER_SPAWN_EGG);
+        spawnEggs.add(Material.ZOMBIFIED_PIGLIN_SPAWN_EGG);
     }
 
     public static String chat(String message) {
@@ -244,5 +309,19 @@ public class utils {
 
         if(noloot)
             b.setType(Material.AIR);
+    }
+
+    public static Material getRandomSpawnEgg(){
+        Random rand = new Random();
+        int i = rand.nextInt(spawnEggs.size());
+        Material egg = spawnEggs.get(i);
+
+        // If it's a zombie horse, roll again to make it extra rare
+        if(egg == Material.ZOMBIE_HORSE_SPAWN_EGG){
+            i = rand.nextInt(spawnEggs.size());
+            egg = spawnEggs.get(i);
+        }
+
+        return egg;
     }
 }
