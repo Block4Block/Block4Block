@@ -28,11 +28,13 @@ public class Block4Block extends JavaPlugin{
 
     private void setupHints() {
         hints = getConfig().getList("hints");
+        long interval = getConfig().getLong("seconds-between-hints");
+        boolean hintsEnabled = getConfig().getBoolean("hints-enabled");
 
         // Shuffle hints, then show a hint every 10 minutes (20 ticks/second * 600 seconds)
-        if(hints != null){
+        if(hints != null && hintsEnabled){
             Collections.shuffle(hints);
-            getServer().getScheduler().scheduleSyncRepeatingTask(this, this::showHint, 0, 20 * 600);
+            getServer().getScheduler().scheduleSyncRepeatingTask(this, this::showHint, 0, 20 * interval);
         }
     }
 

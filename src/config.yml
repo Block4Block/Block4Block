@@ -1,6 +1,11 @@
-# Allows players to break blocks in others' claims
+# Allow players to break blocks in others' claims
 can-break-in-others-claims: true
+# Show hints 
+hints-enabled: true
+# Time between hints
+seconds-between-hints: 600
 
+# Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
 - PISTON
 - OBSERVER
@@ -116,6 +121,7 @@ blacklisted-claim-blocks:
 - WARPED_SIGN
 - WARPED_WALL_SIGN
 
+# Blocks that are exempt from Block4Block
 blacklisted-blocks:
 - CRIMSON_NYLIUM
 - WARPED_NYLIUM
@@ -245,6 +251,7 @@ blacklisted-blocks:
 - PUMPKIN_STEM
 - ATTACHED_PUMPKIN_STEM
 
+# Blocks with loot disabled on break
 no-loot-on-break:
 - ACACIA_BUTTON
 - ACACIA_DOOR
@@ -892,6 +899,7 @@ no-loot-on-break:
 - YELLOW_TERRACOTTA
 - YELLOW_WOOL
 
+# Hints that shuffled at server start and shown one by one
 hints:
 - "Hint #0: Join the discussion on Discord: §1§nhttps://discord.gg/xR9FJGTK"
 - "Hint #1: Ores, Leaves and Logs can be broken normally. Logs are a good choice for temporary blocks when building!"
