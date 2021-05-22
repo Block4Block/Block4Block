@@ -9,3 +9,6 @@ commands:
     description: Use this command to kill yourself if you are stuck.
     usage: /<command>
     aliases: [suicide, kill]
+  hints:
+    description: Turns hints on/off.
+    usage: /<command> [on|off]

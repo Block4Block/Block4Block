@@ -3,8 +3,11 @@ package hasjamon.block4block;
 import hasjamon.block4block.command.*;
 import hasjamon.block4block.listener.*;
 import hasjamon.block4block.files.ConfigManager;
+import hasjamon.block4block.utils.utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Collections;
@@ -41,16 +44,25 @@ public class Block4Block extends JavaPlugin{
     private void showHint() {
         if(++nextHint >= hints.size())
             nextHint = 0;
-        String hint = (String) hints.get(nextHint);
 
-        Bukkit.broadcastMessage(hint);
+        String hint = (String) hints.get(nextHint);
+        FileConfiguration hintSettings = this.cfg.getHintSettings();
+
+        for(Player p : Bukkit.getOnlinePlayers()) {
+            String pUUID = p.getUniqueId().toString();
+            String pSettings = hintSettings.getString(pUUID);
+
+            if (pSettings == null || pSettings.equals("on"))
+                p.sendMessage(utils.chat(hint));
+        }
     }
 
     private void setCommandExecutors() {
-        PluginCommand cmd = this.getCommand("die");
+        PluginCommand dieCmd = this.getCommand("die");
+        PluginCommand hintsCmd = this.getCommand("hints");
 
-        if(cmd != null)
-            cmd.setExecutor(new DieCommand());
+        if(dieCmd != null) dieCmd.setExecutor(new DieCommand());
+        if(hintsCmd != null) hintsCmd.setExecutor(new HintsCommand(this));
     }
 
     private void registerEvents() {

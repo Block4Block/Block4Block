@@ -17,6 +17,8 @@ public class ConfigManager {
     private final ConsoleCommandSender consoleSender = Bukkit.getServer().getConsoleSender();
     private final File claimDataFile = new File(this.plugin.getDataFolder(), "claimdata.yml");
     private final FileConfiguration claimDataCfg = YamlConfiguration.loadConfiguration(claimDataFile);
+    private final File hintSettingsFile = new File(this.plugin.getDataFolder(), "hintsettings.yml");
+    private final FileConfiguration hintSettingsCfg = YamlConfiguration.loadConfiguration(hintSettingsFile);
 
     public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
@@ -25,6 +27,7 @@ public class ConfigManager {
 
         saveDefaultConfig();
         saveClaimData();
+        saveHintSettings();
     }
 
     // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
@@ -51,6 +54,19 @@ public class ConfigManager {
             consoleSender.sendMessage(ChatColor.AQUA + "Claim data has been saved to claimdata.yml");
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save claim data to claimdata.yml");
+        }
+    }
+
+    public FileConfiguration getHintSettings() {
+        return this.hintSettingsCfg;
+    }
+
+    public void saveHintSettings() {
+        try {
+            this.hintSettingsCfg.save(this.hintSettingsFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Hint settings has been saved to hintsettings.yml");
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save hint settings to hintsettings.yml");
         }
     }
 }

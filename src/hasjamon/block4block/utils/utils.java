@@ -11,7 +11,7 @@ import org.bukkit.inventory.meta.BookMeta;
 import java.util.*;
 
 public class utils {
-    public static Block4Block plugin = Block4Block.getInstance();
+    private static final Block4Block plugin = Block4Block.getInstance();
     private static final Map<Material, Material> specialTypes;
 
     static {
