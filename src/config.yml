@@ -5,6 +5,28 @@ hints-enabled: true
 # Time between hints
 seconds-between-hints: 600
 
+# Messages to be shown chronologically the first time a player joins the server
+welcome-messages:
+  - "&cWelcome! There are 3 things you should know about Block4Block to get started:"
+  - "1) &7Most blocks will require you to have them and spend one from your quick-slots to break them."
+  - "2) &7To claim an area, you must first place a lectern within the Chunk you wish to claim (F3+G to see chunk borders). Then place a book and quill on it and follow the instructions."
+  - "3) &7Be aware that griefing is allowed and very much part of the fun on this server. A claim is only as protected as you make it."
+
+# Hints that shuffled at server start and shown one by one
+hints:
+  - "&6Hint #0: &eJoin the discussion on Discord: &1&nhttps://discord.gg/xR9FJGTK"
+  - "&6Hint #1: &eOres, Leaves and Logs can be broken normally. Logs are a good choice for temporary blocks when building!"
+  - "&6Hint #2: &ePigs are dirty so they drop dirt now!"
+  - "&6Hint #3: &eGrass blocks can be hard to break, but there are several ways to turn them into dirt blocks. Try a hoe or a solid block!"
+  - "&6Hint #4: &eNatural ravines and caves are great places to find ore and go deep underground."
+  - "&6Hint #5: &eSkeletons are stoners, so they drop stone now! A skeleton farm will help your mining endeavours."
+  - "&6Hint #6: &eStone will drop cobblestone as normal. Remember you can smelt it back into stone and recycle it!"
+  - "&6Hint #7: &eWhen breaking stone it has a 10% chance of dropping double the cobblestone! Smelt it for stone profits!"
+  - "&6Hint #8: &eYou can prevent others from placing blocks within a chunk by claiming it! Write a book with \"claim\" and your name in it, then place it on a lectern!"
+  - "&6Hint #9: &eMake it hard for people to break in! Protect your claim by surrounding it with rare blocks."
+  - "&6Hint #10: &eType /hints off to turn hints off."
+  - "&6Hint #?: &eSheep are colourful and so are blocks!"
+
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
 - PISTON
@@ -898,18 +920,3 @@ no-loot-on-break:
 - YELLOW_STAINED_GLASS_PANE
 - YELLOW_TERRACOTTA
 - YELLOW_WOOL
-
-# Hints that shuffled at server start and shown one by one
-hints:
-- "&6Hint #0: &eJoin the discussion on Discord: &1&nhttps://discord.gg/xR9FJGTK"
-- "&6Hint #1: &eOres, Leaves and Logs can be broken normally. Logs are a good choice for temporary blocks when building!"
-- "&6Hint #2: &ePigs are dirty so they drop dirt now!"
-- "&6Hint #3: &eGrass blocks can be hard to break, but there are several ways to turn them into dirt blocks. Try a hoe or a solid block!"
-- "&6Hint #4: &eNatural ravines and caves are great places to find ore and go deep underground."
-- "&6Hint #5: &eSkeletons are stoners, so they drop stone now! A skeleton farm will help your mining endeavours."
-- "&6Hint #6: &eStone will drop cobblestone as normal. Remember you can smelt it back into stone and recycle it!"
-- "&6Hint #7: &eWhen breaking stone it has a 10% chance of dropping double the cobblestone! Smelt it for stone profits!"
-- "&6Hint #8: &eYou can prevent others from placing blocks within a chunk by claiming it! Write a book with \"claim\" and your name in it, then place it on a lectern!"
-- "&6Hint #9: &eMake it hard for people to break in! Protect your claim by surrounding it with rare blocks."
-- "&6Hint #10: &eType /hints off to turn hints off."
-- "&6Hint #?: &eSheep are colourful and so are blocks!"
