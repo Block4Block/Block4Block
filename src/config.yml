@@ -7,10 +7,13 @@ seconds-between-hints: 600
 
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:
-  - "&cWelcome! There are 3 things you should know about Block4Block to get started:"
+  - "&cWelcome! There are 5 things you should know about Block4Block to get started:"
   - "1) &7Most blocks will require you to have them and spend one from your quick-slots to break them."
-  - "2) &7To claim an area, you must first place a lectern within the Chunk you wish to claim (F3+G to see chunk borders). Then place a book and quill on it and follow the instructions."
-  - "3) &7Be aware that griefing is allowed and very much part of the fun on this server. A claim is only as protected as you make it."
+  - "2) &7Many blocks have to be obtained by alternative means, like placing a torch under a falling gravel or sand block."
+  - "3) &7Some blocks can still be broken freely, including logs, ores, leaves, crafting tables, ladders and torches."
+  - "4) &7When building it's recommended to start out with easily rebreakable blocks like logs."
+  - "5) &7Hints pop up as you play and introduces you to the more in depth mechanics of b4b."
+  - "§aEnjoy the challenge and I hope you get a bed soon. :)"
 
 # Hints that shuffled at server start and shown one by one
 hints:
@@ -19,12 +22,12 @@ hints:
   - "&6Hint #2: &ePigs are dirty so they drop dirt now!"
   - "&6Hint #3: &eGrass blocks can be hard to break, but there are several ways to turn them into dirt blocks. Try a hoe or a solid block!"
   - "&6Hint #4: &eNatural ravines and caves are great places to find ore and go deep underground."
-  - "&6Hint #5: &eSkeletons are stoners, so they drop stone now! A skeleton farm will help your mining endeavours."
-  - "&6Hint #6: &eStone will drop cobblestone as normal. Remember you can smelt it back into stone and recycle it!"
+  - "&6Hint #5: &eSkeletons are stoners, so they drop stone now! A skeleton farm will help when mining."
+  - "&6Hint #6: &eStone will drop cobblestone as normal. You can smelt it back into stone and recycle it!"
   - "&6Hint #7: &eWhen breaking stone it has a 10% chance of dropping double the cobblestone! Smelt it for stone profits!"
   - "&6Hint #8: &eYou can prevent others from placing blocks within a chunk by claiming it! Write a book with \"claim\" and your name in it, then place it on a lectern!"
   - "&6Hint #9: &eMake it hard for people to break in! Protect your claim by surrounding it with rare blocks."
-  - "&6Hint #10: &eType /hints off to turn hints off."
+  - "&6Hint #10: &eType /hints off to stop hints from appearing."
   - "&6Hint #?: &eSheep are colourful and so are blocks!"
 
 # Blocks that are exempt from Block4Block while in player's own claim
