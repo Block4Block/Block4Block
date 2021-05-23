@@ -15,6 +15,7 @@ commands:
   b4bhelp:
     description: Shows an inventory with items that explain how Block4Block works.
     usage: /<command>
+    aliases: [helpb4b]
   ignore:
     description: Ignores a player to hide their messages. Use it again (or use /unignore) to continue receiving message from the player.
     usage: /<command> player
