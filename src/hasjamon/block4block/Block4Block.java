@@ -60,9 +60,11 @@ public class Block4Block extends JavaPlugin{
     private void setCommandExecutors() {
         PluginCommand dieCmd = this.getCommand("die");
         PluginCommand hintsCmd = this.getCommand("hints");
+        PluginCommand helpCmd = this.getCommand("b4bhelp");
 
         if(dieCmd != null) dieCmd.setExecutor(new DieCommand());
         if(hintsCmd != null) hintsCmd.setExecutor(new HintsCommand(this));
+        if(helpCmd != null) helpCmd.setExecutor(new HelpCommand(this));
     }
 
     private void registerEvents() {

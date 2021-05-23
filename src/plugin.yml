@@ -12,3 +12,6 @@ commands:
   hints:
     description: Turns hints on/off.
     usage: /<command> [on|off]
+  b4bhelp:
+    description: Shows an inventory with items that explain how Block4Block works.
+    usage: /<command>
