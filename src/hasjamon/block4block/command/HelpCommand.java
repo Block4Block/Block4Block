@@ -52,62 +52,70 @@ public class HelpCommand implements CommandExecutor, Listener {
         ItemStack polarbearHead = createPlayerHead("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q4NzAyOTExZTYxNmMwZDMyZmJlNzc4ZDE5NWYyMWVjY2U5MDI1YmNiZDA5MTUxZTNkOTdhZjMxOTJhYTdlYyJ9fX0=");
         inv.setItem(3,createItem(Material.GRASS_BLOCK,
                 "§bBasics: §eWhy can't I break blocks?",
-                "§7Most blocks require you to have them in your off-hand or 1-9 hotbar/quickslots when breaking them.",
+                "§7Most blocks require you to have them when breaking them.",
                 "§7It costs a block to break them.",
-                "§7This both creates more meaningful progression and reduces griefing significantly.",
-                "§7Consider it Veteran Mode, if it was in the base game."
+                "§7The item has to be in 1-9 or off-hand.",
+                "§7Experience meaningful progression",
+                "§7and significantly reduced griefing.",
+                "§7Consider it a Veteran Mode. Enjoy!"
         ));
         inv.setItem(4,createItem(Material.OAK_LOG,
                 "§bBasics: §eBlocks that can be broken.",
                 "§fSome blocks can still be broken normally.",
-                "§7Trees can be taken down and the wood will be the most basic building material",
+                "§7Trees can be broken down freely.",
+                "§7Use logs for any temporary structures.",
                 "§7Utilities such as crafting tables and beds are also exempt.",
-                "§7See a full list by clicking this block and following the link that pops up in the chat."
+                "§7Click this block for a full list in chat."
         ));
         inv.setItem(5,createItem(Material.STONE,
                 "§bBasics: §eAdvanced Mining",
-                "§7Stone still drops cobblestone and have a chance of dropping more than one.",
-                "§7Smelting cobblestone back into stone makes it reusable.",
-                "§7Use ravines and caves to go deep underground, before you have a proper collection of stone.",
+                "§7Stone still drops cobble.",
+                "§710% chance of double drop.",
+                "§7Smelting cobble back into stone makes it reusable.",
+                "§7Use ravines and caves to reach a low y.",
                 "§7Build ladders and platforms to reach ores in ravines.",
-                "§7No more straight corridors! You will have to navigate around pockets of diorite and granite.",
-                "§7Drop down signs and help yourself back to the exit. No tunneling out without the right blocks."
+                "§7You will have to navigate around diorite and granite.",
+                "§7No tunneling out without the right blocks.",
+                "§7Use signs to find back. "
+
         ));
         inv.setItem(9,createItem(Material.SKELETON_SKULL,
-                "§aLoot: §eSkeletons drop stone!",
+                "§aLoot: §eSkeletons drop stone",
                 "§7Stone is easiest obtained from skeletons.",
-                "§7They can be tough to fight and it's recommended to get a shield.",
-                "§7Creating a farm for animals that drop leather may help you boost your defenses.",
-                "§7If its hard to get night time, go find dark areas or make one for them to spawn in.",
-                "§7The easiest way to gather lots of stone is to create a mob farm."
+                "§7It's recommended to get a shield.",
+                "§7Farming leather may help you boost your defenses.",
+                "§7Seek dark areas or make one for enemies to spawn.",
+                "§7Mobfarms are the easiest way to get a lot of stone."
         ));
         inv.setItem(10,createItem(Material.SPAWNER,
                 "§aLoot: §eSpawners drop",
                 "§7You can break and obtain spawners with any tool.",
-                "§7No silk-touch needed."
+                "§7No silk-touch needed.",
+                "§7Find a skeleton spawner to increase your stone production."
         ));
         inv.setItem(11,createItem(pigHead,
-                "§aLoot: §eDirt from Pigs",
+                "§aLoot: §ePigs drop dirt",
                 "§7Dirt can be gained from pigs.",
                 "§7Farm it to terraform your area.",
-                "§7Grassblocks can be changed into dirt with simple tricks.",
+                "§7Use tricks to change grassblocks into dirt.",
                 "§7Try placing a block on top or using a hoe."
         ));
         inv.setItem(12,createItem(polarbearHead,
-                "§aLoot: §eMore to discover!",
+                "§aLoot: §eThere is more",
                 "§7There are more changes for you to seek out and discover.",
-                "§7Why not share your discoveries on Discord?"
+                "§7consider sharing your discoveries on Discord."
         ));
         inv.setItem(15,createItem(Material.SAND,
-                "§6Tricks: §eObtaining blocks affected by gravity.",
+                "§6Tricks: §eObtain blocks affected by gravity.",
                 "§7Blocks affected by gravity become drops, if they fall on torches.",
                 "§7You will have to find a way to break a block to make the blocks fall.",
-                "§7If you are swift you can place a torch in place as soon as they begin falling.",
+                "§7Place the torch as soon as they begin falling.",
                 "§7Make sure they can't fall beyond the torch."
         ));
         inv.setItem(16,createItem(Material.WATER_BUCKET,
-                "§6Tricks: §eObtaining blocks using water.",
-                "§7Flowers, redstone wire and more become drops when interacting with water."
+                "§6Tricks: §eObtain blocks using water.",
+                "§7Flowers become drops when interacting with water.",
+                "§7Redstone wire and more is affected as well."
         ));
         inv.setItem(17,createItem(Material.PISTON,
                 "§6Tricks: §eObtaining blocks using a piston",
@@ -138,9 +146,10 @@ public class HelpCommand implements CommandExecutor, Listener {
         inv.setItem(22,createItem(Material.WRITABLE_BOOK,
                 "§cClaim: §eHow to make a claim book.",
                 "§7Use a book and quill and follow the below format.",
-                "§7You need to include yourself in the list to be a part of the claim.",
+                "§7Include yourself in the list to be a part of the claim.",
                 "§7You can place a claim for others.",
-                "§7You will get a confirmation in chat when placing a proper claim book in the lectern.",
+                "§7See chat when placing your claim.",
+                "§7If done correctly, your memberlist will appear.",
                 "§cClaim Book format:",
                 "§7claim",
                 "§7membername1",
@@ -158,9 +167,9 @@ public class HelpCommand implements CommandExecutor, Listener {
         ));
         inv.setItem(24,createItem(Material.REDSTONE_BLOCK,
                 "§cClaim: §eBlocks that can be broken inside owned claim.",
-                "§7While inside your claim, you will be able to break more blocks normally.",
+                "§7Inside your claim, you can break more blocks normally.",
                 "§7This applies mostly to redstone related items.",
-                "§7See a full list by clicking this block and following the link that pops up in the chat."
+                "§7Click this block for a full list in chat."
         ));
         inv.setItem(30,createItem(Material.EGG,
                 "§dSecret: §eChickens lay many eggs."
