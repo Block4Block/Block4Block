@@ -20,7 +20,7 @@ public class EggLay implements Listener {
 
         // If it's an egg and wasn't dropped by a player: 1% chance to lay a random spawn egg instead
         if (itemStack.getType() == Material.EGG && item.getThrower() == null && item.getPickupDelay() == 10) {
-            List<Entity> nearbyEntities = item.getNearbyEntities(2.5, 2.5, 2.5);
+            List<Entity> nearbyEntities = item.getNearbyEntities(5, 5, 5);
             Set<String> namedChickensPos = new HashSet<>();
             Map<Character, Integer> letterBonuses = new HashMap<>();
 
