@@ -311,17 +311,41 @@ public class utils {
             b.setType(Material.AIR);
     }
 
-    public static Material getRandomSpawnEgg(){
+    public static Material getRandomSpawnEgg(Map<Character, Integer> letterBonuses){
         Random rand = new Random();
-        int totalWeight = spawnEggs.values().stream().reduce(0, Integer::sum);
+        int totalWeight = calcTotalWeight(letterBonuses);
         int i = rand.nextInt(totalWeight);
 
         for(Map.Entry<Material, Integer> egg : spawnEggs.entrySet()){
-            i -= egg.getValue();
+            Character firstLetter = egg.getKey().name().toLowerCase().charAt(0);
+            Integer bonus = letterBonuses.get(firstLetter);
+            int weight = egg.getValue();
+
+            if(bonus != null)
+                weight *= (1 + bonus);
+            i -= weight;
+
             if(i <= 0)
                 return egg.getKey();
         }
 
-        return null;
+        // We should never get this far
+        return Material.TROPICAL_FISH_SPAWN_EGG;
+    }
+
+    private static int calcTotalWeight(Map<Character, Integer> letterBonuses){
+        int totalWeight = 0;
+
+        for(Map.Entry<Material, Integer> egg : spawnEggs.entrySet()){
+            Character firstLetter = egg.getKey().name().toLowerCase().charAt(0);
+            Integer bonus = letterBonuses.get(firstLetter);
+            Integer weight = egg.getValue();
+
+            if(bonus != null)
+                weight *= (1 + bonus);
+            totalWeight += weight;
+        }
+
+        return totalWeight;
     }
 }
