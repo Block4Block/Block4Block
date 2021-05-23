@@ -26,6 +26,7 @@ public class BlockBreak implements Listener {
         Block b = e.getBlock();
         FileConfiguration cfg = Block4Block.getInstance().getConfig();
 
+        // Lecterns are exempt from B4B rules. Changing this would require refactoring of LecternBreak's onBreak.
         if (b.getType() == Material.LECTERN) return;
         if (p.getGameMode() == GameMode.CREATIVE) return;
 
@@ -33,15 +34,18 @@ public class BlockBreak implements Listener {
             if (!utils.isClaimBlock(b)) {
                 String[] members = utils.getMembers(b.getChunk());
                 List<?> claimBlacklist = cfg.getList("blacklisted-claim-blocks");
-                if (members != null && claimBlacklist != null) {  // If there is members in the claim
-                    for (String member : members) //Loops through all members
-                        if (member.equalsIgnoreCase(p.getName())) //if one of the members equal to the player that broke the block
-                            if (claimBlacklist.contains(b.getType().toString())) // If this block type can be broken by members of the claim
-                                return; // Don't apply Block4Block rules
+
+                // If the player is a member of the claim and the block is claim-blacklisted: Don't apply B4B rules
+                if (members != null && claimBlacklist != null) {
+                    for (String member : members)
+                        if (member.equalsIgnoreCase(p.getName()))
+                            if (claimBlacklist.contains(b.getType().toString()))
+                                return;
 
                     // If the chunk is claimed, you're not a member, and 'can-break-in-others-claims' isn't on
                     if (!cfg.getBoolean("can-break-in-others-claims")) {
-                        e.setCancelled(true); // Cancel BlockBreakEvent, i.e., prevent block from breaking
+                        // Cancel BlockBreakEvent, i.e., prevent block from breaking
+                        e.setCancelled(true);
                         p.sendMessage(utils.chat("&cYou cannot break blocks in this claim"));
                         return;
                     }
@@ -50,7 +54,7 @@ public class BlockBreak implements Listener {
         }
 
         if(b.getType() == Material.ANDESITE) {
-            // If it's been at least 0.1 second since the last time andesite was broken (to avoid chain reaction)
+            // Add splash if it's been at least 0.1 second since the last time andesite was broken (to avoid chain reaction)
             if(System.nanoTime() - andesiteLatestBreak > 1E8) {
                 andesiteLatestBreak = System.nanoTime();
                 for (int x = -1; x <= 1; x++) {
@@ -78,7 +82,6 @@ public class BlockBreak implements Listener {
             utils.b4bCheck(p, b, e, noloot, requiresBlock);
         }
     }
-
 
     @EventHandler
     public void onBucketFill(PlayerBucketFillEvent e) {
