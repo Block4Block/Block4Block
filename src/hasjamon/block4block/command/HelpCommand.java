@@ -48,13 +48,127 @@ public class HelpCommand implements CommandExecutor, Listener {
     // Creates items and adds them to the help inventory
     public void initItems() {
         ItemStack whiteSheepHead = createPlayerHead("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmRmZTdjYzQ2ZDc0OWIxNTMyNjFjMWRjMTFhYmJmMmEzMTA4ZWExYmEwYjI2NTAyODBlZWQxNTkyZGNmYzc1YiJ9fX0=");
-
-        inv.addItem(createItem(Material.GRASS_BLOCK, "Grass Block", "§aFirst line of the lore", "§bSecond line of the lore"));
-        inv.addItem(createItem(Material.LECTERN, "Lectern", "§aFirst line of the lore", "§bSecond line of the lore"));
-        inv.addItem(createItem(Material.WRITABLE_BOOK, "Book & Quill", "§aFirst line of the lore", "§bSecond line of the lore"));
-        inv.addItem(createItem(Material.STONE, "Stone", "§aFirst line of the lore", "§bSecond line of the lore"));
-        inv.addItem(createItem(Material.NAME_TAG, "Name Tag", "§aFirst line of the lore", "§bSecond line of the lore"));
-        inv.addItem(createItem(whiteSheepHead, "Player Head", "§aFirst line of the lore", "§bSecond line of the lore"));
+        ItemStack SkeletonHead = createPlayerHead("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmRmZTdjYzQ2ZDc0OWIxNTMyNjFjMWRjMTFhYmJmMmEzMTA4ZWExYmEwYjI2NTAyODBlZWQxNTkyZGNmYzc1YiJ9fX0=");
+        ItemStack PigHead = createPlayerHead("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmRmZTdjYzQ2ZDc0OWIxNTMyNjFjMWRjMTFhYmJmMmEzMTA4ZWExYmEwYjI2NTAyODBlZWQxNTkyZGNmYzc1YiJ9fX0=");
+        ItemStack PolarbearHead = createPlayerHead("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmRmZTdjYzQ2ZDc0OWIxNTMyNjFjMWRjMTFhYmJmMmEzMTA4ZWExYmEwYjI2NTAyODBlZWQxNTkyZGNmYzc1YiJ9fX0=");
+        inv.addItem(createItem(Material.GRASS_BLOCK,
+                "§bBasics: §eWhy can't I break blocks?",
+                "§aMost blocks require you to have them in your off-hand or 1-9 hotbar/quickslots when breaking them.",
+                "§bIt costs a block to break them.",
+                "§cThis both creates more meaningful progression and reduces griefing significantly.",
+                "§dConsider it Veteran Mode, if it was in the base game."
+        ));
+        inv.addItem(createItem(Material.OAK_LOG,
+                "§bBasics: §eBlocks that can be broken.",
+                "§fSome blocks can still be broken normally.",
+                "§fTrees can be taken down and the wood will be the most basic building material",
+                "§fUtilities such as crafting tables and beds are also exempt.",
+                "§fSee a full list by clicking this block and following the link that pops up in the chat."
+        ));
+        inv.addItem(createItem(Material.STONE,
+                "§bBasics: §eAdvanced Mining",
+                "§7Stone still drops cobblestone and have a chance of dropping more than one.",
+                "§7Smelting cobblestone back into stone makes it reusable.",
+                "§7Use ravines and caves to go deep underground, before you have a proper collection of stone.",
+                "§7Build ladders and platforms to reach ores in ravines.",
+                "§7No more straight corridors! You will have to navigate around pockets of diorite and granite.",
+                "§7Drop down signs and help yourself back to the exit. No tunneling out without the right blocks."
+        ));
+        inv.addItem(createItem(SkeletonHead,
+                "§aLoot: §eSkeletons drop stone!",
+                "§fStone is easiest obtained from skeletons.",
+                "§fThey can be tough to fight and it's recommended to get a shield.",
+                "§fCreating a farm for animals that drop leather may help you boost your defenses.",
+                "§fIf its hard to get night time, go find dark areas or make one for them to spawn in.",
+                "§fThe easiest way to gather lots of stone is to create a mob farm."
+        ));
+        inv.addItem(createItem(Material.SPAWNER,
+                "§aLoot: §eSpawners drop",
+                "§fYou can break and obtain spawners with any tool.",
+                "§fNo silk-touch needed."
+        ));
+        inv.addItem(createItem(PigHead,
+                "§aLoot: §eDirt from Pigs",
+                "§fDirt can be gained from pigs.",
+                "§fFarm it to terraform your area.",
+                "§fGrassblocks can be changed into dirt with simple tricks.",
+                "§fTry placing a block on top or using a hoe."
+        ));
+        inv.addItem(createItem(PolarbearHead,
+                "§aLoot: §eMore to discover!",
+                "§fThere are more changes for you to seek out and discover.",
+                "§fWhy not share your discoveries on Discord?"
+        ));
+        inv.addItem(createItem(Material.SAND,
+                "§6Tricks: §eObtaining blocks affected by gravity.",
+                "§fBlocks affected by gravity become drops, if they fall on torches.",
+                "§fYou will have to find a way to break a block to make the blocks fall.",
+                "§fIf you are swift you can place a torch in place as soon as they begin falling.",
+                "§fMake sure they can't fall beyond the torch."
+        ));
+        inv.addItem(createItem(Material.WATER_BUCKET,
+                "§6Tricks: §eObtaining blocks using water.",
+                "§fFlowers, redstone wire and more become drops when interacting with water."
+        ));
+        inv.addItem(createItem(Material.PISTON,
+                "§6Tricks: §eObtaining blocks using a piston",
+                "§fWatermelons, pumpkins and bamboo will drop when pushed by a piston.",
+                "§fIf a piston doesn't work, try with TNT."
+        ));
+        inv.addItem(createItem(Material.LECTERN,
+                "§cClaim: §ePlacing a claim.",
+                "§fUse F3+G to see chunk borders.",
+                "§fPlace the lectern in the chunk you wish to claim.",
+                "§fPut a claim book in the lectern to place your claim.",
+                "§fYou cannot place a claim next to bedrock."
+        ));
+        inv.addItem(createItem(Material.BARRIER,
+                "§cClaim: §eWhat does a claim do?",
+                "§fClaims prevent non-members from placing blocks.",
+                "§fPlayers can still break blocks inside your claim.",
+                "§fBy holding TAB you can see how many claims you and others have.",
+                "§fYou can steal a claim by taking the book or breaking the lectern."
+        ));
+        inv.addItem(createItem(Material.IRON_BLOCK,
+                "§cClaim: §eProtecting a claim.",
+                "§fProtect your claim by surrounding your lectern with blocks.",
+                "§fChoose blocks you believe infiltrators won't expect.",
+                "§fUse redstone traps and doors to stop them from reaching your lectern.",
+                "§fNametag strong mobs and have them guard the lectern for you."
+        ));
+        inv.addItem(createItem(Material.WRITABLE_BOOK,
+                "§cClaim: §eHow to make a claim book.",
+                "§fUse a book and quill and follow the below format.",
+                "§fYou need to include yourself in the list to be a part of the claim.",
+                "§fYou can place a claim for others.",
+                "§fYou will get a confirmation in chat when placing a proper claim book in the lectern.",
+                "§cClaim Book format:",
+                "§fclaim",
+                "§fmembername1",
+                "§fmembername2",
+                "§fmembername3"
+        ));
+        inv.addItem(createItem(Material.WRITTEN_BOOK,
+                "§cClaim: §eUsing a signed book for claiming.",
+                "§fYou can claim using a signed book as well.",
+                "§fSigned books identify the original author.",
+                "§fCopy the signed book to easily create many claims.",
+                "§fYou can't change the memberlist of signed books.",
+                "§fYou can tell if it's the original or a copy.",
+                "§fUse others signed books to create conflicts."
+        ));
+        inv.addItem(createItem(Material.REDSTONE_BLOCK,
+                "§cClaim: §eBlocks that can be broken inside owned claim.",
+                "§fWhile inside your claim, you will be able to break more blocks normally.",
+                "§fThis applies mostly to redstone related items.",
+                "§fSee a full list by clicking this block and following the link that pops up in the chat."
+        ));
+        inv.addItem(createItem(Material.EGG,
+                "§dSecret: §eChickens lay many eggs."
+        ));
+        inv.addItem(createItem(whiteSheepHead,
+                "§dSecret: §eSheep are colorful and so are blocks."
+        ));
     }
 
     // Helper method for creating an item with a custom name and description
