@@ -12,7 +12,11 @@ import org.bukkit.event.player.PlayerTakeLecternBookEvent;
 import org.bukkit.inventory.meta.BookMeta;
 
 public class BookPlaceTake implements Listener {
-    Block4Block plugin = Block4Block.getInstance();
+    private final Block4Block plugin;
+
+    public BookPlaceTake(Block4Block plugin){
+        this.plugin = plugin;
+    }
 
     @EventHandler
     public void onPlace(BlockPlaceEvent e){

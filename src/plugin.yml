@@ -15,3 +15,9 @@ commands:
   b4bhelp:
     description: Shows an inventory with items that explain how Block4Block works.
     usage: /<command>
+  ignore:
+    description: Ignores a player to hide their messages. Use it again (or use /unignore) to continue receiving message from the player.
+    usage: /<command> player
+  unignore:
+    description: Removes a player from your ignore list to start showing their messages again.
+    usage: /<command> player

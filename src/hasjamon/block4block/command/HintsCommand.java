@@ -24,12 +24,12 @@ public class HintsCommand implements CommandExecutor {
             if(args[0].equalsIgnoreCase("off")) {
                 hintSettings.set(pUUID, "off");
                 plugin.cfg.saveHintSettings();
-                sender.sendMessage(utils.chat("Hints are now " + ChatColor.RED + "OFF"));
+                sender.sendMessage("Hints are now " + ChatColor.RED + "OFF");
                 return true;
             }else if(args[0].equalsIgnoreCase("on")) {
                 hintSettings.set(pUUID, "on");
                 plugin.cfg.saveHintSettings();
-                sender.sendMessage(utils.chat("Hints are now " + ChatColor.GREEN + "ON"));
+                sender.sendMessage("Hints are now " + ChatColor.GREEN + "ON");
                 return true;
             }
         }

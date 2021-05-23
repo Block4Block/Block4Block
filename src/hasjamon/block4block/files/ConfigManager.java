@@ -19,6 +19,8 @@ public class ConfigManager {
     private final FileConfiguration claimDataCfg = YamlConfiguration.loadConfiguration(claimDataFile);
     private final File hintSettingsFile = new File(this.plugin.getDataFolder(), "hintsettings.yml");
     private final FileConfiguration hintSettingsCfg = YamlConfiguration.loadConfiguration(hintSettingsFile);
+    private final File ignoreListsFile = new File(this.plugin.getDataFolder(), "ignorelists.yml");
+    private final FileConfiguration ignoreListsCfg = YamlConfiguration.loadConfiguration(ignoreListsFile);
 
     public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
@@ -28,6 +30,7 @@ public class ConfigManager {
         saveDefaultConfig();
         saveClaimData();
         saveHintSettings();
+        saveIgnoreLists();
     }
 
     // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
@@ -64,9 +67,22 @@ public class ConfigManager {
     public void saveHintSettings() {
         try {
             this.hintSettingsCfg.save(this.hintSettingsFile);
-            consoleSender.sendMessage(ChatColor.AQUA + "Hint settings has been saved to hintsettings.yml");
+            consoleSender.sendMessage(ChatColor.AQUA + "Hint settings have been saved to hintsettings.yml");
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save hint settings to hintsettings.yml");
+        }
+    }
+
+    public FileConfiguration getIgnoreLists() {
+        return this.ignoreListsCfg;
+    }
+
+    public void saveIgnoreLists() {
+        try {
+            this.ignoreListsCfg.save(this.ignoreListsFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Ignore lists have been saved to ignorelists.yml");
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save ignore lists to ignorelists.yml");
         }
     }
 }

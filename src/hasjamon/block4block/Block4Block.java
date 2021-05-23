@@ -61,20 +61,28 @@ public class Block4Block extends JavaPlugin{
         PluginCommand dieCmd = this.getCommand("die");
         PluginCommand hintsCmd = this.getCommand("hints");
         PluginCommand helpCmd = this.getCommand("b4bhelp");
+        PluginCommand ignoreCmd = this.getCommand("ignore");
+        PluginCommand unignoreCmd = this.getCommand("unignore");
 
         if(dieCmd != null) dieCmd.setExecutor(new DieCommand());
         if(hintsCmd != null) hintsCmd.setExecutor(new HintsCommand(this));
         if(helpCmd != null) helpCmd.setExecutor(new HelpCommand(this));
+        if(ignoreCmd != null && unignoreCmd != null){
+            IgnoreCommand cmd = new IgnoreCommand(this);
+            ignoreCmd.setExecutor(cmd);
+            unignoreCmd.setExecutor(cmd);
+        }
     }
 
     private void registerEvents() {
         pluginManager.registerEvents(new BlockBreak(), this);
-        pluginManager.registerEvents(new BookPlaceTake(), this);
-        pluginManager.registerEvents(new LecternBreak(), this);
+        pluginManager.registerEvents(new BookPlaceTake(this), this);
+        pluginManager.registerEvents(new LecternBreak(this), this);
         pluginManager.registerEvents(new EditBook(), this);
         pluginManager.registerEvents(new BlockPlace(), this);
         pluginManager.registerEvents(new LavaCasting(), this);
         pluginManager.registerEvents(new PlayerJoin(this), this);
+        pluginManager.registerEvents(new PlayerChat(this), this);
         pluginManager.registerEvents(new EggLay(), this);
     }
 

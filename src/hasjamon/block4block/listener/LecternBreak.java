@@ -13,7 +13,11 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 public class LecternBreak implements Listener {
-    Block4Block plugin = Block4Block.getInstance();
+    private final Block4Block plugin;
+
+    public LecternBreak(Block4Block plugin){
+        this.plugin = plugin;
+    }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBreak(BlockBreakEvent e){
