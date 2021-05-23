@@ -7,6 +7,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
@@ -14,14 +15,21 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 public class LecternBreak implements Listener {
     Block4Block plugin = Block4Block.getInstance();
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onBreak(BlockBreakEvent e){
-        if(plugin.cfg.getClaimData().contains(utils.getChunkID(e.getBlock().getChunk()))) { //if the block broken is in a claimed chunk
-            Player p = e.getPlayer();
+        if(!e.isCancelled()) {
+            Block b = e.getBlock();
+            String chunkID = utils.getChunkID(b.getChunk());
 
-            if (e.getBlock().getType() == Material.LECTERN)
-                if(utils.isClaimBlock(e.getBlock()))
-                    utils.unclaimChunk(p,e.getBlock(),false);
+            // If the block is in a claimed chunk
+            if (plugin.cfg.getClaimData().contains(chunkID)) {
+                Player p = e.getPlayer();
+
+                // LECTERN is exempt from B4B - otherwise having it on noloot would cause problems
+                if (b.getType() == Material.LECTERN)
+                    if (utils.isClaimBlock(b))
+                        utils.unclaimChunk(p, b, false);
+            }
         }
     }
 
