@@ -156,7 +156,7 @@ public class HelpCommand implements CommandExecutor, Listener {
                 "§7membername2",
                 "§7membername3"
         ));
-        inv.setItem(23,createItem(Material.WRITTEN_BOOK,
+        inv.setItem(23,createItem(Material.BOOK,
                 "§cClaim: §eUsing a signed book for claiming.",
                 "§7You can claim using a signed book as well.",
                 "§7Signed books identify the original author.",
