@@ -17,20 +17,25 @@ import java.util.List;
 
 
 public class BlockBreak implements Listener {
+    private final Block4Block plugin;
     private long andesiteLatestBreak = 0;
+
+    public BlockBreak(Block4Block plugin){
+        this.plugin = plugin;
+    }
 
     // This Class is for the block break event (This runs every time a player breaks a block)
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
         Player p = e.getPlayer();
         Block b = e.getBlock();
-        FileConfiguration cfg = Block4Block.getInstance().getConfig();
+        FileConfiguration cfg = plugin.getConfig();
 
         // Lecterns are exempt from B4B rules. Changing this would require refactoring of LecternBreak's onBreak.
         if (b.getType() == Material.LECTERN) return;
         if (p.getGameMode() == GameMode.CREATIVE) return;
 
-        if (Block4Block.getInstance().cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))) { //if claimed
+        if (plugin.cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))) { //if claimed
             if (!utils.isClaimBlock(b)) {
                 String[] members = utils.getMembers(b.getChunk());
                 List<?> claimBlacklist = cfg.getList("blacklisted-claim-blocks");
@@ -88,7 +93,7 @@ public class BlockBreak implements Listener {
         Player p = e.getPlayer();
         Block b = e.getBlock();
 
-        if (Block4Block.getInstance().cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))) {
+        if (plugin.cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))) {
             String[] members = utils.getMembers(b.getChunk());
             if (members != null) {
                 for (String member : members)

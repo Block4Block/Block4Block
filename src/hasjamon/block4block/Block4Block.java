@@ -75,11 +75,11 @@ public class Block4Block extends JavaPlugin{
     }
 
     private void registerEvents() {
-        pluginManager.registerEvents(new BlockBreak(), this);
+        pluginManager.registerEvents(new BlockBreak(this), this);
         pluginManager.registerEvents(new BookPlaceTake(this), this);
         pluginManager.registerEvents(new LecternBreak(this), this);
         pluginManager.registerEvents(new EditBook(), this);
-        pluginManager.registerEvents(new BlockPlace(), this);
+        pluginManager.registerEvents(new BlockPlace(this), this);
         pluginManager.registerEvents(new LavaCasting(), this);
         pluginManager.registerEvents(new PlayerJoin(this), this);
         pluginManager.registerEvents(new PlayerChat(this), this);

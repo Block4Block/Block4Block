@@ -11,6 +11,12 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 
 public class BlockPlace implements Listener {
+    private final Block4Block plugin;
+
+    public BlockPlace(Block4Block plugin){
+        this.plugin = plugin;
+    }
+
     // Prevent blocks from being placed in someone else's claim
     @EventHandler
     public void onPlace(BlockPlaceEvent e) {
@@ -21,7 +27,7 @@ public class BlockPlace implements Listener {
             return;
 
         // If the block was placed in a claimed chunk
-        if (Block4Block.getInstance().cfg.getClaimData().contains(utils.getChunkID(e.getBlockPlaced().getChunk()))) {
+        if (plugin.cfg.getClaimData().contains(utils.getChunkID(e.getBlockPlaced().getChunk()))) {
             String[] members = utils.getMembers(b.getChunk());
 
             if (!utils.isClaimBlock(b)){
@@ -43,7 +49,7 @@ public class BlockPlace implements Listener {
         Player p = e.getPlayer();
         Material bucket = e.getBucket();
 
-        if(Block4Block.getInstance().cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))){
+        if(plugin.cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))){
             String[] members = utils.getMembers(b.getChunk());
             if (members != null) {
                 for (String member : members)
