@@ -2,6 +2,7 @@ package hasjamon.block4block.command;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -52,26 +53,28 @@ public class ClaimContestCommand implements CommandExecutor {
                         if (args.length >= 4) {
                             int x = Integer.parseInt(args[2]);
                             int z = Integer.parseInt(args.length >= 5 ? args[4] : args[3]);
-                            World.Environment dimension;
+                            World.Environment environment;
+                            String dimension = args[1].toLowerCase();
 
-                            switch (args[1].toLowerCase()) {
+                            switch (dimension) {
                                 case "overworld":
-                                    dimension = World.Environment.NORMAL;
+                                    environment = World.Environment.NORMAL;
                                     break;
 
                                 case "nether":
-                                    dimension = World.Environment.NETHER;
+                                    environment = World.Environment.NETHER;
                                     break;
 
                                 case "end":
-                                    dimension = World.Environment.THE_END;
+                                    environment = World.Environment.THE_END;
                                     break;
 
                                 default:
                                     return false;
                             }
 
-                            claimContest.set("chunkID", utils.getChunkID(x, z, dimension));
+                            claimContest.set("chunkLoc", StringUtils.capitalize(dimension) + " (X: " + x + ", Z: " + z + ")");
+                            claimContest.set("chunkID", utils.getChunkID(x, z, environment));
                         }else{
                             return false;
                         }
@@ -153,11 +156,13 @@ public class ClaimContestCommand implements CommandExecutor {
 
                             String prize = claimContest.getString("prize", "none");
 
+                            String chunkLoc = claimContest.getString("chunkLoc", "none");
+
                             // Information shown to/on the current claimant
-                            Scoreboard claimantBoard = createClaimantScoreboard(timeLeft, prize, claimant);
+                            Scoreboard claimantBoard = createClaimantScoreboard(timeLeft, prize, claimant, chunkLoc);
 
                             // Information shown to everyone else
-                            Scoreboard playerBoard = createPlayerScoreboard(timeLeft, prize, claimant);
+                            Scoreboard playerBoard = createPlayerScoreboard(timeLeft, prize, claimant, chunkLoc);
 
                             for(Player p : Bukkit.getOnlinePlayers())
                                 if(p.getName().equalsIgnoreCase(claimant) && claimantBoard != null)
@@ -193,31 +198,33 @@ public class ClaimContestCommand implements CommandExecutor {
                 p.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
     }
 
-    private Scoreboard createPlayerScoreboard(String timeLeft, String prize, String claimant){
+    private Scoreboard createPlayerScoreboard(String timeLeft, String prize, String claimant, String chunkLoc){
         if(Bukkit.getScoreboardManager() != null) {
             Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
             Objective sidebarObj = scoreboard.registerNewObjective("contest", "dummy", "Claim Contest");
 
             sidebarObj.setDisplaySlot(DisplaySlot.SIDEBAR);
-            sidebarObj.getScore("Countdown: " + timeLeft).setScore(-1);
-            sidebarObj.getScore("Prize: " + prize).setScore(-2);
-            sidebarObj.getScore("Claimant: " + claimant).setScore(-3);
+            sidebarObj.getScore("Location: " + chunkLoc).setScore(-1);
+            sidebarObj.getScore("Countdown: " + timeLeft).setScore(-2);
+            sidebarObj.getScore("Prize: " + prize).setScore(-3);
+            sidebarObj.getScore("Claimant: " + claimant).setScore(-4);
 
             return scoreboard;
         }
         return null;
     }
 
-    private Scoreboard createClaimantScoreboard(String timeLeft, String prize, String claimant){
+    private Scoreboard createClaimantScoreboard(String timeLeft, String prize, String claimant, String chunkLoc){
         if(Bukkit.getScoreboardManager() != null) {
             Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
             Objective sidebarObj = scoreboard.registerNewObjective("contest", "dummy", "Claim Contest");
             Objective claimantObj = scoreboard.registerNewObjective("claimant", "dummy", ChatColor.GOLD + "Claimant");
 
             sidebarObj.setDisplaySlot(DisplaySlot.SIDEBAR);
-            sidebarObj.getScore("Countdown: " + timeLeft).setScore(-1);
-            sidebarObj.getScore("Prize: " + prize).setScore(-2);
-            sidebarObj.getScore("Claimant: " + claimant).setScore(-3);
+            sidebarObj.getScore("Location: " + chunkLoc).setScore(-1);
+            sidebarObj.getScore("Countdown: " + timeLeft).setScore(-2);
+            sidebarObj.getScore("Prize: " + prize).setScore(-3);
+            sidebarObj.getScore("Claimant: " + claimant).setScore(-4);
 
             claimantObj.setDisplaySlot(DisplaySlot.BELOW_NAME);
             claimantObj.getScore(ChatColor.GOLD + "Claim Contest Leader").setScore(0);
