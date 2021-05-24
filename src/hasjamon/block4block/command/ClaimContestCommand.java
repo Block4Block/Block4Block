@@ -35,13 +35,14 @@ public class ClaimContestCommand implements CommandExecutor {
             FileConfiguration claimContest = plugin.cfg.getClaimContest();
 
             try {
-                switch (args[0]) {
+                switch (args[0].toLowerCase()) {
                     case "help":
                         p.sendMessage(ChatColor.GOLD + "To create a claim contest, use a combination of:");
                         p.sendMessage(ChatColor.GRAY + "/claimcontest chunk [overworld | nether | end] x z");
                         p.sendMessage(ChatColor.GRAY + "/claimcontest duration minutes [hours] [days]");
                         p.sendMessage(ChatColor.GRAY + "/claimcontest prize amount");
                         p.sendMessage(ChatColor.GRAY + "/claimcontest start");
+                        p.sendMessage(ChatColor.GRAY + "/claimcontest cancel");
                         break;
 
                     case "chunk":
@@ -94,6 +95,13 @@ public class ClaimContestCommand implements CommandExecutor {
                         claimContest.set("duration", minutes * (long) 6e10);
                         break;
 
+                    case "prize":
+                        if(args.length > 1)
+                            claimContest.set("prize", String.join(" ", args).substring(6));
+                        else
+                            return false;
+                        break;
+
                     case "start":
                         if (this.contestTask == null)
                             this.contestTask = startContest();
@@ -103,13 +111,6 @@ public class ClaimContestCommand implements CommandExecutor {
 
                     case "cancel":
                         this.cancelContest();
-                        break;
-
-                    case "prize":
-                        if(args.length > 1)
-                            claimContest.set("prize", args[1]);
-                        else
-                            return false;
                         break;
 
                     default:
