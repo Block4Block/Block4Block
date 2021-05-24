@@ -10,6 +10,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -63,6 +65,7 @@ public class Block4Block extends JavaPlugin{
         PluginCommand helpCmd = this.getCommand("b4bhelp");
         PluginCommand ignoreCmd = this.getCommand("ignore");
         PluginCommand unignoreCmd = this.getCommand("unignore");
+        PluginCommand claimContestCmd = this.getCommand("claimcontest");
 
         if(dieCmd != null) dieCmd.setExecutor(new DieCommand());
         if(hintsCmd != null) hintsCmd.setExecutor(new HintsCommand(this));
@@ -72,6 +75,7 @@ public class Block4Block extends JavaPlugin{
             ignoreCmd.setExecutor(cmd);
             unignoreCmd.setExecutor(cmd);
         }
+        if(claimContestCmd != null) claimContestCmd.setExecutor(new ClaimContestCommand(this));
     }
 
     private void registerEvents() {

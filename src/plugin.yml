@@ -22,3 +22,7 @@ commands:
   unignore:
     description: Removes a player from your ignore list to start showing their messages again.
     usage: /<command> player
+  claimcontest:
+    description: Everything you need to start a Chunk Claim Contest.
+    usage: /<command> help
+    permission: op

@@ -21,6 +21,8 @@ public class ConfigManager {
     private final FileConfiguration hintSettingsCfg = YamlConfiguration.loadConfiguration(hintSettingsFile);
     private final File ignoreListsFile = new File(this.plugin.getDataFolder(), "ignorelists.yml");
     private final FileConfiguration ignoreListsCfg = YamlConfiguration.loadConfiguration(ignoreListsFile);
+    private final File claimContestFile = new File(this.plugin.getDataFolder(), "claimcontest.yml");
+    private final FileConfiguration claimContestCfg = YamlConfiguration.loadConfiguration(claimContestFile);
 
     public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
@@ -31,6 +33,7 @@ public class ConfigManager {
         saveClaimData();
         saveHintSettings();
         saveIgnoreLists();
+        saveClaimContest();
     }
 
     // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
@@ -84,5 +87,24 @@ public class ConfigManager {
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save ignore lists to ignorelists.yml");
         }
+    }
+
+    public FileConfiguration getClaimContest() {
+        return this.claimContestCfg;
+    }
+
+    public void saveClaimContest() {
+        try {
+            this.claimContestCfg.save(this.claimContestFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Claim contest has been saved to claimcontest.yml");
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save claim contest to claimcontest.yml");
+        }
+    }
+
+    public void clearClaimContest() {
+        for(String key : this.claimContestCfg.getKeys(false))
+            this.claimContestCfg.set(key, null);
+        this.saveClaimContest();
     }
 }
