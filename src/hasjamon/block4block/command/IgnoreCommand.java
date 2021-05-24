@@ -21,7 +21,7 @@ public class IgnoreCommand implements CommandExecutor {
     }
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
-        if(args.length > 0 && sender instanceof  Player) {
+        if(args.length > 0 && sender instanceof Player) {
             FileConfiguration ignoreLists = plugin.cfg.getIgnoreLists();
             String ignoreeName = args[0];
             List<Player> ignoreeCandidates = Bukkit.matchPlayer(ignoreeName);
