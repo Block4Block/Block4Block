@@ -144,7 +144,11 @@ public class utils {
     }
 
     public static String getChunkID(Chunk chunk) {
-        return chunk.getX() + "," + chunk.getZ();
+        return chunk.getWorld().getEnvironment().name() + "|" + chunk.getX() + "," + chunk.getZ();
+    }
+
+    public static String getChunkID(int blockX, int blockY, World.Environment environment) {
+        return environment.name() + "|" + (blockX >> 4) + "," + (blockY >> 4);
     }
 
     public static String[] getMembers(Chunk chunk) {
@@ -156,6 +160,7 @@ public class utils {
             return null;
     }
 
+    // Check if a block is a lectern with a claim book
     public static boolean isClaimBlock(Block b) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
         String cID = getChunkID(b.getChunk());
