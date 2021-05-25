@@ -169,6 +169,11 @@ public class ClaimContestCommand implements CommandExecutor {
                                     p.setScoreboard(claimantBoard);
                                 else if(playerBoard != null)
                                     p.setScoreboard(playerBoard);
+
+                            // Inform the players if the claimant has changed
+                            String prevClaimant = claimContest.getString("claimant", "No one");
+                            if(!claimant.equalsIgnoreCase(prevClaimant))
+                                Bukkit.broadcastMessage(ChatColor.GOLD + claimant + " has claimed the Contest Chunk!");
                         }
                     }, 0, 20);
         }
