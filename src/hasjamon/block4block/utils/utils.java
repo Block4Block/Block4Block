@@ -177,7 +177,7 @@ public class utils {
 
         if (bookmeta != null) {
             List<String> pages = bookmeta.getPages();
-            Set<String> members = new HashSet<>();
+            List<String> members = new ArrayList<>();
 
             // Collect a list of members
             for (String page : pages) {
@@ -191,7 +191,7 @@ public class utils {
                     String member = lines[i].trim();
 
                     // If the member name is valid
-                    if(!member.contains(" ") && !member.isEmpty())
+                    if(!member.contains(" ") && !member.isEmpty() && !members.contains(member))
                         members.add(member);
                 }
             }
