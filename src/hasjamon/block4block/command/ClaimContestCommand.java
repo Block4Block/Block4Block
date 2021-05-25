@@ -174,6 +174,7 @@ public class ClaimContestCommand implements CommandExecutor {
                             String prevClaimant = claimContest.getString("claimant", "No one");
                             if(!claimant.equalsIgnoreCase(prevClaimant))
                                 Bukkit.broadcastMessage(ChatColor.GOLD + claimant + " has claimed the Contest Chunk!");
+                            claimContest.set("claimant", claimant);
                         }
                     }, 0, 20);
         }
