@@ -132,8 +132,8 @@ public class ClaimContestCommand implements CommandExecutor {
         FileConfiguration claimData = plugin.cfg.getClaimData();
         FileConfiguration claimContest = plugin.cfg.getClaimContest();
 
-        String chunkID = claimContest.getString("chunkID");
-        long duration = claimContest.getLong("duration", 0);
+        String chunkID = claimContest.getString("data.chunkID");
+        long duration = claimContest.getLong("data.duration", 0);
         plugin.cfg.saveClaimContest();
 
         if(duration > 0 && chunkID != null) {
@@ -144,7 +144,7 @@ public class ClaimContestCommand implements CommandExecutor {
                     () -> {
                         if (System.nanoTime() >= endTime) {
                             String claimant = claimData.getString(chunkID + ".members", "No one");
-                            String prize = claimContest.getString("prize", "none");
+                            String prize = claimContest.getString("data.prize", "none");
 
                             claimContest.set("winners." + endTime, claimant);
                             claimContest.set("prizes." + endTime, prize);
@@ -161,9 +161,9 @@ public class ClaimContestCommand implements CommandExecutor {
                             String claimant = claimData.getString(chunkID + ".members", "No one");
                             claimant = claimant.split("\\n")[0];
 
-                            String prize = claimContest.getString("prize", "none");
+                            String prize = claimContest.getString("data.prize", "none");
 
-                            String chunkLoc = claimContest.getString("chunkLoc", "none");
+                            String chunkLoc = claimContest.getString("data.chunkLoc", "none");
 
                             // Information shown to/on the current claimant
                             Scoreboard claimantBoard = createClaimantScoreboard(timeLeft, prize, claimant, chunkLoc);
@@ -178,7 +178,7 @@ public class ClaimContestCommand implements CommandExecutor {
                                     p.setScoreboard(playerBoard);
 
                             // Inform the players if the claimant has changed
-                            String prevClaimant = claimContest.getString("claimant", "No one");
+                            String prevClaimant = claimContest.getString("data.claimant", "No one");
                             if(!claimant.equalsIgnoreCase(prevClaimant) && !claimant.equals("No one"))
                                 Bukkit.broadcastMessage(ChatColor.GOLD + claimant + " has claimed the Contest Chunk!");
                             claimContest.set("data.claimant", claimant);
