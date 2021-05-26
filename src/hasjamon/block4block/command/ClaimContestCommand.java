@@ -17,6 +17,8 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -166,9 +168,13 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                             String claimant = claimData.getString(chunkID + ".members", "No one");
                             String prize = claimContest.getString("data.prize", "none");
 
-                            claimContest.set(endTime + ".location", chunkLoc);
-                            claimContest.set(endTime + ".winner", claimant);
-                            claimContest.set(endTime + ".prize", prize);
+                            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MMM-dd_HH-mm");
+                            LocalDateTime now = LocalDateTime.now();
+                            String endDate = dtf.format(now);
+
+                            claimContest.set(endDate + ".location", chunkLoc);
+                            claimContest.set(endDate + ".winner", claimant);
+                            claimContest.set(endDate + ".prize", prize);
 
                             Bukkit.broadcastMessage(ChatColor.GOLD + "THE CONTEST HAS ENDED!");
                             if(!claimant.equals("No one"))
