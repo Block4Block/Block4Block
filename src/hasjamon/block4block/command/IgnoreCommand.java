@@ -56,7 +56,7 @@ public class IgnoreCommand implements CommandExecutor, TabCompleter {
                     return false;
             }
 
-            sendIgnoreMessage(ignorer, ignoreeName, System.nanoTime() >= until);
+            sendIgnoreMessage(ignorer, ignoreeName, System.nanoTime() < until);
             ignoreLists.set(field, until);
             plugin.cfg.saveIgnoreLists();
 
