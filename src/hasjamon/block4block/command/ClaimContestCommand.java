@@ -305,7 +305,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
         if(args.length == 3) {
             if(args[0].equalsIgnoreCase("chunk")) {
                 if(p != null)
-                    suggestions.add(String.valueOf(p.getLocation().getX()));
+                    suggestions.add(String.valueOf(p.getLocation().getBlockX()));
                 suggestions.add("<X>");
             }else if (args[0].equalsIgnoreCase("duration")){
                 suggestions.add("<hours>");
@@ -315,7 +315,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
         if(args.length == 4) {
             if(args[0].equalsIgnoreCase("chunk")) {
                 if(p != null)
-                    suggestions.add(String.valueOf(p.getLocation().getZ()));
+                    suggestions.add(String.valueOf(p.getLocation().getBlockZ()));
                 suggestions.add("<Z>");
             }else if (args[0].equalsIgnoreCase("duration")){
                 suggestions.add("<days>");
