@@ -119,6 +119,7 @@ public class ClaimContestCommand implements CommandExecutor {
                     default:
                         return false;
                 }
+                sendContestData(p);
                 return true;
             }catch(Exception e){
                 e.printStackTrace();
@@ -126,6 +127,20 @@ public class ClaimContestCommand implements CommandExecutor {
             }
         }
         return false;
+    }
+
+    private void sendContestData(Player p){
+        FileConfiguration claimContest = plugin.cfg.getClaimContest();
+        long durationNs = claimContest.getLong("data.duration", 0);
+        long endTime = System.nanoTime() + durationNs;
+
+        String chunkLoc = claimContest.getString("data.chunkLoc", "none");
+        String duration = getTimeLeft(endTime, System.nanoTime());
+        String prize = claimContest.getString("data.prize", "none");
+
+        p.sendMessage("Location: " + chunkLoc);
+        p.sendMessage("Duration: " + duration);
+        p.sendMessage("Prize: " + prize);
     }
 
     private BukkitTask startContest() {
