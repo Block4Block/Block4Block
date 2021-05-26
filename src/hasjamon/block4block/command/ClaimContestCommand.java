@@ -188,8 +188,8 @@ public class ClaimContestCommand implements CommandExecutor {
         return null;
     }
 
-    private String getTimeLeft(long endTime, long nanoTime) {
-        long secondsTotal = (endTime - System.nanoTime()) / (long) 1e9;
+    private String getTimeLeft(long endTime, long now) {
+        long secondsTotal = (endTime - now) / (long) 1e9;
         long daysLeft = secondsTotal / SECONDS_PER_DAY;
         long hoursLeft = (secondsTotal % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
         long minutesLeft = (secondsTotal % SECONDS_PER_HOUR) / 60;
