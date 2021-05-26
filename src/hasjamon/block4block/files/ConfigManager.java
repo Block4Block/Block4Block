@@ -103,8 +103,7 @@ public class ConfigManager {
     }
 
     public void clearClaimContest() {
-        for(String key : this.claimContestCfg.getKeys(false))
-            this.claimContestCfg.set(key, null);
+        this.claimContestCfg.set("data", null);
         this.saveClaimContest();
     }
 }

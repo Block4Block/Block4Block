@@ -73,8 +73,8 @@ public class ClaimContestCommand implements CommandExecutor {
                                     return false;
                             }
 
-                            claimContest.set("chunkLoc", StringUtils.capitalize(dimension) + " (X: " + x + ", Z: " + z + ")");
-                            claimContest.set("chunkID", utils.getChunkID(x, z, environment));
+                            claimContest.set("data.chunkLoc", StringUtils.capitalize(dimension) + " (X: " + x + ", Z: " + z + ")");
+                            claimContest.set("data.chunkID", utils.getChunkID(x, z, environment));
                         }else{
                             return false;
                         }
@@ -95,12 +95,12 @@ public class ClaimContestCommand implements CommandExecutor {
                             return false;
                         }
 
-                        claimContest.set("duration", minutes * (long) 6e10);
+                        claimContest.set("data.duration", minutes * (long) 6e10);
                         break;
 
                     case "prize":
                         if(args.length > 1)
-                            claimContest.set("prize", String.join(" ", args).substring(6));
+                            claimContest.set("data.prize", String.join(" ", args).substring(6));
                         else
                             return false;
                         break;
@@ -138,15 +138,22 @@ public class ClaimContestCommand implements CommandExecutor {
 
         if(duration > 0 && chunkID != null) {
             long endTime = System.nanoTime() + duration;
-            claimContest.set("start-timestamp", System.nanoTime());
+            claimContest.set("data.start-timestamp", System.nanoTime());
 
             return Bukkit.getScheduler().runTaskTimer(plugin,
                     () -> {
                         if (System.nanoTime() >= endTime) {
                             String claimant = claimData.getString(chunkID + ".members", "No one");
+                            String prize = claimContest.getString("prize", "none");
+
+                            claimContest.set("winners." + endTime, claimant);
+                            claimContest.set("prizes." + endTime, prize);
 
                             Bukkit.broadcastMessage(ChatColor.GOLD + "THE CONTEST HAS ENDED!");
-                            Bukkit.broadcastMessage("And the winner is... " + ChatColor.GREEN + claimant + "!");
+                            if(!claimant.equals("No one"))
+                                Bukkit.broadcastMessage("And the winner is... " + ChatColor.GREEN + claimant + "!");
+                            else
+                                Bukkit.broadcastMessage("No one won this round! Better luck next time!");
                             this.cancelContest();
                         } else {
                             String timeLeft = getTimeLeft(endTime, System.nanoTime());
@@ -172,9 +179,9 @@ public class ClaimContestCommand implements CommandExecutor {
 
                             // Inform the players if the claimant has changed
                             String prevClaimant = claimContest.getString("claimant", "No one");
-                            if(!claimant.equalsIgnoreCase(prevClaimant))
+                            if(!claimant.equalsIgnoreCase(prevClaimant) && !claimant.equals("No one"))
                                 Bukkit.broadcastMessage(ChatColor.GOLD + claimant + " has claimed the Contest Chunk!");
-                            claimContest.set("claimant", claimant);
+                            claimContest.set("data.claimant", claimant);
                         }
                     }, 0, 20);
         }
