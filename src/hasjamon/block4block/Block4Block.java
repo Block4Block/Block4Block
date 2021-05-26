@@ -10,7 +10,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Collections;
 import java.util.List;
@@ -75,11 +74,7 @@ public class Block4Block extends JavaPlugin{
             ignoreCmd.setExecutor(cmd);
             unignoreCmd.setExecutor(cmd);
         }
-        if(claimContestCmd != null){
-            ClaimContestCommand cmd = new ClaimContestCommand(this);
-            claimContestCmd.setExecutor(cmd);
-            claimContestCmd.setTabCompleter(cmd);
-        }
+        if(claimContestCmd != null) claimContestCmd.setExecutor(new ClaimContestCommand(this));
     }
 
     private void registerEvents() {

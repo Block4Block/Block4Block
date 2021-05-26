@@ -1,15 +1,19 @@
 package hasjamon.block4block.command;
 
 import hasjamon.block4block.Block4Block;
-import hasjamon.block4block.utils.utils;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
-public class HintsCommand implements CommandExecutor {
+import java.util.ArrayList;
+import java.util.List;
+
+public class HintsCommand implements CommandExecutor, TabCompleter {
     private final Block4Block plugin;
 
     public HintsCommand(Block4Block plugin) {
@@ -34,5 +38,16 @@ public class HintsCommand implements CommandExecutor {
             }
         }
         return false;
+    }
+
+    public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args){
+        List<String> suggestions = new ArrayList<>();
+
+        if(args.length == 1){
+            suggestions.add("on");
+            suggestions.add("off");
+        }
+
+        return suggestions;
     }
 }
