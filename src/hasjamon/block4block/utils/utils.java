@@ -313,7 +313,7 @@ public class utils {
         }
 
         if(noloot)
-            b.setType(Material.AIR);
+            e.setDropItems(false);
     }
 
     public static Material getRandomSpawnEgg(Map<Character, Integer> letterBonuses){
