@@ -242,7 +242,6 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
         if(Bukkit.getScoreboardManager() != null) {
             Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
             Objective sidebarObj = scoreboard.registerNewObjective("contest", "dummy", "Claim Contest");
-            Objective claimantObj = scoreboard.registerNewObjective("claimant", "dummy", ChatColor.GOLD + "Claimant");
 
             sidebarObj.setDisplaySlot(DisplaySlot.SIDEBAR);
             sidebarObj.getScore("Location: " + chunkLoc).setScore(-1);
@@ -250,9 +249,12 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
             sidebarObj.getScore("Prize: " + prize).setScore(-3);
             sidebarObj.getScore("Claimant: " + claimant).setScore(-4);
 
-            claimantObj.setDisplaySlot(DisplaySlot.BELOW_NAME);
-            claimantObj.getScore(claimant).setScore(0);
-            claimantObj.setDisplayName(ChatColor.GOLD + "Claim Contest Leader");
+            if(Bukkit.getServer().getPlayerExact(claimant) != null) {
+                Objective claimantObj = scoreboard.registerNewObjective("claimant", "dummy", ChatColor.GOLD + "Claimant");
+                claimantObj.setDisplaySlot(DisplaySlot.BELOW_NAME);
+                claimantObj.getScore(claimant).setScore(0);
+                claimantObj.setDisplayName(ChatColor.GOLD + "Claim Contest Leader");
+            }
 
             return scoreboard;
         }
@@ -310,7 +312,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
             }
         }
 
-        if(args.length == 3) {
+        if(args.length == 4) {
             if(args[0].equalsIgnoreCase("chunk")) {
                 if(p != null)
                     suggestions.add(String.valueOf(p.getLocation().getZ()));
