@@ -221,11 +221,16 @@ public class utils {
                 claimData.set(chunkID + ".members", membersString);
                 plugin.cfg.saveClaimData(); // Save members to claimdata.yml
 
+                OfflinePlayer[] knownPlayers = Bukkit.getServer().getOfflinePlayers();
+
                 // Inform the player of the claim and its members
                 p.sendMessage(utils.chat("&aThis chunk has now been claimed!"));
                 p.sendMessage(utils.chat("&aMembers who can access this chunk:"));
                 for (String member : members)
-                    p.sendMessage(ChatColor.GRAY + " - " + member);
+                    if(Arrays.stream(knownPlayers).anyMatch(kp -> kp.getName() != null && kp.getName().equalsIgnoreCase(member)))
+                        p.sendMessage(ChatColor.GRAY + " - " + member);
+                    else
+                        p.sendMessage(ChatColor.GRAY + " - " + member + ChatColor.RED + " (unknown player)");
 
                 updateClaimCount();
             }else{
