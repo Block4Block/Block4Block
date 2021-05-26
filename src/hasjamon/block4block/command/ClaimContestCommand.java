@@ -242,12 +242,17 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
         if(Bukkit.getScoreboardManager() != null) {
             Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
             Objective sidebarObj = scoreboard.registerNewObjective("contest", "dummy", "Claim Contest");
+            Objective claimantObj = scoreboard.registerNewObjective("claimant", "dummy", ChatColor.GOLD + "Claimant");
 
             sidebarObj.setDisplaySlot(DisplaySlot.SIDEBAR);
             sidebarObj.getScore("Location: " + chunkLoc).setScore(-1);
             sidebarObj.getScore("Countdown: " + timeLeft).setScore(-2);
             sidebarObj.getScore("Prize: " + prize).setScore(-3);
             sidebarObj.getScore("Claimant: " + claimant).setScore(-4);
+
+            claimantObj.setDisplaySlot(DisplaySlot.BELOW_NAME);
+            claimantObj.getScore(claimant).setScore(0);
+            claimantObj.setDisplayName(ChatColor.GOLD + "Claim Contest Leader");
 
             return scoreboard;
         }
@@ -258,16 +263,12 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
         if(Bukkit.getScoreboardManager() != null) {
             Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
             Objective sidebarObj = scoreboard.registerNewObjective("contest", "dummy", "Claim Contest");
-            Objective claimantObj = scoreboard.registerNewObjective("claimant", "dummy", ChatColor.GOLD + "Claimant");
 
             sidebarObj.setDisplaySlot(DisplaySlot.SIDEBAR);
             sidebarObj.getScore("Location: " + chunkLoc).setScore(-1);
             sidebarObj.getScore("Countdown: " + timeLeft).setScore(-2);
             sidebarObj.getScore("Prize: " + prize).setScore(-3);
             sidebarObj.getScore("Claimant: " + claimant).setScore(-4);
-
-            claimantObj.setDisplaySlot(DisplaySlot.BELOW_NAME);
-            claimantObj.getScore(ChatColor.GOLD + "Claim Contest Leader").setScore(0);
 
             return scoreboard;
         }
@@ -276,6 +277,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
 
     public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args){
         List<String> suggestions = new ArrayList<>();
+        Player p = sender instanceof Player ? (Player) sender : null;
 
         if(args.length == 1){
             suggestions.add("help");
@@ -300,6 +302,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
 
         if(args.length == 3) {
             if(args[0].equalsIgnoreCase("chunk")) {
+                if(p != null)
+                    suggestions.add(String.valueOf(p.getLocation().getX()));
                 suggestions.add("<X>");
             }else if (args[0].equalsIgnoreCase("duration")){
                 suggestions.add("<hours>");
@@ -308,6 +312,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
 
         if(args.length == 3) {
             if(args[0].equalsIgnoreCase("chunk")) {
+                if(p != null)
+                    suggestions.add(String.valueOf(p.getLocation().getZ()));
                 suggestions.add("<Z>");
             }else if (args[0].equalsIgnoreCase("duration")){
                 suggestions.add("<days>");
