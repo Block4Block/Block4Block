@@ -7,13 +7,14 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-public class IgnoreCommand implements CommandExecutor {
+public class IgnoreCommand implements CommandExecutor, TabCompleter {
     private final Block4Block plugin;
 
     public IgnoreCommand(Block4Block plugin) {
@@ -34,24 +35,29 @@ public class IgnoreCommand implements CommandExecutor {
                 return false;
 
             String field = ignoree.getUniqueId() + "." + ignorer.getUniqueId();
-            boolean shouldIgnore = true;
+            long until = System.nanoTime();
 
             switch (label.toLowerCase()) {
                 case "ignore":
-                    if(ignoreLists.contains(field))
-                        shouldIgnore = !ignoreLists.getBoolean(field);
+                    if(args.length == 2)
+                        if(args[1].matches("[0-9]+"))
+                            until += Long.parseLong(args[1]) * 6e10;
+                        else
+                            return false;
+                    else
+                        until *= 2;
                     break;
 
                 case "unignore":
-                    shouldIgnore = false;
+                    until = 0;
                     break;
 
                 default:
                     return false;
             }
 
-            sendIgnoreMessage(ignorer, ignoreeName, shouldIgnore);
-            ignoreLists.set(field, shouldIgnore);
+            sendIgnoreMessage(ignorer, ignoreeName, System.nanoTime() >= until);
+            ignoreLists.set(field, until);
             plugin.cfg.saveIgnoreLists();
 
             return true;
@@ -64,5 +70,19 @@ public class IgnoreCommand implements CommandExecutor {
             ignorer.sendMessage("Messages from " + ignoreeName + " are now " + ChatColor.RED + "OFF");
         else
             ignorer.sendMessage("Messages from " + ignoreeName + " are now " + ChatColor.GREEN + "ON");
+    }
+
+    public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args){
+        List<String> suggestions = new ArrayList<>();
+
+        if(args.length == 1)
+            for(Player p : Bukkit.getOnlinePlayers())
+                if(!p.getName().equals(sender.getName()))
+                    suggestions.add(p.getName());
+
+        if(args.length == 2 && cmd.getName().equalsIgnoreCase("ignore"))
+            suggestions.add("<minutes>");
+
+        return suggestions;
     }
 }

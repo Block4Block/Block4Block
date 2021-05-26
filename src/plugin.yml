@@ -17,8 +17,8 @@ commands:
     usage: /<command>
     aliases: [helpb4b]
   ignore:
-    description: Ignores a player to hide their messages. Use it again (or use /unignore) to continue receiving message from the player.
-    usage: /<command> player
+    description: Ignores a player to hide their messages until you use /unignore or for x minutes.
+    usage: /<command> player [minutes]
   unignore:
     description: Removes a player from your ignore list to start showing their messages again.
     usage: /<command> player

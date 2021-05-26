@@ -21,7 +21,8 @@ public class PlayerChat implements Listener {
         Player sender = e.getPlayer();
         FileConfiguration ignoreLists = plugin.cfg.getIgnoreLists();
         Set<Player> recipients = e.getRecipients();
+        long now = System.nanoTime();
 
-        recipients.removeIf(r -> ignoreLists.getBoolean(sender.getUniqueId() + "." + r.getUniqueId(), false));
+        recipients.removeIf(r -> now < ignoreLists.getLong(sender.getUniqueId() + "." + r.getUniqueId(), 0));
     }
 }
