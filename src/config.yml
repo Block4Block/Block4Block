@@ -275,6 +275,8 @@ blacklisted-blocks:
 - ATTACHED_MELON_STEM
 - PUMPKIN_STEM
 - ATTACHED_PUMPKIN_STEM
+- CARROTS
+- BEETROOTS
 
 # Blocks with loot disabled on break
 no-loot-on-break:
@@ -304,7 +306,6 @@ no-loot-on-break:
 - BASALT
 - BEDROCK
 - BEEHIVE
-- BEETROOTS
 - BIG_DRIPLEAF
 - BIRCH_BUTTON
 - BIRCH_DOOR
@@ -367,7 +368,6 @@ no-loot-on-break:
 - BUBBLE_CORAL_WALL_FAN
 - BUDDING_AMETHYST
 - CALCITE
-- CARROTS
 - CAMPFIRE
 - CARTOGRAPHY_TABLE
 - CARVED_PUMPKIN
