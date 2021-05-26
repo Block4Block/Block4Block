@@ -9,6 +9,7 @@ import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
@@ -16,7 +17,10 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 
-public class ClaimContestCommand implements CommandExecutor {
+import java.util.ArrayList;
+import java.util.List;
+
+public class ClaimContestCommand implements CommandExecutor, TabCompleter {
     private final Block4Block plugin;
     private BukkitTask contestTask;
     private final int SECONDS_PER_HOUR = 60 * 60;
@@ -158,11 +162,13 @@ public class ClaimContestCommand implements CommandExecutor {
             return Bukkit.getScheduler().runTaskTimer(plugin,
                     () -> {
                         if (System.nanoTime() >= endTime) {
+                            String chunkLoc = claimContest.getString("data.chunkLoc", "none");
                             String claimant = claimData.getString(chunkID + ".members", "No one");
                             String prize = claimContest.getString("data.prize", "none");
 
-                            claimContest.set("winners." + endTime, claimant);
-                            claimContest.set("prizes." + endTime, prize);
+                            claimContest.set(endTime + ".location", chunkLoc);
+                            claimContest.set(endTime + ".winner", claimant);
+                            claimContest.set(endTime + ".prize", prize);
 
                             Bukkit.broadcastMessage(ChatColor.GOLD + "THE CONTEST HAS ENDED!");
                             if(!claimant.equals("No one"))
@@ -262,4 +268,46 @@ public class ClaimContestCommand implements CommandExecutor {
         return null;
     }
 
+    public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args){
+        List<String> suggestions = new ArrayList<>();
+
+        if(args.length == 1){
+            suggestions.add("help");
+            suggestions.add("chunk");
+            suggestions.add("duration");
+            suggestions.add("prize");
+            suggestions.add("start");
+            suggestions.add("cancel");
+        }
+
+        if(args.length == 2) {
+            if(args[0].equalsIgnoreCase("chunk")) {
+                suggestions.add("overworld");
+                suggestions.add("nether");
+                suggestions.add("end");
+            }else if (args[0].equalsIgnoreCase("duration")){
+                suggestions.add("<minutes>");
+            }else if (args[0].equalsIgnoreCase("prize")){
+                suggestions.add("<amount>");
+            }
+        }
+
+        if(args.length == 3) {
+            if(args[0].equalsIgnoreCase("chunk")) {
+                suggestions.add("<X>");
+            }else if (args[0].equalsIgnoreCase("duration")){
+                suggestions.add("<hours>");
+            }
+        }
+
+        if(args.length == 3) {
+            if(args[0].equalsIgnoreCase("chunk")) {
+                suggestions.add("<Z>");
+            }else if (args[0].equalsIgnoreCase("duration")){
+                suggestions.add("<days>");
+            }
+        }
+
+        return suggestions;
+    }
 }

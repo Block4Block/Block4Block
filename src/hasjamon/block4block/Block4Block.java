@@ -75,7 +75,11 @@ public class Block4Block extends JavaPlugin{
             ignoreCmd.setExecutor(cmd);
             unignoreCmd.setExecutor(cmd);
         }
-        if(claimContestCmd != null) claimContestCmd.setExecutor(new ClaimContestCommand(this));
+        if(claimContestCmd != null){
+            ClaimContestCommand cmd = new ClaimContestCommand(this);
+            claimContestCmd.setExecutor(cmd);
+            claimContestCmd.setTabCompleter(cmd);
+        }
     }
 
     private void registerEvents() {
