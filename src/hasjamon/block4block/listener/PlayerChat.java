@@ -17,7 +17,7 @@ public class PlayerChat implements Listener {
     }
 
     @EventHandler
-    public void chatEvent(AsyncPlayerChatEvent e) {
+    public void onPlayerChat(AsyncPlayerChatEvent e) {
         Player sender = e.getPlayer();
         FileConfiguration ignoreLists = plugin.cfg.getIgnoreLists();
         Set<Player> recipients = e.getRecipients();

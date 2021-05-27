@@ -87,6 +87,7 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new PlayerJoin(this), this);
         pluginManager.registerEvents(new PlayerChat(this), this);
         pluginManager.registerEvents(new EggLay(), this);
+        pluginManager.registerEvents(new PlayerFish(this), this);
     }
 
     public static Block4Block getInstance(){

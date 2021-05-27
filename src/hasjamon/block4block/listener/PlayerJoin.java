@@ -17,7 +17,7 @@ public class PlayerJoin implements Listener {
     }
 
     @EventHandler
-    public void LogOnGMC(PlayerJoinEvent e) {
+    public void onPlayerJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
         List<String> welcomeMessages = plugin.getConfig().getStringList("welcome-messages");
 
