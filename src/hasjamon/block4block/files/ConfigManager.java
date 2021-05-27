@@ -23,6 +23,8 @@ public class ConfigManager {
     private final FileConfiguration ignoreListsCfg = YamlConfiguration.loadConfiguration(ignoreListsFile);
     private final File claimContestFile = new File(this.plugin.getDataFolder(), "claimcontest.yml");
     private final FileConfiguration claimContestCfg = YamlConfiguration.loadConfiguration(claimContestFile);
+    private final File bedCommandUsageFile = new File(this.plugin.getDataFolder(), "bedcommandusage.yml");
+    private final FileConfiguration bedCommandUsageCfg = YamlConfiguration.loadConfiguration(bedCommandUsageFile);
 
     public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
@@ -105,5 +107,18 @@ public class ConfigManager {
     public void clearClaimContest() {
         this.claimContestCfg.set("data", null);
         this.saveClaimContest();
+    }
+
+    public FileConfiguration getBedCommandUsage() {
+        return this.bedCommandUsageCfg;
+    }
+
+    public void saveBedCommandUsage() {
+        try {
+            this.bedCommandUsageCfg.save(this.bedCommandUsageFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Bed command usage has been saved to bedcommandusage.yml");
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save bed command usage to bedcommandusage.yml");
+        }
     }
 }

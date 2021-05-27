@@ -24,5 +24,8 @@ commands:
     usage: /<command> player
   claimcontest:
     description: Everything you need to start a Chunk Claim Contest.
-    usage: Invalid command, see correct usage with /claimcontest help
+    usage: Invalid command, see correct usage with /<command> help
     permission: op
+  bed:
+    description: A free bed. Can only be used once every 24 hours.
+    usage: /<command>
