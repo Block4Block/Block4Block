@@ -24,7 +24,9 @@ public class PlayerFish implements Listener {
 
         if(e.getState() == PlayerFishEvent.State.CAUGHT_FISH){
             if(e.getCaught().getType() == EntityType.DROPPED_ITEM){
-                if (((Item) e.getCaught()).getItemStack().getType() == Material.NAME_TAG){
+                Material itemType = ((Item) e.getCaught()).getItemStack().getType();
+
+                if (itemType == Material.NAME_TAG || itemType == Material.SADDLE){
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         p.getInventory().remove(p.getInventory().getItemInMainHand());
                     }, 1);
