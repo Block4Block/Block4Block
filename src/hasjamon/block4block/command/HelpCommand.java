@@ -4,11 +4,13 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.sun.istack.internal.NotNull;
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.utils.utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,11 +22,14 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 public class HelpCommand implements CommandExecutor, Listener {
     private final Inventory inv;
+    private final List<ItemStack> clickableItems = new ArrayList<>();
 
     public HelpCommand(Block4Block plugin) {
         plugin.pluginManager.registerEvents(this, plugin);
@@ -50,6 +55,35 @@ public class HelpCommand implements CommandExecutor, Listener {
         ItemStack whiteSheepHead = createPlayerHead("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmRmZTdjYzQ2ZDc0OWIxNTMyNjFjMWRjMTFhYmJmMmEzMTA4ZWExYmEwYjI2NTAyODBlZWQxNTkyZGNmYzc1YiJ9fX0=");
         ItemStack pigHead = createPlayerHead("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDFlZTc2ODFhZGYwMDA2N2YwNGJmNDI2MTFjOTc2NDEwNzVhNDRhZTJiMWMwMzgxZDVhYzZiMzI0NjIxMWJmZSJ9fX0=");
         ItemStack polarbearHead = createPlayerHead("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q4NzAyOTExZTYxNmMwZDMyZmJlNzc4ZDE5NWYyMWVjY2U5MDI1YmNiZDA5MTUxZTNkOTdhZjMxOTJhYTdlYyJ9fX0=");
+
+        // Create items with clickable behaviour
+        ItemStack oakLogItem = createItem(Material.OAK_LOG,
+                "§bBasics: §eBlocks that can be broken.",
+                "§fSome blocks can still be broken normally.",
+                "§7Trees can be broken down freely.",
+                "§7Use logs for any temporary structures.",
+                "§7Utilities such as crafting tables and beds are also exempt.",
+                "§7Click this item for a full list in chat."
+        );
+        ItemStack redstoneBlock = createItem(Material.REDSTONE_BLOCK,
+                "§cClaim: §eBlocks that can be broken inside owned claim.",
+                "§7Inside your claim, you can break more blocks normally.",
+                "§7This applies mostly to redstone related items.",
+                "§7Click this item for a full list in chat."
+        );
+        ItemStack writableBook = createItem(Material.WRITABLE_BOOK,
+                "§cClaim: §eHow to make a claim book.",
+                "§7Use a book and quill and follow the below format.",
+                "§7Include yourself in the list to be a part of the claim.",
+                "§7You can place a claim for others.",
+                "§7See chat when placing your claim.",
+                "§7If done correctly, your memberlist will appear.",
+                "§cClick this item for a link to an example."
+        );
+        clickableItems.add(oakLogItem);
+        clickableItems.add(redstoneBlock);
+        clickableItems.add(writableBook);
+
         inv.setItem(3,createItem(Material.GRASS_BLOCK,
                 "§bBasics: §eWhy can't I break blocks?",
                 "§7Most blocks require you to have them when breaking them.",
@@ -59,14 +93,7 @@ public class HelpCommand implements CommandExecutor, Listener {
                 "§7and significantly reduced griefing.",
                 "§7Consider it a Veteran Mode. Enjoy!"
         ));
-        inv.setItem(4,createItem(Material.OAK_LOG,
-                "§bBasics: §eBlocks that can be broken.",
-                "§fSome blocks can still be broken normally.",
-                "§7Trees can be broken down freely.",
-                "§7Use logs for any temporary structures.",
-                "§7Utilities such as crafting tables and beds are also exempt.",
-                "§7Click this block for a full list in chat."
-        ));
+        inv.setItem(4, oakLogItem);
         inv.setItem(5,createItem(Material.STONE,
                 "§bBasics: §eAdvanced Mining",
                 "§7Stone still drops cobble.",
@@ -143,19 +170,7 @@ public class HelpCommand implements CommandExecutor, Listener {
                 "§7Use redstone traps and doors to stop them from reaching your lectern.",
                 "§7Nametag strong mobs and have them guard the lectern for you."
         ));
-        inv.setItem(22,createItem(Material.WRITABLE_BOOK,
-                "§cClaim: §eHow to make a claim book.",
-                "§7Use a book and quill and follow the below format.",
-                "§7Include yourself in the list to be a part of the claim.",
-                "§7You can place a claim for others.",
-                "§7See chat when placing your claim.",
-                "§7If done correctly, your memberlist will appear.",
-                "§cClaim Book format:",
-                "§7claim",
-                "§7membername1",
-                "§7membername2",
-                "§7membername3"
-        ));
+        inv.setItem(22,writableBook);
         inv.setItem(23,createItem(Material.BOOK,
                 "§cClaim: §eUsing a signed book for claiming.",
                 "§7You can claim using a signed book as well.",
@@ -163,14 +178,9 @@ public class HelpCommand implements CommandExecutor, Listener {
                 "§7Copy the signed book to easily create many claims.",
                 "§7You can't change the memberlist of signed books.",
                 "§7You can tell if it's the original or a copy.",
-                "§7Use others signed books to create conflicts."
+                "§7Use others' signed books to create conflicts."
         ));
-        inv.setItem(24,createItem(Material.REDSTONE_BLOCK,
-                "§cClaim: §eBlocks that can be broken inside owned claim.",
-                "§7Inside your claim, you can break more blocks normally.",
-                "§7This applies mostly to redstone related items.",
-                "§7Click this block for a full list in chat."
-        ));
+        inv.setItem(24,redstoneBlock);
         inv.setItem(30,createItem(Material.EGG,
                 "§dSecret: §eChickens lay many eggs."
         ));
@@ -189,10 +199,12 @@ public class HelpCommand implements CommandExecutor, Listener {
     private ItemStack createItem(ItemStack item, String name, String... lore) {
         ItemMeta meta = item.getItemMeta();
 
-        // Update the item's name and description
-        meta.setDisplayName(name);
-        meta.setLore(Arrays.asList(lore));
-        item.setItemMeta(meta);
+        if(meta != null) {
+            // Update the item's name and description
+            meta.setDisplayName(name);
+            meta.setLore(Arrays.asList(lore));
+            item.setItemMeta(meta);
+        }
 
         return item;
     }
@@ -200,13 +212,19 @@ public class HelpCommand implements CommandExecutor, Listener {
     // Disable picking up or swapping items in the help inventory
     @EventHandler
     public void onInventoryClick(InventoryClickEvent e) {
-        if (e.getInventory() == inv)
+        if (e.getInventory() == inv){
+            HumanEntity whoClicked = e.getWhoClicked();
+
+            if(clickableItems.contains(e.getCurrentItem()))
+                whoClicked.sendMessage(utils.chat("&aMore information at: https://hasjamon.github.io/b4block/lists.html"));
+
             e.setCancelled(true);
+        }
     }
 
     // Disable dragging items in the help inventory
     @EventHandler
-    public void onInventoryClick(InventoryDragEvent e) {
+    public void onInventoryDrag(InventoryDragEvent e) {
         if (e.getInventory() == inv)
             e.setCancelled(true);
     }
