@@ -262,13 +262,10 @@ public class utils {
         for(Player p : Bukkit.getOnlinePlayers()) {
             Integer pClaims = membersNumClaims.get(p.getName().toLowerCase());
 
-            if(pClaims == null) {
+            if(pClaims == null)
                 p.setPlayerListName(p.getName() + utils.chat(" - &c0"));
-                p.setCustomName(p.getName() + utils.chat(" - &c0"));
-            }else {
+            else
                 p.setPlayerListName(p.getName() + utils.chat(" - &c" + pClaims));
-                p.setCustomName(p.getName() + utils.chat(" - &c" + pClaims));
-            }
         }
     }
 
