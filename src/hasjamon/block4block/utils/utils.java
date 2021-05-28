@@ -15,6 +15,7 @@ public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
     private static final Map<Material, Material> specialTypes = new HashMap<>();
     private static final Map<Material, Integer> spawnEggs = new HashMap<>();
+    public static final Map<Block, Long> b4bGracePeriods = new LinkedHashMap<>();
 
     static {
         specialTypes.put(Material.REDSTONE_WIRE, Material.REDSTONE);

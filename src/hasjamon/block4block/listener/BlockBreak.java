@@ -14,6 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import java.util.List;
+import java.util.Map;
 
 
 public class BlockBreak implements Listener {
@@ -82,8 +83,21 @@ public class BlockBreak implements Listener {
         if(blacklistedBlocks != null && lootDisabled != null) {
             // Does Block4Block apply, i.e., has the block type not been exempted from Block4Block through the blacklist
             boolean requiresBlock = !blacklistedBlocks.contains(b.getType().toString());
+
             // Are drops disabled for this block type
             boolean noloot = lootDisabled.contains(b.getType().toString());
+
+            // Remove all expired grace periods
+            for(Map.Entry<Block, Long> entry : utils.b4bGracePeriods.entrySet())
+                if(System.nanoTime() - entry.getValue() > 5e9)
+                    utils.b4bGracePeriods.remove(entry.getKey());
+                else
+                    break;
+
+            // If the block was placed less than 5 seconds ago, do not apply B4B rules
+            if(utils.b4bGracePeriods.containsKey(b))
+                return;
+
             utils.b4bCheck(p, b, e, noloot, requiresBlock);
         }
     }

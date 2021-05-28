@@ -23,6 +23,8 @@ public class BlockPlace implements Listener {
         Block b = e.getBlock();
         Player p = e.getPlayer();
 
+        utils.b4bGracePeriods.put(b, System.nanoTime());
+
         if(b.getType() == Material.LECTERN)
             return;
 
