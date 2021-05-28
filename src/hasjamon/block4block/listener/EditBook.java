@@ -1,6 +1,9 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.utils.utils;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,7 +29,9 @@ public class EditBook implements Listener {
                     // Send the player instruction on what to do with the book
                     p.sendMessage(utils.chat("&cNOTE: &7To make a claim book, type &a\"claim\" &7at the top of the book!"));
                     p.sendMessage(utils.chat("&aThen write a player's ign on each line to add a member!"));
-                    p.sendMessage(utils.chat("&aExample: https://hasjamon.github.io/b4block/lists.html"));
+                    p.spigot().sendMessage(new ComponentBuilder(utils.chat("&aCLICK HERE to see an example"))
+                            .event(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://hasjamon.github.io/b4block/lists.html" ))
+                            .create());
                 }
             }
         }

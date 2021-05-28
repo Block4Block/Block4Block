@@ -5,6 +5,8 @@ import com.mojang.authlib.properties.Property;
 import com.sun.istack.internal.NotNull;
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -63,13 +65,13 @@ public class HelpCommand implements CommandExecutor, Listener {
                 "§7Trees can be broken down freely.",
                 "§7Use logs for any temporary structures.",
                 "§7Utilities such as crafting tables and beds are also exempt.",
-                "§7Click this item for a full list in chat."
+                "§cClick this item for a full list in chat."
         );
         ItemStack redstoneBlock = createItem(Material.REDSTONE_BLOCK,
                 "§cClaim: §eBlocks that can be broken inside owned claim.",
                 "§7Inside your claim, you can break more blocks normally.",
                 "§7This applies mostly to redstone related items.",
-                "§7Click this item for a full list in chat."
+                "§cClick this item for a full list in chat."
         );
         ItemStack writableBook = createItem(Material.WRITABLE_BOOK,
                 "§cClaim: §eHow to make a claim book.",
@@ -216,7 +218,9 @@ public class HelpCommand implements CommandExecutor, Listener {
             HumanEntity whoClicked = e.getWhoClicked();
 
             if(clickableItems.contains(e.getCurrentItem()))
-                whoClicked.sendMessage(utils.chat("&aMore information at: https://hasjamon.github.io/b4block/lists.html"));
+                whoClicked.spigot().sendMessage(new ComponentBuilder(utils.chat("&aCLICK HERE for more information"))
+                        .event(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://hasjamon.github.io/b4block/lists.html" ))
+                        .create());
 
             e.setCancelled(true);
         }
