@@ -20,9 +20,14 @@ public class EditBook implements Listener {
 
             // If player is holding a book and quill
             if(item != null && item.getType() == Material.WRITABLE_BOOK){
-                // Send the player instruction on what to do with the book
-                p.sendMessage(utils.chat("&aWrite a player's ign on each line to add a member!"));
-                p.sendMessage(utils.chat("&cNOTE: &7To make a claim book, type&a \"claim\" &7at the top of your book!"));
+
+                // If the player isn't a member of any claims
+                if(!utils.countMemberClaims().containsKey(p.getName().toLowerCase())) {
+                    // Send the player instruction on what to do with the book
+                    p.sendMessage(utils.chat("&cNOTE: &7To make a claim book, type &a\"claim\" &7at the top of the book!"));
+                    p.sendMessage(utils.chat("&aThen write a player's ign on each line to add a member!"));
+                    p.sendMessage(utils.chat("&aExample: https://hasjamon.github.io/b4block/lists.html"));
+                }
             }
         }
     }
