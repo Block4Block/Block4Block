@@ -33,7 +33,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
         this.plugin = plugin;
 
         // In case the server restarted while a contest was underway:
-        this.contestTask = startContest();
+        if(plugin.cfg.getClaimContest().contains("data.start-timestamp"))
+            this.contestTask = startContest();
     }
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
