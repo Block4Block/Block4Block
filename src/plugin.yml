@@ -29,3 +29,6 @@ commands:
   bed:
     description: A free bed. Can only be used once every 24 hours.
     usage: /<command>
+  welcome:
+    description: Shows the welcome message.
+    usage: /<command>

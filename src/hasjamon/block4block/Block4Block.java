@@ -66,6 +66,7 @@ public class Block4Block extends JavaPlugin{
         PluginCommand unignoreCmd = this.getCommand("unignore");
         PluginCommand claimContestCmd = this.getCommand("claimcontest");
         PluginCommand bedCmd = this.getCommand("bed");
+        PluginCommand welcomeCmd = this.getCommand("welcome");
 
 
         if(dieCmd != null) dieCmd.setExecutor(new DieCommand());
@@ -78,6 +79,7 @@ public class Block4Block extends JavaPlugin{
         }
         if(claimContestCmd != null) claimContestCmd.setExecutor(new ClaimContestCommand(this));
         if(bedCmd != null) bedCmd.setExecutor(new BedCommand(this));
+        if(welcomeCmd != null) welcomeCmd.setExecutor(new WelcomeCommand(this));
     }
 
     private void registerEvents() {
