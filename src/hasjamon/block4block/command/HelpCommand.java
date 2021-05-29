@@ -8,6 +8,7 @@ import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -46,7 +47,10 @@ public class HelpCommand implements CommandExecutor, Listener {
     // Open the inventory when the b4bhelp command is sent
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
         if(sender instanceof Player) {
-            ((Player) sender).openInventory(inv);
+            Player p = (Player) sender;
+
+            p.sendMessage(ChatColor.GOLD + "Hover over each item and read its description. If the text is too small, go to options -> video settings -> GUI scale (recommended value: 2).");
+            p.openInventory(inv);
             return true;
         }
         return false;
