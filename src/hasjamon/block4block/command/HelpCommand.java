@@ -86,6 +86,12 @@ public class HelpCommand implements CommandExecutor, Listener {
         clickableItems.add(redstoneBlock);
         clickableItems.add(writableBook);
 
+        inv.setItem(1,createItem(Material.STRUCTURE_VOID,
+                "§bBasics: §eGrace Period",
+                "§7Within 5 seconds of placing a block you can break it freely.",
+                "§7Other players can break it freely as well.",
+                "§7Be sure to correct building mistakes as they happen."
+        ));
         inv.setItem(3,createItem(Material.GRASS_BLOCK,
                 "§bBasics: §eWhy can't I break blocks?",
                 "§7Most blocks require you to have them when breaking them.",
@@ -107,6 +113,11 @@ public class HelpCommand implements CommandExecutor, Listener {
                 "§7No tunneling out without the right blocks.",
                 "§7Use signs to find back. "
 
+        ));
+        inv.setItem(7,createItem(Material.RED_BED,
+                "§bCommand: §e/bed",
+                "§7Be given a bed.",
+                "§7Has a 24 hour cooldown."
         ));
         inv.setItem(9,createItem(Material.SKELETON_SKULL,
                 "§aLoot: §eSkeletons drop stone",

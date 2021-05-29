@@ -8,12 +8,12 @@ seconds-between-hints: 600
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:
   - "&cWelcome! There are 5 things you should know about Block4Block to get started:"
-  - "1) &7Most blocks will require you to have them and spend one from your quick-slots to break them."
-  - "2) &7Many blocks have to be obtained by alternative means, like placing a torch under a falling gravel or sand block."
-  - "3) &7Some blocks can still be broken freely, including logs, ores, leaves, crafting tables, ladders and torches."
-  - "4) &7When building it's recommended to start out with easily rebreakable blocks like logs."
-  - "5) &7Hints pop up as you play and introduces you to the more in depth mechanics of b4b."
-  - "§aEnjoy the challenge and I hope you get a bed soon. :)"
+  - "1) BEWARE! &7Most blocks will require you to have them and spend one from your quick-slots to break them."
+  - "2) GET STARTED &7with free-to-break blocks such as logs, ores, crafting tables, ladders, and torches."
+  - "3) GET CREATIVE &7by luring creepers into giving you stone, killing pigs for dirt, and placing torches under falling gravel and sand."
+  - "4) GET THROUGH THE NIGHT &7by typing /bed for a free bed. 24 hour cooldown."
+  - "5) LEARN MORE &7with the /b4bhelp command. Learn everything about Block4Block."
+  - "§aWe hope you enjoy the challenge!"
 
 # Hints that are shuffled at server start and shown one by one
 hints:
@@ -30,6 +30,8 @@ hints:
   - "&6Hint #10: &eType /hints off to stop hints from appearing."
   - "&6Hint #11: &eType /b4bhelp to open an inventory with help on block4block changes."
   - "&6Hint #12: &eFishing can no longer give enchanted items, but may give some cool vanity items."
+  - "&6Hint #13: &eYou can type /bed once a day to get a bed!"
+  - "&6Hint #14: &eWhen placing blocks, there is a 5 second grace period where all players can remove them normally."
   - "&6Hint #?: &eSheep are colourful and so are blocks!"
 
 # Blocks that are exempt from Block4Block while in player's own claim
