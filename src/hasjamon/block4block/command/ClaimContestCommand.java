@@ -155,7 +155,6 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
 
         String chunkID = claimContest.getString("data.chunkID");
         long duration = claimContest.getLong("data.duration", 0);
-        plugin.cfg.saveClaimContest();
 
         if(duration > 0 && chunkID != null) {
             final long endTime;
@@ -166,6 +165,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                 long now = System.nanoTime();
                 endTime = now + duration;
                 claimContest.set("data.start-timestamp", now);
+                plugin.cfg.saveClaimContest();
             }
 
             return Bukkit.getScheduler().runTaskTimer(plugin,
@@ -182,6 +182,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                             claimContest.set(endDate + ".location", chunkLoc);
                             claimContest.set(endDate + ".winner", claimant);
                             claimContest.set(endDate + ".prize", prize);
+                            plugin.cfg.saveClaimContest();
 
                             Bukkit.broadcastMessage(ChatColor.GOLD + "THE CONTEST HAS ENDED!");
                             if(!claimant.equals("No one"))
@@ -213,9 +214,13 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
 
                             // Inform the players if the claimant has changed
                             String prevClaimant = claimContest.getString("data.claimant", "No one");
-                            if(!claimant.equalsIgnoreCase(prevClaimant) && !claimant.equals("No one"))
-                                Bukkit.broadcastMessage(ChatColor.GOLD + claimant + " has claimed the Contest Chunk!");
-                            claimContest.set("data.claimant", claimant);
+                            if(!claimant.equalsIgnoreCase(prevClaimant)){
+                                claimContest.set("data.claimant", claimant);
+                                plugin.cfg.saveClaimContest();
+
+                                if(!claimant.equals("No one"))
+                                    Bukkit.broadcastMessage(ChatColor.GOLD + claimant + " has claimed the Contest Chunk!");
+                            }
                         }
                     }, 0, 20);
         }
