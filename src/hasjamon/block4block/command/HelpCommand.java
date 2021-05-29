@@ -50,7 +50,7 @@ public class HelpCommand implements CommandExecutor, Listener {
             Player p = (Player) sender;
 
             p.sendMessage(ChatColor.GOLD + "Hover over each item and read its description.");
-            p.sendMessage(ChatColor.GRAY + "If the text is too small, go to options -> video settings -> GUI scale (recommended: 2).");
+            p.sendMessage(ChatColor.GRAY + "If you can't read the text; go to options -> video settings -> GUI scale (recommended: 2).");
             p.openInventory(inv);
             return true;
         }
