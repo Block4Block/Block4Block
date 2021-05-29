@@ -15,7 +15,7 @@ welcome-messages:
   - "5) &7Hints pop up as you play and introduces you to the more in depth mechanics of b4b."
   - "§aEnjoy the challenge and I hope you get a bed soon. :)"
 
-# Hints that shuffled at server start and shown one by one
+# Hints that are shuffled at server start and shown one by one
 hints:
   - "&6Hint #0: &eJoin the discussion on Discord: &1&nhttps://discord.gg/xR9FJGTK"
   - "&6Hint #1: &eOres, Leaves and Logs can be broken normally. Logs are a good choice for temporary blocks when building!"
@@ -28,6 +28,8 @@ hints:
   - "&6Hint #8: &eYou can prevent others from placing blocks within a chunk by claiming it! Write a book with \"claim\" and your name in it, then place it on a lectern!"
   - "&6Hint #9: &eMake it hard for people to break in! Protect your claim by surrounding it with rare blocks."
   - "&6Hint #10: &eType /hints off to stop hints from appearing."
+  - "&6Hint #11: &eType /b4bhelp to open an inventory with help on block4block changes."
+  - "&6Hint #12: &eFishing can no longer give enchanted items, but may give some cool vanity items."
   - "&6Hint #?: &eSheep are colourful and so are blocks!"
 
 # Blocks that are exempt from Block4Block while in player's own claim
