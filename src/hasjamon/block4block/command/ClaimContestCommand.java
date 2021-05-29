@@ -81,6 +81,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
 
                             claimContest.set("data.chunkLoc", StringUtils.capitalize(dimension) + " (X: " + x + ", Z: " + z + ")");
                             claimContest.set("data.chunkID", utils.getChunkID(x, z, environment));
+                            plugin.cfg.saveClaimContest();
                         }else{
                             return false;
                         }
@@ -102,13 +103,16 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                         }
 
                         claimContest.set("data.duration", minutes * (long) 6e10);
+                        plugin.cfg.saveClaimContest();
                         break;
 
                     case "prize":
-                        if(args.length > 1)
+                        if(args.length > 1) {
                             claimContest.set("data.prize", String.join(" ", args).substring(6));
-                        else
+                            plugin.cfg.saveClaimContest();
+                        }else {
                             return false;
+                        }
                         break;
 
                     case "start":
