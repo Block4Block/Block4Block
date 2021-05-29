@@ -158,8 +158,15 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
         plugin.cfg.saveClaimContest();
 
         if(duration > 0 && chunkID != null) {
-            long endTime = System.nanoTime() + duration;
-            claimContest.set("data.start-timestamp", System.nanoTime());
+            final long endTime;
+
+            if(claimContest.contains("data.start-timestamp")) {
+                endTime = claimContest.getLong("data.start-timestamp") + duration;
+            } else {
+                long now = System.nanoTime();
+                endTime = now + duration;
+                claimContest.set("data.start-timestamp", now);
+            }
 
             return Bukkit.getScheduler().runTaskTimer(plugin,
                     () -> {
@@ -169,8 +176,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                             String prize = claimContest.getString("data.prize", "none");
 
                             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MMM-dd_HH-mm");
-                            LocalDateTime now = LocalDateTime.now();
-                            String endDate = dtf.format(now);
+                            LocalDateTime dateTimeNow = LocalDateTime.now();
+                            String endDate = dtf.format(dateTimeNow);
 
                             claimContest.set(endDate + ".location", chunkLoc);
                             claimContest.set(endDate + ".winner", claimant);
