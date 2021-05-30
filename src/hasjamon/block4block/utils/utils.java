@@ -389,9 +389,9 @@ public class utils {
         intruders.get(chunk).add(intruder);
 
         // Make all iron golems in chunk hostile to the intruder
-        for(Entity ent : chunk.getEntities())
-            if(ent.getType() == EntityType.IRON_GOLEM)
-                ((IronGolem) ent).damage(0, intruder);
+        for(IronGolem golem : utils.ironGolems.keySet())
+            if(utils.ironGolems.get(golem) == chunk)
+                golem.damage(0, intruder);
     }
 
     public static boolean isIntruder(Player p, Chunk chunk){
