@@ -1,6 +1,7 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.utils.utils;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.IronGolem;
@@ -19,8 +20,8 @@ public class ChunkLoad implements Listener {
 
     @EventHandler
     public void onChunkUnload(ChunkUnloadEvent e){
-        for(IronGolem golem : utils.ironGolems.keySet())
-            if(golem.getLocation().getChunk() == e.getChunk())
-                utils.ironGolems.remove(golem);
+        for(Entity ent : e.getChunk().getEntities())
+            if(ent.getType() == EntityType.IRON_GOLEM)
+                utils.ironGolems.remove((IronGolem) ent);
     }
 }

@@ -3,6 +3,7 @@ package hasjamon.block4block.utils;
 import hasjamon.block4block.Block4Block;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
@@ -241,19 +242,11 @@ public class utils {
 
                 updateClaimCount();
 
-                Set<IronGolem> golems = new HashSet<>();
-                Set<Player> players = new HashSet<>();
-
                 for(Entity ent : chunk.getEntities())
-                    if (ent.getType() == EntityType.IRON_GOLEM)
-                        golems.add((IronGolem) ent);
-                    else if (ent.getType() == EntityType.PLAYER)
-                        players.add((Player) ent);
+                    if (ent.getType() == EntityType.PLAYER)
+                        if(isIntruder((Player) ent, chunk))
+                            onIntruderEnterClaim((Player) ent, chunk);
 
-                for(IronGolem golem : golems)
-                    for(Player player : players)
-                        if(isIntruder(player, chunk))
-                            onIntruderEnterClaim(player, chunk);
             }else{
                 p.sendMessage(utils.chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
             }
@@ -274,7 +267,9 @@ public class utils {
             p.sendMessage(utils.chat("&aYou have removed this claim!"));
 
         updateClaimCount();
-        intruders.get(chunk).clear();
+
+        if(intruders.containsKey(chunk))
+            intruders.get(chunk).clear();
     }
 
     // Update tablist with current number of claims for each player
@@ -389,9 +384,9 @@ public class utils {
         intruders.get(chunk).add(intruder);
 
         // Make all iron golems in chunk hostile to the intruder
-        for(IronGolem golem : utils.ironGolems.keySet())
-            if(utils.ironGolems.get(golem) == chunk)
-                golem.damage(0, intruder);
+        for(Entity ent : chunk.getEntities())
+            if(ent.getType() == EntityType.IRON_GOLEM)
+                ((IronGolem) ent).damage(0, intruder);
     }
 
     public static boolean isIntruder(Player p, Chunk chunk){
@@ -418,8 +413,9 @@ public class utils {
                 entry.setValue(currentChunk);
 
                 // Make it hostile to all intruders in chunk
-                for(Player intruder : utils.intruders.get(currentChunk))
-                    golem.damage(0, intruder);
+                if(utils.intruders.containsKey(currentChunk))
+                    for(Player intruder : utils.intruders.get(currentChunk))
+                        golem.damage(0, intruder);
             }
         }
     }
