@@ -5,6 +5,9 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
@@ -16,6 +19,8 @@ public class utils {
     private static final Map<Material, Material> specialTypes = new HashMap<>();
     private static final Map<Material, Integer> spawnEggs = new HashMap<>();
     public static final Map<Block, Long> b4bGracePeriods = new LinkedHashMap<>();
+    public static final Map<Chunk, Set<Player>> intruders = new HashMap<>();
+    public static final Map<IronGolem, Chunk> ironGolems = new HashMap<>();
 
     static {
         specialTypes.put(Material.REDSTONE_WIRE, Material.REDSTONE);
@@ -213,7 +218,8 @@ public class utils {
 
                 FileConfiguration claimData = plugin.cfg.getClaimData();
                 Location blockLoc = block.getLocation();
-                String chunkID = utils.getChunkID(block.getChunk());
+                Chunk chunk = block.getChunk();
+                String chunkID = utils.getChunkID(chunk);
                 String membersString = String.join("\n", members);
 
                 claimData.set(chunkID + ".location.X", blockLoc.getX());
@@ -234,6 +240,20 @@ public class utils {
                         p.sendMessage(ChatColor.GRAY + " - " + member + ChatColor.RED + " (unknown player)");
 
                 updateClaimCount();
+
+                Set<IronGolem> golems = new HashSet<>();
+                Set<Player> players = new HashSet<>();
+
+                for(Entity ent : chunk.getEntities())
+                    if (ent.getType() == EntityType.IRON_GOLEM)
+                        golems.add((IronGolem) ent);
+                    else if (ent.getType() == EntityType.PLAYER)
+                        players.add((Player) ent);
+
+                for(IronGolem golem : golems)
+                    for(Player player : players)
+                        if(isIntruder(player, chunk))
+                            onIntruderEnterClaim(player, chunk);
             }else{
                 p.sendMessage(utils.chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
             }
@@ -244,7 +264,8 @@ public class utils {
 
     public static void unclaimChunk(Player p, Block block, Boolean wasExploded) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
-        String chunkID = utils.getChunkID(block.getChunk());
+        Chunk chunk = block.getChunk();
+        String chunkID = utils.getChunkID(chunk);
 
         claimData.set(chunkID, null);
         plugin.cfg.saveClaimData();
@@ -253,6 +274,7 @@ public class utils {
             p.sendMessage(utils.chat("&aYou have removed this claim!"));
 
         updateClaimCount();
+        intruders.get(chunk).clear();
     }
 
     // Update tablist with current number of claims for each player
@@ -358,5 +380,47 @@ public class utils {
         }
 
         return totalWeight;
+    }
+
+    public static void onIntruderEnterClaim(Player intruder, Chunk chunk) {
+        if(!intruders.containsKey(chunk))
+            intruders.put(chunk, new HashSet<>());
+
+        intruders.get(chunk).add(intruder);
+
+        // Make all iron golems in chunk hostile to the intruder
+        for(Entity ent : chunk.getEntities())
+            if(ent.getType() == EntityType.IRON_GOLEM)
+                ((IronGolem) ent).damage(0, intruder);
+    }
+
+    public static boolean isIntruder(Player p, Chunk chunk){
+        String[] members = utils.getMembers(chunk);
+
+        // If the chunk isn't claimed; else if p is a member
+        if (members == null)
+            return false;
+        else
+            for (String member : members)
+                if (member.equalsIgnoreCase(p.getName()))
+                    return false;
+
+        return true;
+    }
+
+    public static void updateGolemHostility(){
+        for(Map.Entry<IronGolem, Chunk> entry : ironGolems.entrySet()){
+            IronGolem golem = entry.getKey();
+            Chunk currentChunk = golem.getLocation().getChunk();
+            Chunk prevChunk = entry.getValue();
+
+            if(currentChunk != prevChunk){
+                entry.setValue(currentChunk);
+
+                // Make it hostile to all intruders in chunk
+                for(Player intruder : utils.intruders.get(currentChunk))
+                    golem.damage(0, intruder);
+            }
+        }
     }
 }

@@ -28,6 +28,7 @@ public class Block4Block extends JavaPlugin{
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
         setupHints(); // Prepares hints and starts broadcasting them
+        getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
     }
 
     private void setupHints() {
@@ -89,11 +90,16 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new EditBook(), this);
         pluginManager.registerEvents(new BlockPlace(this), this);
         pluginManager.registerEvents(new LavaCasting(), this);
-        pluginManager.registerEvents(new PlayerJoin(this), this);
-        pluginManager.registerEvents(new PlayerChat(this), this);
         pluginManager.registerEvents(new EggLay(), this);
         pluginManager.registerEvents(new PlayerFish(this), this);
         pluginManager.registerEvents(new EntityDropItem(), this);
+        pluginManager.registerEvents(new CreatureSpawn(), this);
+        pluginManager.registerEvents(new PlayerChat(this), this);
+        pluginManager.registerEvents(new PlayerMove(), this);
+        pluginManager.registerEvents(new PlayerQuit(), this);
+        pluginManager.registerEvents(new PlayerJoin(this), this);
+        pluginManager.registerEvents(new PlayerDeath(), this);
+        pluginManager.registerEvents(new PlayerRespawn(), this);
     }
 
     public static Block4Block getInstance(){
