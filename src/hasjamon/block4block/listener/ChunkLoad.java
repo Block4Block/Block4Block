@@ -14,13 +14,13 @@ public class ChunkLoad implements Listener {
     public void onChunkLoad(ChunkLoadEvent e){
         for(Entity ent : e.getChunk().getEntities())
             if(ent.getType() == EntityType.IRON_GOLEM)
-                utils.ironGolems.put((IronGolem) ent, e.getChunk());
+                utils.ironGolems.put((IronGolem) ent, null);
     }
 
     @EventHandler
     public void onChunkUnload(ChunkUnloadEvent e){
-        for(Entity ent : e.getChunk().getEntities())
-            if(ent.getType() == EntityType.IRON_GOLEM)
-                utils.ironGolems.remove((IronGolem) ent);
+        for(IronGolem golem : utils.ironGolems.keySet())
+            if(golem.getLocation().getChunk() == e.getChunk())
+                utils.ironGolems.remove(golem);
     }
 }
