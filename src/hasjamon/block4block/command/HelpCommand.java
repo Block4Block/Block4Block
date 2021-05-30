@@ -134,7 +134,7 @@ public class HelpCommand implements CommandExecutor, Listener {
         ));
         inv.setItem(10,createItem(Material.SPAWNER,
                 "§aLoot: §eSpawners drop",
-                "§7You can break and obtain spawners with any tool.",
+                "§7You can break and obtain spawners with any pickaxe.",
                 "§7No silk-touch needed.",
                 "§7Find a skeleton spawner to increase your stone production."
         ));
