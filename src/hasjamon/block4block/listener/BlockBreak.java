@@ -13,8 +13,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 public class BlockBreak implements Listener {
@@ -88,11 +91,16 @@ public class BlockBreak implements Listener {
             boolean noloot = lootDisabled.contains(b.getType().toString());
 
             // Remove all expired grace periods
+            Set<Block> expiredGracePeriods = new HashSet<>();
+
             for(Map.Entry<Block, Long> entry : utils.b4bGracePeriods.entrySet())
                 if(System.nanoTime() - entry.getValue() > 5e9)
-                    utils.b4bGracePeriods.remove(entry.getKey());
+                    expiredGracePeriods.add(entry.getKey());
                 else
                     break;
+
+            for(Block expired : expiredGracePeriods)
+                utils.b4bGracePeriods.remove(expired);
 
             // If the block was placed less than 5 seconds ago, do not apply B4B rules
             if(utils.b4bGracePeriods.containsKey(b))
