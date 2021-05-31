@@ -26,8 +26,8 @@ public class BookPlaceTake implements Listener {
         // If you're placing something on a lectern
         if(b.getType() == Material.LECTERN){
             // If the lectern is in a claimed chunk
-            if(plugin.cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))){
-                String[] members = utils.getMembers(b.getChunk());
+            if(plugin.cfg.getClaimData().contains(utils.getChunkID(b.getLocation()))){
+                String[] members = utils.getMembers(b.getLocation());
 
                 // If you're placing something other than a book
                 if(e.getItemInHand().getType() != Material.WRITTEN_BOOK && e.getItemInHand().getType() != Material.WRITABLE_BOOK){
@@ -60,7 +60,7 @@ public class BookPlaceTake implements Listener {
     // Runs if a player takes a book from a lectern, then unclaims the chunk if it's a claim book
     @EventHandler
     public void onBookTake(PlayerTakeLecternBookEvent e){
-        if(plugin.cfg.getClaimData().contains(utils.getChunkID(e.getLectern().getChunk())))
+        if(plugin.cfg.getClaimData().contains(utils.getChunkID(e.getLectern().getLocation())))
             if(utils.isClaimBlock(e.getLectern().getBlock()))
                 utils.unclaimChunk(e.getPlayer(),e.getLectern().getBlock(), false);
     }

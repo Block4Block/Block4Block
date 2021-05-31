@@ -23,7 +23,7 @@ public class LecternBreak implements Listener {
     public void onBreak(BlockBreakEvent e){
         if(!e.isCancelled()) {
             Block b = e.getBlock();
-            String chunkID = utils.getChunkID(b.getChunk());
+            String chunkID = utils.getChunkID(b.getLocation());
 
             // If the block is in a claimed chunk
             if (plugin.cfg.getClaimData().contains(chunkID)) {
@@ -43,7 +43,7 @@ public class LecternBreak implements Listener {
         for (Block block : e.blockList()) {
             if (block.getType().equals(Material.LECTERN) && utils.isClaimBlock(block)) {
                 utils.unclaimChunk(null, block, true);
-                String[] members = utils.getMembers(block.getChunk());
+                String[] members = utils.getMembers(block.getLocation());
                 for (Player p : Bukkit.getOnlinePlayers())
                     if (members != null)
                         for (String member : members)

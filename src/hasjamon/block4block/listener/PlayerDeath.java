@@ -1,7 +1,6 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.utils.utils;
-import org.bukkit.Chunk;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -11,8 +10,8 @@ public class PlayerDeath implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent e){
         Player p = e.getEntity();
-        Chunk chunk = p.getLocation().getChunk();
+        String chunkID = utils.getChunkID(p.getLocation());
 
-        utils.onIntruderLeaveClaim(p, chunk);
+        utils.onIntruderLeaveClaim(p, chunkID);
     }
 }

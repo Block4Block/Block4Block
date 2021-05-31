@@ -25,6 +25,8 @@ public class ConfigManager {
     private final FileConfiguration claimContestCfg = YamlConfiguration.loadConfiguration(claimContestFile);
     private final File bedCommandUsageFile = new File(this.plugin.getDataFolder(), "bedcommandusage.yml");
     private final FileConfiguration bedCommandUsageCfg = YamlConfiguration.loadConfiguration(bedCommandUsageFile);
+    private final File masterBooksFile = new File(this.plugin.getDataFolder(), "masterbooks.yml");
+    private final FileConfiguration masterBooksCfg = YamlConfiguration.loadConfiguration(masterBooksFile);
 
     public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
@@ -119,6 +121,19 @@ public class ConfigManager {
             consoleSender.sendMessage(ChatColor.AQUA + "Bed command usage has been saved to bedcommandusage.yml");
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save bed command usage to bedcommandusage.yml");
+        }
+    }
+
+    public FileConfiguration getMasterBooks() {
+        return this.masterBooksCfg;
+    }
+
+    public void saveMasterBooks() {
+        try {
+            this.masterBooksCfg.save(this.masterBooksFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Master books have been saved to masterbooks.yml");
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save master books to masterbooks.yml");
         }
     }
 }

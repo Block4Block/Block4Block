@@ -39,9 +39,9 @@ public class BlockBreak implements Listener {
         if (b.getType() == Material.LECTERN) return;
         if (p.getGameMode() == GameMode.CREATIVE) return;
 
-        if (plugin.cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))) { //if claimed
+        if (plugin.cfg.getClaimData().contains(utils.getChunkID(b.getLocation()))) { //if claimed
             if (!utils.isClaimBlock(b)) {
-                String[] members = utils.getMembers(b.getChunk());
+                String[] members = utils.getMembers(b.getLocation());
                 List<?> claimBlacklist = cfg.getList("blacklisted-claim-blocks");
 
                 // If the player is a member of the claim and the block is claim-blacklisted: Don't apply B4B rules
@@ -115,8 +115,8 @@ public class BlockBreak implements Listener {
         Player p = e.getPlayer();
         Block b = e.getBlock();
 
-        if (plugin.cfg.getClaimData().contains(utils.getChunkID(b.getChunk()))) {
-            String[] members = utils.getMembers(b.getChunk());
+        if (plugin.cfg.getClaimData().contains(utils.getChunkID(b.getLocation()))) {
+            String[] members = utils.getMembers(b.getLocation());
             if (members != null) {
                 for (String member : members)
                     if (member.equalsIgnoreCase(p.getName()))

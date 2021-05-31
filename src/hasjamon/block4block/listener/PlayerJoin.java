@@ -2,7 +2,6 @@ package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
-import org.bukkit.Chunk;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -29,8 +28,8 @@ public class PlayerJoin implements Listener {
 
         utils.updateClaimCount();
 
-        Chunk chunk = p.getLocation().getChunk();
-        if(utils.isIntruder(p, chunk))
-            utils.onIntruderEnterClaim(p, chunk);
+        String chunkID = utils.getChunkID(p.getLocation());
+        if(utils.isIntruder(p, chunkID))
+            utils.onIntruderEnterClaim(p, chunkID);
     }
 }
