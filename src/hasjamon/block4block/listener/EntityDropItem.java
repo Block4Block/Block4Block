@@ -13,6 +13,7 @@ public class EntityDropItem implements Listener {
     public void onEntityDropItem(EntityDropItemEvent e){
         if(e.getEntityType() == EntityType.FALLING_BLOCK)
             if(((CraftFallingBlock) e.getEntity()).getMaterial() == Material.GRAVEL)
-                e.getItemDrop().setItemStack(new ItemStack(Material.FLINT, 1));
+                if(Math.random() > 0.9)
+                    e.getItemDrop().setItemStack(new ItemStack(Material.FLINT, 1));
     }
 }
