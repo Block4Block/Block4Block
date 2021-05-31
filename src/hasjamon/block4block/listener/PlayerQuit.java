@@ -13,7 +13,9 @@ public class PlayerQuit implements Listener {
         Player p = e.getPlayer();
         Chunk chunk = p.getLocation().getChunk();
 
-        if(utils.intruders.containsKey(chunk))
-            utils.intruders.get(chunk).remove(p);
+        utils.onIntruderLeaveClaim(p, chunk);
+
+        // Stop keeping track of the player's intruded claims
+        utils.playerClaimsIntruded.remove(p);
     }
 }

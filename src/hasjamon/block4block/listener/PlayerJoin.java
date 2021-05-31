@@ -2,8 +2,6 @@ package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
-import net.minecraft.server.v1_16_R3.IChunkProvider;
-import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,6 +24,8 @@ public class PlayerJoin implements Listener {
         if(!p.hasPlayedBefore())
             for(String msg : welcomeMessages)
                 p.sendMessage(utils.chat(msg));
+        else
+            utils.populatePlayerClaimsIntruded(p);
 
         utils.updateClaimCount();
 

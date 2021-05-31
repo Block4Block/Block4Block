@@ -17,10 +17,9 @@ public class PlayerMove implements Listener {
 
             if (prevChunk != currentChunk) {
                 // Remove p from the previous chunk's intruder list
-                if(utils.intruders.containsKey(prevChunk))
-                    utils.intruders.get(prevChunk).remove(p);
+                utils.onIntruderLeaveClaim(p, prevChunk);
 
-                // If p is an intruder in the chunk he just entered
+                // If p is an intruder in the chunk he just entered, register him
                 if (utils.isIntruder(p, currentChunk))
                     utils.onIntruderEnterClaim(p, currentChunk);
             }

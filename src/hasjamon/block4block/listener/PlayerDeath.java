@@ -13,7 +13,6 @@ public class PlayerDeath implements Listener {
         Player p = e.getEntity();
         Chunk chunk = p.getLocation().getChunk();
 
-        if(utils.intruders.containsKey(chunk))
-            utils.intruders.get(chunk).remove(p);
+        utils.onIntruderLeaveClaim(p, chunk);
     }
 }

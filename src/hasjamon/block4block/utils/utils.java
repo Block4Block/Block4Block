@@ -3,7 +3,6 @@ package hasjamon.block4block.utils;
 import hasjamon.block4block.Block4Block;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
@@ -22,6 +21,8 @@ public class utils {
     public static final Map<Block, Long> b4bGracePeriods = new LinkedHashMap<>();
     public static final Map<Chunk, Set<Player>> intruders = new HashMap<>();
     public static final Map<IronGolem, Chunk> ironGolems = new HashMap<>();
+    public static final Map<Player, Set<String>> playerClaimsIntruded = new HashMap<>();
+    public static final Map<Player, Long> lastIntrusionMessageReceived = new HashMap<>();
 
     static {
         specialTypes.put(Material.REDSTONE_WIRE, Material.REDSTONE);
@@ -269,7 +270,8 @@ public class utils {
         updateClaimCount();
 
         if(intruders.containsKey(chunk))
-            intruders.get(chunk).clear();
+            for(Player intruder : intruders.get(chunk))
+                onIntruderLeaveClaim(intruder, chunk);
     }
 
     // Update tablist with current number of claims for each player
@@ -387,6 +389,37 @@ public class utils {
         for(Entity ent : chunk.getEntities())
             if(ent.getType() == EntityType.IRON_GOLEM)
                 ((IronGolem) ent).damage(0, intruder);
+
+        String[] members = getMembers(chunk);
+
+        if(members != null) {
+            for (String m : members) {
+                Player p = Bukkit.getPlayerExact(m);
+
+                if (p != null) {
+                    String chunkID = getChunkID(chunk);
+                    FileConfiguration claimData = plugin.cfg.getClaimData();
+                    long now = System.nanoTime();
+                    double x = claimData.getDouble(chunkID + ".location.X");
+                    double y = claimData.getDouble(chunkID + ".location.Y");
+                    double z = claimData.getDouble(chunkID + ".location.Z");
+
+                    if (!playerClaimsIntruded.containsKey(p))
+                        playerClaimsIntruded.put(p, new HashSet<>());
+                    playerClaimsIntruded.get(p).add(chunkID);
+
+                    if(now - lastIntrusionMessageReceived.getOrDefault(p, now) > 6e10){
+                        p.sendMessage(ChatColor.RED + "An intruder has entered your claim at "+x+", "+y+", "+z);
+                        lastIntrusionMessageReceived.put(p, now);
+                    }
+                }
+            }
+        }
+    }
+
+    public static void onIntruderLeaveClaim(Player intruder, Chunk chunk) {
+        if(intruders.containsKey(chunk))
+            intruders.get(chunk).remove(intruder);
     }
 
     public static boolean isIntruder(Player p, Chunk chunk){
@@ -416,6 +449,28 @@ public class utils {
                 if(utils.intruders.containsKey(currentChunk))
                     for(Player intruder : utils.intruders.get(currentChunk))
                         golem.damage(0, intruder);
+            }
+        }
+    }
+
+    public static void populatePlayerClaimsIntruded(Player p){
+        // Go through all intruded claims
+        for(Chunk intrudedChunk : intruders.keySet()){
+            String chunkID = getChunkID(intrudedChunk);
+            String[] members = getMembers(intrudedChunk);
+
+            if(members != null) {
+                for (String m : members) {
+                    // If p is a member
+                    if (m.equalsIgnoreCase(p.getName())) {
+                        if (!playerClaimsIntruded.containsKey(p))
+                            playerClaimsIntruded.put(p, new HashSet<>());
+
+                        // Add the chunk as one of p's intruded claims
+                        playerClaimsIntruded.get(p).add(chunkID);
+                        break;
+                    }
+                }
             }
         }
     }
