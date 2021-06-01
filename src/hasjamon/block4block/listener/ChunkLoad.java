@@ -1,7 +1,6 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.utils.utils;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.IronGolem;

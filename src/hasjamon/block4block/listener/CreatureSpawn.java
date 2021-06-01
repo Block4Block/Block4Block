@@ -1,7 +1,6 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.utils.utils;
-import org.bukkit.Chunk;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.event.EventHandler;
@@ -13,13 +12,13 @@ public class CreatureSpawn implements Listener {
     public void onCreatureSpawn(CreatureSpawnEvent e){
         if(e.getEntityType() == EntityType.IRON_GOLEM) {
             IronGolem golem = (IronGolem) e.getEntity();
-            Chunk chunk = golem.getLocation().getChunk();
+            String chunkID = utils.getChunkID(golem.getLocation());
 
             // Make sure it can attack players
             golem.setPlayerCreated(false);
 
             // Add it to the list of tracked golems
-            utils.ironGolems.put(golem, golem.getLocation().getChunk());
+            utils.ironGolems.put(golem, chunkID);
         }
     }
 }
