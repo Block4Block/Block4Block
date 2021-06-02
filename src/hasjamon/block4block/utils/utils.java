@@ -441,7 +441,7 @@ public class utils {
             String currentChunkID = getChunkID(golem.getLocation());
             String prevChunkID = entry.getValue();
 
-            if(currentChunkID.equals(prevChunkID)){
+            if(!currentChunkID.equals(prevChunkID)){
                 entry.setValue(currentChunkID);
 
                 // Make it hostile to all intruders in chunk
