@@ -14,7 +14,7 @@ public class PlayerMove implements Listener {
             String prevChunkID = utils.getChunkID(e.getFrom());
             String currentChunkID = utils.getChunkID(e.getTo());
 
-            if (prevChunkID != currentChunkID) {
+            if (!prevChunkID.equals(currentChunkID)) {
                 // Remove p from the previous chunk's intruder list
                 utils.onIntruderLeaveClaim(p, prevChunkID);
 
