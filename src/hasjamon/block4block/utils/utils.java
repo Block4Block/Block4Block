@@ -224,22 +224,11 @@ public class utils {
                 Location blockLoc = block.getLocation();
                 String chunkID = utils.getChunkID(blockLoc);
                 String membersString = String.join("\n", members);
-                List<String> lore = bookmeta.getLore();
-                int masterBookID = -1;
-
-                if(lore != null) {
-                    try {
-                        masterBookID = Integer.parseInt(String.join("", lore).substring(17));
-                    }catch(NumberFormatException ex){
-                        ex.printStackTrace();
-                    }
-                }
 
                 claimData.set(chunkID + ".location.X", blockLoc.getX());
                 claimData.set(chunkID + ".location.Y", blockLoc.getY());
                 claimData.set(chunkID + ".location.Z", blockLoc.getZ());
                 claimData.set(chunkID + ".members", membersString);
-                claimData.set(chunkID + ".masterBookID", masterBookID);
                 plugin.cfg.saveClaimData(); // Save members to claimdata.yml
 
                 OfflinePlayer[] knownPlayers = Bukkit.getServer().getOfflinePlayers();
