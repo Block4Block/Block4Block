@@ -10,8 +10,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.UUID;
-
 public class BedCommand implements CommandExecutor {
     private final Block4Block plugin;
 

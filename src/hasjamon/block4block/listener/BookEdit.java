@@ -4,8 +4,11 @@ import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
-import org.bukkit.Material;
+import org.bukkit.*;
+import org.bukkit.block.Block;
+import org.bukkit.block.Lectern;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,8 +17,8 @@ import org.bukkit.event.player.PlayerEditBookEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
-import java.util.ArrayList;
-import java.util.List;
+
+import java.util.*;
 
 public class BookEdit implements Listener {
     private final Block4Block plugin;
@@ -27,11 +30,57 @@ public class BookEdit implements Listener {
     @EventHandler
     public void onInteract(PlayerInteractEvent e){
         Player p = e.getPlayer();
+        Block clickedBlock = e.getClickedBlock();
+        ItemStack item = e.getItem();
 
-        // If player right clicks air
-        if(e.getAction().equals(Action.RIGHT_CLICK_AIR)){
-            ItemStack item = e.getItem();
+        if(e.getAction() == Action.RIGHT_CLICK_BLOCK && clickedBlock != null && clickedBlock.getType() == Material.LECTERN) {
+            Lectern lectern = (Lectern) clickedBlock.getState();
+            int slot = lectern.getInventory().first(Material.WRITTEN_BOOK);
 
+            if (slot > -1) {
+                ItemStack book = lectern.getInventory().getItem(slot);
+                BookMeta meta = (BookMeta) book.getItemMeta();
+
+                if (meta != null && meta.getLore() != null) {
+                    FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
+                    String bookID = String.join("", meta.getLore()).substring(17);
+
+                    if (masterBooks.contains(bookID + ".pages")) {
+                        // Check if it's a claim book, then check if it's the one that claimed the chunk
+                        if (utils.isClaimPage(masterBooks.getStringList(bookID + ".pages").get(0))) {
+                            FileConfiguration claimData = plugin.cfg.getClaimData();
+                            String chunkID = utils.getChunkID(lectern.getLocation());
+                            Location bLoc = lectern.getLocation();
+                            boolean isCorrupted = true;
+
+                            if (claimData.contains(chunkID + ".location"))
+                                if (claimData.get(chunkID + ".location.X").equals(bLoc.getX()))
+                                    if (claimData.get(chunkID + ".location.Y").equals(bLoc.getY()))
+                                        if (claimData.get(chunkID + ".location.Z").equals(bLoc.getZ()))
+                                            isCorrupted = false;
+
+                            if (isCorrupted) {
+                                lectern.getInventory().clear();
+
+                                List<String> copies = masterBooks.getStringList(bookID + ".copies-on-lecterns");
+                                String xyz = bLoc.getBlockX() + "," + bLoc.getBlockY() + "," + bLoc.getBlockZ();
+                                copies.remove(chunkID + "!" + xyz);
+                                masterBooks.set(bookID + ".copies-on-lecterns", copies);
+                                plugin.cfg.saveMasterBooks();
+
+                                p.sendMessage(ChatColor.GRAY + "The book was corrupted and turns to dust in your hands.");
+
+                                e.setCancelled(true);
+                                return;
+                            }
+                        }
+
+                        meta.setPages(masterBooks.getStringList(bookID + ".pages"));
+                        book.setItemMeta(meta);
+                    }
+                }
+            }
+        }else if(e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK){
             if(item != null) {
                 // If player is holding a book and quill
                 if (item.getType() == Material.WRITABLE_BOOK) {
@@ -49,9 +98,19 @@ public class BookEdit implements Listener {
 
                     if(meta != null && meta.getLore() != null) {
                         // If the book is not a copy
-                        if(!meta.hasGeneration() || meta.getGeneration() == BookMeta.Generation.ORIGINAL){
+                        if(!meta.hasGeneration() || meta.getGeneration() == BookMeta.Generation.ORIGINAL) {
                             item.setType(Material.WRITABLE_BOOK);
                             item.setItemMeta(meta);
+                            item.addUnsafeEnchantment(Enchantment.LUCK, 1);
+                        }else{
+                            FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
+                            String bookID = String.join("", meta.getLore()).substring(17);
+
+                            if(masterBooks.contains(bookID + ".pages")) {
+                                meta.setPages(masterBooks.getStringList(bookID + ".pages"));
+                                item.setItemMeta(meta);
+                                p.openBook(item);
+                            }
                         }
                     }
                 }
@@ -59,34 +118,74 @@ public class BookEdit implements Listener {
         }
     }
 
-
     @EventHandler
     public void onBookSave(PlayerEditBookEvent e) {
         Player p = e.getPlayer();
         FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
         BookMeta meta = e.getNewBookMeta();
+        BookMeta prevMeta = e.getPreviousBookMeta();
         List<String> lore = meta.getLore();
 
         if(lore == null) {
-            /*if (e.isSigning()) {
-                List<String> lore = new ArrayList<>();
-                lore.add(utils.chat("&6Master Book &7#" + getNextMasterBookID()));
-                meta.setLore(lore);
+            if (e.isSigning()) {
+                List<String> newLore = new ArrayList<>();
+                newLore.add(utils.chat("&6Master Book &7#" + getNextMasterBookID()));
+                meta.setLore(newLore);
                 e.setNewBookMeta(meta);
-            }*/
+            }
         }else{
-            String allLore = String.join("", lore);
-            String bookID = allLore.substring(17);
+            String bookID = String.join("", lore).substring(17);
+            boolean isClaimBook = utils.isClaimPage(meta.getPage(1));
+            boolean wasClaimBook = utils.isClaimPage(prevMeta.getPage(1));
 
             masterBooks.set(bookID + ".pages", meta.getPages());
+            plugin.cfg.saveMasterBooks();
 
-            /*
-            TODO: 1. When a copy is placed on a lectern (whether it's currently a claim book or not), add it to a list (config file). When it's removed from the lectern, remove it from the list.
-            TODO: 2. When a copy is opened, update its content before it's shown.
-            TODO: 3. When a master book is saved or signed, save its pages (config file) and update claims by copies already placed on lecterns.
-            TODO: Make sure claims are not overwritten if another claim book already exists in a chunk. Destroy copy instead?
-            TODO: (unrelated) reduce number of getChunk calls by using the getChunkID function that takes coordinates whenever possible.
-             */
+            if(isClaimBook || wasClaimBook) {
+                FileConfiguration claimData = plugin.cfg.getClaimData();
+                Set<Block> toBeUnclaimed = new HashSet<>();
+                Set<Block> toBeClaimed = new HashSet<>();
+
+                for (String copy : masterBooks.getStringList(bookID + ".copies-on-lecterns")) {
+                    String[] parts = copy.split("!");
+                    String chunkID = parts[0];
+
+                    if(!wasClaimBook && claimData.contains(chunkID)){
+                        p.sendMessage(ChatColor.GRAY + "A copy of the master book was in a claimed chunk and has been corrupted!");
+                    }else{
+                        String environment = chunkID.split("\\|")[0];
+                        String[] xyz = parts[1].split(",");
+                        int x = Integer.parseInt(xyz[0]);
+                        int y = Integer.parseInt(xyz[1]);
+                        int z = Integer.parseInt(xyz[2]);
+
+                        List<World> worlds = Bukkit.getWorlds();
+                        Optional<World> world = worlds.stream().filter(w -> w.getEnvironment().name().equals(environment)).findFirst();
+
+                        if(world.isPresent()) {
+                            Block lectern = world.get().getBlockAt(x, y, z);
+
+                            // If the copy is corrupted / a fake claim book
+                            if(claimData.contains(chunkID))
+                                if(Math.round(claimData.getDouble(chunkID + ".location.X")) != x ||
+                                        Math.round(claimData.getDouble(chunkID + ".location.Y")) != y ||
+                                        Math.round(claimData.getDouble(chunkID + ".location.Z")) != z)
+                                    continue;
+
+                            toBeUnclaimed.add(lectern);
+                            if (isClaimBook)
+                                toBeClaimed.add(lectern);
+                        }else{
+                            p.sendMessage("Something went wrong. Please contact a server admin.");
+                        }
+                    }
+                }
+
+                if(toBeUnclaimed.size() > 0)
+                    utils.unclaimChunkBulk(toBeUnclaimed);
+                if(toBeClaimed.size() > 0)
+                    utils.claimChunkBulk(toBeClaimed, meta);
+            }
         }
     }
 

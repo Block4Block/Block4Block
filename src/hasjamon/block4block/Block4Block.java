@@ -1,8 +1,8 @@
 package hasjamon.block4block;
 
 import hasjamon.block4block.command.*;
-import hasjamon.block4block.listener.*;
 import hasjamon.block4block.files.ConfigManager;
+import hasjamon.block4block.listener.*;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;

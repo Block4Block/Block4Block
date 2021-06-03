@@ -32,7 +32,7 @@ public class LecternBreak implements Listener {
                 // LECTERN is exempt from B4B - otherwise having it on noloot would cause problems
                 if (b.getType() == Material.LECTERN)
                     if (utils.isClaimBlock(b))
-                        utils.unclaimChunk(p, b, false);
+                        utils.unclaimChunk(b, false, p::sendMessage);
             }
         }
     }
@@ -42,7 +42,7 @@ public class LecternBreak implements Listener {
     public void onExplosion(EntityExplodeEvent e) {
         for (Block block : e.blockList()) {
             if (block.getType().equals(Material.LECTERN) && utils.isClaimBlock(block)) {
-                utils.unclaimChunk(null, block, true);
+                utils.unclaimChunk(block, true, (msg) -> {});
                 String[] members = utils.getMembers(block.getLocation());
                 for (Player p : Bukkit.getOnlinePlayers())
                     if (members != null)

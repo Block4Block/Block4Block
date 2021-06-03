@@ -10,7 +10,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
+
 import java.util.*;
+import java.util.function.Consumer;
 
 public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
@@ -182,82 +184,126 @@ public class utils {
         return false;
     }
 
-    public static boolean claimChunk(Block block, Player p, ItemStack book) {
-        BookMeta bookmeta = (BookMeta) book.getItemMeta();
+    public static boolean claimChunk(Block block, ItemStack book, Consumer<String> sendMessage) {
+        BookMeta meta = (BookMeta) book.getItemMeta();
+        return claimChunk(block, meta, sendMessage);
+    }
 
-        if (bookmeta != null) {
-            List<String> pages = bookmeta.getPages();
-            List<String> members = new ArrayList<>();
-
-            // Collect a list of members
-            for (String page : pages) {
-                // If it isn't a claim page, stop looking for members
-                if (!page.substring(0, 5).equalsIgnoreCase("claim"))
-                    break;
-
-                String[] lines = page.split("\\n");
-
-                for (int i = 1; i < lines.length; i++) {
-                    String member = lines[i].trim();
-
-                    // If the member name is valid
-                    if(!member.contains(" ") && !member.isEmpty() && !members.contains(member))
-                        members.add(member);
-                }
-            }
+    public static boolean claimChunk(Block block, BookMeta meta, Consumer<String> sendMessage) {
+        if (meta != null) {
+            List<String> members = findMembersInBook(meta);
 
             // If it's a valid claim book
             if(members.size() > 0) {
                 // If the lectern is next to bedrock: Cancel
-                for (int x = -1; x <= 1; x++) {
-                    for (int y = -1; y <= 1; y++) {
-                        for (int z = -1; z <= 1; z++) {
-                            if (block.getRelative(x, y, z).getType() == Material.BEDROCK) {
-                                p.sendMessage(utils.chat("&cYou cannot place a claim next to bedrock"));
-                                return false;
-                            }
-                        }
-                    }
+                if(isNextToBedrock(block)){
+                    sendMessage.accept(utils.chat("&cYou cannot place a claim next to bedrock"));
+                    return false;
                 }
 
-                FileConfiguration claimData = plugin.cfg.getClaimData();
-                Location blockLoc = block.getLocation();
-                String chunkID = utils.getChunkID(blockLoc);
                 String membersString = String.join("\n", members);
 
-                claimData.set(chunkID + ".location.X", blockLoc.getX());
-                claimData.set(chunkID + ".location.Y", blockLoc.getY());
-                claimData.set(chunkID + ".location.Z", blockLoc.getZ());
-                claimData.set(chunkID + ".members", membersString);
+                setChunkClaim(block, membersString);
                 plugin.cfg.saveClaimData(); // Save members to claimdata.yml
 
                 OfflinePlayer[] knownPlayers = Bukkit.getServer().getOfflinePlayers();
 
                 // Inform the player of the claim and its members
-                p.sendMessage(utils.chat("&aThis chunk has now been claimed!"));
-                p.sendMessage(utils.chat("&aMembers who can access this chunk:"));
+                sendMessage.accept(utils.chat("&eThis chunk has now been claimed!"));
+                sendMessage.accept(utils.chat("&aMembers who can access this chunk:"));
                 for (String member : members)
                     if(Arrays.stream(knownPlayers).anyMatch(kp -> kp.getName() != null && kp.getName().equalsIgnoreCase(member)))
-                        p.sendMessage(ChatColor.GRAY + " - " + member);
+                        sendMessage.accept(ChatColor.GRAY + " - " + member);
                     else
-                        p.sendMessage(ChatColor.GRAY + " - " + member + ChatColor.RED + " (unknown player)");
+                        sendMessage.accept(ChatColor.GRAY + " - " + member + ChatColor.RED + " (unknown player)");
 
                 updateClaimCount();
 
-                for(Player player : Bukkit.getOnlinePlayers())
-                    if(chunkID.equals(getChunkID(player.getLocation())))
-                        if(isIntruder(player, chunkID))
-                            onIntruderEnterClaim(player, chunkID);
-
             }else{
-                p.sendMessage(utils.chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
+                sendMessage.accept(utils.chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
             }
         }
 
         return true;
     }
 
-    public static void unclaimChunk(Player p, Block block, Boolean wasExploded) {
+    public static boolean claimChunkBulk(Set<Block> blocks, BookMeta meta) {
+        if (meta != null) {
+            List<String> members = findMembersInBook(meta);
+
+            // If it's a valid claim book
+            if(members.size() > 0) {
+                for (Block block : blocks) {
+                    // If the lectern is next to bedrock: Cancel
+                    if (isNextToBedrock(block))
+                        continue;
+
+                    String membersString = String.join("\n", members);
+
+                    setChunkClaim(block, membersString);
+                }
+
+                plugin.cfg.saveClaimData();
+                updateClaimCount();
+            }
+        }
+
+        return true;
+    }
+
+    private static void setChunkClaim(Block block, String membersString) {
+        FileConfiguration claimData = plugin.cfg.getClaimData();
+        Location blockLoc = block.getLocation();
+        String chunkID = utils.getChunkID(blockLoc);
+
+        claimData.set(chunkID + ".location.X", blockLoc.getX());
+        claimData.set(chunkID + ".location.Y", blockLoc.getY());
+        claimData.set(chunkID + ".location.Z", blockLoc.getZ());
+        claimData.set(chunkID + ".members", membersString);
+
+        for (Player player : Bukkit.getOnlinePlayers())
+            if (chunkID.equals(getChunkID(player.getLocation())))
+                if (isIntruder(player, chunkID))
+                    onIntruderEnterClaim(player, chunkID);
+    }
+
+    private static List<String> findMembersInBook(BookMeta meta) {
+        List<String> pages = meta.getPages();
+        List<String> members = new ArrayList<>();
+
+        for (String page : pages) {
+            // If it isn't a claim page, stop looking for members
+            if (!isClaimPage(page))
+                break;
+
+            String[] lines = page.split("\\n");
+
+            for (int i = 1; i < lines.length; i++) {
+                String member = lines[i].trim();
+
+                // If the member name is valid
+                if(!member.contains(" ") && !member.isEmpty() && !members.contains(member))
+                    members.add(member);
+            }
+        }
+
+        return members;
+    }
+
+    private static boolean isNextToBedrock(Block block) {
+        for (int x = -1; x <= 1; x++)
+            for (int y = -1; y <= 1; y++)
+                for (int z = -1; z <= 1; z++)
+                    if (block.getRelative(x, y, z).getType() == Material.BEDROCK)
+                        return true;
+        return false;
+    }
+
+    public static boolean isClaimPage(String page) {
+        return page.substring(0, 5).equalsIgnoreCase("claim");
+    }
+
+    public static void unclaimChunk(Block block, boolean wasExploded, Consumer<String> sendMessage) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
         String chunkID = utils.getChunkID(block.getLocation());
 
@@ -265,13 +311,29 @@ public class utils {
         plugin.cfg.saveClaimData();
 
         if (!wasExploded)
-            p.sendMessage(utils.chat("&aYou have removed this claim!"));
+            sendMessage.accept(ChatColor.RED + "You have removed this claim!");
 
         updateClaimCount();
 
         if(intruders.containsKey(chunkID))
             for(Player intruder : intruders.get(chunkID))
                 onIntruderLeaveClaim(intruder, chunkID);
+    }
+
+    public static void unclaimChunkBulk(Set<Block> blocks) {
+        FileConfiguration claimData = plugin.cfg.getClaimData();
+
+        for(Block b : blocks) {
+            String chunkID = utils.getChunkID(b.getLocation());
+            claimData.set(chunkID, null);
+
+            if(intruders.containsKey(chunkID))
+                for(Player intruder : intruders.get(chunkID))
+                    onIntruderLeaveClaim(intruder, chunkID);
+        }
+        plugin.cfg.saveClaimData();
+
+        updateClaimCount();
     }
 
     // Update tablist with current number of claims for each player
