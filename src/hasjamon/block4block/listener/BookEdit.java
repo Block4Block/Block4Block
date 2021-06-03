@@ -65,8 +65,9 @@ public class BookEdit implements Listener {
         Player p = e.getPlayer();
         FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
         BookMeta meta = e.getNewBookMeta();
+        List<String> lore = meta.getLore();
 
-        if(meta.getLore() == null) {
+        if(lore == null) {
             /*if (e.isSigning()) {
                 List<String> lore = new ArrayList<>();
                 lore.add(utils.chat("&6Master Book &7#" + getNextMasterBookID()));
@@ -74,7 +75,7 @@ public class BookEdit implements Listener {
                 e.setNewBookMeta(meta);
             }*/
         }else{
-            String allLore = String.join("", meta.getLore());
+            String allLore = String.join("", lore);
             String bookID = allLore.substring(17);
 
             masterBooks.set(bookID + ".pages", meta.getPages());
