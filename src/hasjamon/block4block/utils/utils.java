@@ -184,11 +184,6 @@ public class utils {
         return false;
     }
 
-    public static boolean claimChunk(Block block, ItemStack book, Consumer<String> sendMessage) {
-        BookMeta meta = (BookMeta) book.getItemMeta();
-        return claimChunk(block, meta, sendMessage);
-    }
-
     public static boolean claimChunk(Block block, BookMeta meta, Consumer<String> sendMessage) {
         if (meta != null) {
             List<String> members = findMembersInBook(meta);
@@ -300,7 +295,7 @@ public class utils {
     }
 
     public static boolean isClaimPage(String page) {
-        return page.substring(0, 5).equalsIgnoreCase("claim");
+        return page.length() >= 5 && page.substring(0, 5).equalsIgnoreCase("claim");
     }
 
     public static void unclaimChunk(Block block, boolean wasExploded, Consumer<String> sendMessage) {

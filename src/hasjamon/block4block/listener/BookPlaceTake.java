@@ -63,7 +63,7 @@ public class BookPlaceTake implements Listener {
                             canPlace = false;
                             p.sendMessage(utils.chat("&cThis chunk is already claimed! Find the claim book or remove \"claim\" from your book to place it."));
                         }else {
-                            canPlace = utils.claimChunk(b, item, p::sendMessage);
+                            canPlace = utils.claimChunk(b, meta, p::sendMessage);
                         }
                     }
                 }
