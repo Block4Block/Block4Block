@@ -437,6 +437,9 @@ public class utils {
     }
 
     public static void onIntruderEnterClaim(Player intruder, String chunkID) {
+        if(intruder.getGameMode() != GameMode.SURVIVAL)
+            return;
+
         if(!intruders.containsKey(chunkID))
             intruders.put(chunkID, new HashSet<>());
 
