@@ -101,6 +101,7 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new PlayerDeath(), this);
         pluginManager.registerEvents(new PlayerRespawn(), this);
         pluginManager.registerEvents(new ChunkLoad(), this);
+        pluginManager.registerEvents(new FreecamInteract(), this);
     }
 
     public static Block4Block getInstance(){
