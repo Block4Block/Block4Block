@@ -11,8 +11,9 @@ public class LavaCasting implements Listener {
     @EventHandler
     public void onBlockForm(BlockFormEvent e) {
         Block b = e.getBlock();
+        Material newType = e.getNewState().getType();
 
-        if(e.getNewState().getType() == Material.COBBLESTONE) {
+        if(newType == Material.COBBLESTONE || newType == Material.STONE) {
             b.setType(Material.ANDESITE);
             e.setCancelled(true);
         }
