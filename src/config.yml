@@ -1,3 +1,10 @@
+# This is the default config.
+# If you want to make changes that persist between server reloads/restarts:
+#   1. Create a new file called config.yml
+#   2. Add new values for each key you want to replace (e.g., hints-enabled: false)
+#   3. If a key doesn't exist in config.yml, the plugin will look for it in default.yml
+
+
 # Allow players to break blocks in others' claims
 can-break-in-others-claims: true
 # Show hints 
