@@ -2,12 +2,12 @@ package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
-import net.minecraft.server.v1_16_R3.BlockPosition;
+import net.minecraft.core.BlockPosition;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -71,7 +71,7 @@ public class BlockBreak implements Listener {
                         for (int z = -1; z <= 1; z++) {
                             if (b.getRelative(x, y, z).getType() == Material.ANDESITE) {
                                 BlockPosition pos = new BlockPosition(b.getX() + x, b.getY() + y, b.getZ() + z);
-                                ((CraftPlayer) p).getHandle().playerInteractManager.breakBlock(pos);
+                                ((CraftPlayer) p).getHandle().d.breakBlock(pos);
                             }
                         }
                     }

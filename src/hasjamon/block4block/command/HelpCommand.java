@@ -2,7 +2,6 @@ package hasjamon.block4block.command;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import com.sun.istack.internal.NotNull;
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -250,7 +249,6 @@ public class HelpCommand implements CommandExecutor, Listener {
     }
 
     // Hack to create a custom PLAYER_HEAD from a base64-encoded texture
-    @NotNull
     private ItemStack createPlayerHead(String base64EncodedString) {
         final ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) skull.getItemMeta();
