@@ -90,6 +90,7 @@ public class utils {
         spawnEggs.put(Material.SALMON_SPAWN_EGG, 100);
         spawnEggs.put(Material.DONKEY_SPAWN_EGG, 100);
         spawnEggs.put(Material.RABBIT_SPAWN_EGG, 100);
+        spawnEggs.put(Material.GOAT_SPAWN_EGG, 100);
         spawnEggs.put(Material.WOLF_SPAWN_EGG, 50);
         spawnEggs.put(Material.BAT_SPAWN_EGG, 50);
         spawnEggs.put(Material.SQUID_SPAWN_EGG, 50);
@@ -106,6 +107,7 @@ public class utils {
         spawnEggs.put(Material.OCELOT_SPAWN_EGG, 35);
         spawnEggs.put(Material.PUFFERFISH_SPAWN_EGG, 35);
         spawnEggs.put(Material.TRADER_LLAMA_SPAWN_EGG, 35);
+        spawnEggs.put(Material.GLOW_SQUID_SPAWN_EGG, 35);
         spawnEggs.put(Material.ZOMBIE_SPAWN_EGG, 20);
         spawnEggs.put(Material.SKELETON_SPAWN_EGG, 20);
         spawnEggs.put(Material.SPIDER_SPAWN_EGG, 20);
@@ -120,6 +122,7 @@ public class utils {
         spawnEggs.put(Material.STRIDER_SPAWN_EGG, 15);
         spawnEggs.put(Material.SLIME_SPAWN_EGG, 15);
         spawnEggs.put(Material.WANDERING_TRADER_SPAWN_EGG, 15);
+        spawnEggs.put(Material.AXOLOTL_SPAWN_EGG, 15);
         spawnEggs.put(Material.ZOMBIFIED_PIGLIN_SPAWN_EGG, 10);
         spawnEggs.put(Material.VEX_SPAWN_EGG, 10);
         spawnEggs.put(Material.WITCH_SPAWN_EGG, 10);
