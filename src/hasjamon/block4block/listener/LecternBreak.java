@@ -38,35 +38,20 @@ public class LecternBreak implements Listener {
         }
     }
 
-    // If a lectern is destroyed in an explosion: Inform the members of the claim
+    // If a claim lectern is destroyed in an explosion, unclaim the chunk
     @EventHandler
     public void onExplosion(EntityExplodeEvent e) {
-        for (Block block : e.blockList()) {
-            if (block.getType() == Material.LECTERN && utils.isClaimBlock(block)) {
+        for (Block block : e.blockList())
+            if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
                 utils.unclaimChunk(block, false, (msg) -> {});
-                String[] members = utils.getMembers(block.getLocation());
-                for (Player p : Bukkit.getOnlinePlayers())
-                    if (members != null)
-                        for (String member : members)
-                            if (member.equalsIgnoreCase(p.getName()))
-                                p.sendMessage(utils.chat("&cYour claim has been destroyed!"));
-            }
-        }
     }
 
-    // If a lectern is destroyed in a fire: Inform the members of the claim
+    // If a claim lectern is destroyed in a fire, unclaim the chunk
     @EventHandler
-    public void onBurn(BlockBurnEvent e) {
+    public void onBlockBurn(BlockBurnEvent e) {
         Block block = e.getBlock();
 
-        if (block.getType() == Material.LECTERN && utils.isClaimBlock(block)) {
+        if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
             utils.unclaimChunk(block, false, (msg) -> {});
-            String[] members = utils.getMembers(block.getLocation());
-            for (Player p : Bukkit.getOnlinePlayers())
-                if (members != null)
-                    for (String member : members)
-                        if (member.equalsIgnoreCase(p.getName()))
-                            p.sendMessage(utils.chat("&cYour claim has been destroyed!"));
-        }
     }
 }

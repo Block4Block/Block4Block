@@ -39,6 +39,8 @@ public class ConfigManager {
         saveHintSettings();
         saveIgnoreLists();
         saveClaimContest();
+        saveBedCommandUsage();
+        saveMasterBooks();
     }
 
     // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
