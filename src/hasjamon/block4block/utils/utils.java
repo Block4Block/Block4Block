@@ -301,14 +301,14 @@ public class utils {
         return page.length() >= 5 && page.substring(0, 5).equalsIgnoreCase("claim");
     }
 
-    public static void unclaimChunk(Block block, boolean wasExploded, Consumer<String> sendMessage) {
+    public static void unclaimChunk(Block block, boolean causedByPlayer, Consumer<String> sendMessage) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
         String chunkID = utils.getChunkID(block.getLocation());
 
         claimData.set(chunkID, null);
         plugin.cfg.saveClaimData();
 
-        if (!wasExploded)
+        if (causedByPlayer)
             sendMessage.accept(ChatColor.RED + "You have removed this claim!");
 
         updateClaimCount();

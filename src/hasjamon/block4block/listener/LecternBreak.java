@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 public class LecternBreak implements Listener {
@@ -32,7 +33,7 @@ public class LecternBreak implements Listener {
                 // LECTERN is exempt from B4B - otherwise having it on noloot would cause problems
                 if (b.getType() == Material.LECTERN)
                     if (utils.isClaimBlock(b))
-                        utils.unclaimChunk(b, false, p::sendMessage);
+                        utils.unclaimChunk(b, true, p::sendMessage);
             }
         }
     }
@@ -41,8 +42,8 @@ public class LecternBreak implements Listener {
     @EventHandler
     public void onExplosion(EntityExplodeEvent e) {
         for (Block block : e.blockList()) {
-            if (block.getType().equals(Material.LECTERN) && utils.isClaimBlock(block)) {
-                utils.unclaimChunk(block, true, (msg) -> {});
+            if (block.getType() == Material.LECTERN && utils.isClaimBlock(block)) {
+                utils.unclaimChunk(block, false, (msg) -> {});
                 String[] members = utils.getMembers(block.getLocation());
                 for (Player p : Bukkit.getOnlinePlayers())
                     if (members != null)
@@ -50,6 +51,22 @@ public class LecternBreak implements Listener {
                             if (member.equalsIgnoreCase(p.getName()))
                                 p.sendMessage(utils.chat("&cYour claim has been destroyed!"));
             }
+        }
+    }
+
+    // If a lectern is destroyed in a fire: Inform the members of the claim
+    @EventHandler
+    public void onBurn(BlockBurnEvent e) {
+        Block block = e.getBlock();
+
+        if (block.getType() == Material.LECTERN && utils.isClaimBlock(block)) {
+            utils.unclaimChunk(block, false, (msg) -> {});
+            String[] members = utils.getMembers(block.getLocation());
+            for (Player p : Bukkit.getOnlinePlayers())
+                if (members != null)
+                    for (String member : members)
+                        if (member.equalsIgnoreCase(p.getName()))
+                            p.sendMessage(utils.chat("&cYour claim has been destroyed!"));
         }
     }
 }

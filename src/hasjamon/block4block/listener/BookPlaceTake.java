@@ -154,6 +154,6 @@ public class BookPlaceTake implements Listener {
 
         if(plugin.cfg.getClaimData().contains(chunkID))
             if(utils.isClaimBlock(lecternBlock))
-                utils.unclaimChunk(lecternBlock, false, e.getPlayer()::sendMessage);
+                utils.unclaimChunk(lecternBlock, true, e.getPlayer()::sendMessage);
     }
 }
