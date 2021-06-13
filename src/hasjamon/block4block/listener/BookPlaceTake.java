@@ -52,9 +52,9 @@ public class BookPlaceTake implements Listener {
                         FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
                         String bookID = String.join("", meta.getLore()).substring(17);
 
-                        if(masterBooks.contains(bookID + ".pages")) {
-                            meta.setPages(masterBooks.getStringList(bookID + ".pages"));
-                        }
+                        if(plugin.getConfig().getBoolean("enable-master-books"))
+                            if(masterBooks.contains(bookID + ".pages"))
+                                meta.setPages(masterBooks.getStringList(bookID + ".pages"));
                     }
 
                     // If it's a claim book

@@ -28,7 +28,9 @@ public class Block4Block extends JavaPlugin{
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
         setupHints(); // Prepares hints and starts broadcasting them
-        getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
+        if(this.getConfig().getBoolean("golems-guard-claims", true))
+            getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
+        utils.minSecBetweenAlerts = this.getConfig().getInt("seconds-between-intruder-alerts", 60);
     }
 
     private void setupHints() {
@@ -89,7 +91,8 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new LecternBreak(this), this);
         pluginManager.registerEvents(new BookEdit(this), this);
         pluginManager.registerEvents(new BlockPlace(this), this);
-        pluginManager.registerEvents(new LavaCasting(), this);
+        if(this.getConfig().getBoolean("balance-lavacasting"))
+            pluginManager.registerEvents(new LavaCasting(), this);
         pluginManager.registerEvents(new EggLay(), this);
         pluginManager.registerEvents(new PlayerFish(this), this);
         pluginManager.registerEvents(new EntityDropItem(), this);
@@ -101,7 +104,8 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new PlayerDeath(), this);
         pluginManager.registerEvents(new PlayerRespawn(), this);
         pluginManager.registerEvents(new ChunkLoad(), this);
-        pluginManager.registerEvents(new FreecamInteract(), this);
+        if(this.getConfig().getBoolean("disable-freecam-interactions"))
+            pluginManager.registerEvents(new FreecamInteract(), this);
     }
 
     public static Block4Block getInstance(){

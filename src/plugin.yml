@@ -2,7 +2,7 @@ name: Block4Block
 main: hasjamon.block4block.Block4Block
 api-version: 1.17
 authors: [ HasJamOn, Bahm, gtg_cya ]
-version: 1.4
+version: 1.5
 description: Block4Block plugin
 commands:
   die:

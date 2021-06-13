@@ -23,6 +23,7 @@ public class utils {
     public static final Map<IronGolem, String> ironGolems = new HashMap<>();
     public static final Map<Player, Set<String>> playerClaimsIntruded = new HashMap<>();
     public static final Map<Player, Long> lastIntrusionMessageReceived = new HashMap<>();
+    public static int minSecBetweenAlerts;
 
     static {
         specialTypes.put(Material.REDSTONE_WIRE, Material.REDSTONE);
@@ -449,9 +450,10 @@ public class utils {
         intruders.get(chunkID).add(intruder);
 
         // Make all iron golems in chunk hostile to the intruder
-        for(IronGolem golem : ironGolems.keySet())
-            if(chunkID.equals(getChunkID(golem.getLocation())))
-                golem.damage(0, intruder);
+        if(plugin.getConfig().getBoolean("golems-guard-claims", true))
+            for(IronGolem golem : ironGolems.keySet())
+                if(chunkID.equals(getChunkID(golem.getLocation())))
+                    golem.damage(0, intruder);
 
         String[] members = getMembers(chunkID);
 
@@ -470,7 +472,7 @@ public class utils {
                         playerClaimsIntruded.put(p, new HashSet<>());
                     playerClaimsIntruded.get(p).add(chunkID);
 
-                    if(now - lastIntrusionMessageReceived.getOrDefault(p, 0L) > 6e10){
+                    if(now - lastIntrusionMessageReceived.getOrDefault(p, 0L) >= minSecBetweenAlerts){
                         p.sendMessage(ChatColor.RED + "An intruder has entered your claim at "+x+", "+y+", "+z);
                         lastIntrusionMessageReceived.put(p, now);
                     }

@@ -75,7 +75,8 @@ public class BookEdit implements Listener {
                             }
                         }
 
-                        meta.setPages(masterBooks.getStringList(bookID + ".pages"));
+                        if(plugin.getConfig().getBoolean("enable-master-books"))
+                            meta.setPages(masterBooks.getStringList(bookID + ".pages"));
                         book.setItemMeta(meta);
                     }
                 }
@@ -107,7 +108,8 @@ public class BookEdit implements Listener {
                             String bookID = String.join("", meta.getLore()).substring(17);
 
                             if(masterBooks.contains(bookID + ".pages")) {
-                                meta.setPages(masterBooks.getStringList(bookID + ".pages"));
+                                if(plugin.getConfig().getBoolean("enable-master-books"))
+                                    meta.setPages(masterBooks.getStringList(bookID + ".pages"));
                                 item.setItemMeta(meta);
                                 p.openBook(item);
                             }
@@ -127,7 +129,7 @@ public class BookEdit implements Listener {
         List<String> lore = meta.getLore();
 
         if(lore == null) {
-            if (e.isSigning()) {
+            if (plugin.getConfig().getBoolean("enable-master-books") && e.isSigning()) {
                 List<String> newLore = new ArrayList<>();
                 newLore.add(utils.chat("&6Master Book &7#" + getNextMasterBookID()));
                 meta.setLore(newLore);

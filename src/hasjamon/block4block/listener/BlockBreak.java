@@ -62,22 +62,24 @@ public class BlockBreak implements Listener {
             }
         }
 
-        if(b.getType() == Material.ANDESITE) {
-            // Add splash if it's been at least 0.1 second since the last time andesite was broken (to avoid chain reaction)
-            if(System.nanoTime() - andesiteLatestBreak > 1E8) {
-                andesiteLatestBreak = System.nanoTime();
-                for (int x = -1; x <= 1; x++) {
-                    for (int y = -1; y <= 1; y++) {
-                        for (int z = -1; z <= 1; z++) {
-                            if (b.getRelative(x, y, z).getType() == Material.ANDESITE) {
-                                BlockPosition pos = new BlockPosition(b.getX() + x, b.getY() + y, b.getZ() + z);
-                                ((CraftPlayer) p).getHandle().d.breakBlock(pos);
+        if(plugin.getConfig().getBoolean("andesite-splash-on")) {
+            if(b.getType() == Material.ANDESITE) {
+                // Add splash if it's been at least 0.1 second since the last time andesite was broken (to avoid chain reaction)
+                if(System.nanoTime() - andesiteLatestBreak > 1E8) {
+                    andesiteLatestBreak = System.nanoTime();
+                    for (int x = -1; x <= 1; x++) {
+                        for (int y = -1; y <= 1; y++) {
+                            for (int z = -1; z <= 1; z++) {
+                                if (b.getRelative(x, y, z).getType() == Material.ANDESITE) {
+                                    BlockPosition pos = new BlockPosition(b.getX() + x, b.getY() + y, b.getZ() + z);
+                                    ((CraftPlayer) p).getHandle().d.breakBlock(pos);
+                                }
                             }
                         }
                     }
                 }
+                return;
             }
-            return;
         }
 
         List<?> blacklistedBlocks = cfg.getList("blacklisted-blocks");
