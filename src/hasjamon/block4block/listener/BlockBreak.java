@@ -46,9 +46,9 @@ public class BlockBreak implements Listener {
 
                 // If the player is a member of the claim and the block is claim-blacklisted: Don't apply B4B rules
                 if (members != null && claimBlacklist != null) {
-                    for (String member : members)
-                        if (member.equalsIgnoreCase(p.getName()))
-                            if (claimBlacklist.contains(b.getType().toString()))
+                    if (claimBlacklist.contains(b.getType().toString()))
+                        for (String member : members)
+                            if (member.equalsIgnoreCase(p.getName()))
                                 return;
 
                     // If the chunk is claimed, you're not a member, and 'can-break-in-others-claims' isn't on
