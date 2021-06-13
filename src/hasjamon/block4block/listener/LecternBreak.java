@@ -2,6 +2,7 @@ package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
+import hasjamon.lecternclaim.utils.utils;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -23,34 +24,38 @@ public class LecternBreak implements Listener {
     public void onBreak(BlockBreakEvent e){
         if(!e.isCancelled()) {
             Block b = e.getBlock();
-            String chunkID = utils.getChunkID(b.getLocation());
 
-            // If the block is in a claimed chunk
-            if (plugin.cfg.getClaimData().contains(chunkID)) {
-                Player p = e.getPlayer();
+            if (b.getType() == Material.LECTERN) {
+                String chunkID = utils.getChunkID(b.getLocation());
 
-                // LECTERN is exempt from B4B - otherwise having it on noloot would cause problems
-                if (b.getType() == Material.LECTERN)
-                    if (utils.isClaimBlock(b))
-                        utils.unclaimChunk(b, true, p::sendMessage);
+                // If the block is in a claimed chunk
+                if (plugin.cfg.getClaimData().contains(chunkID) && utils.isClaimBlock(b)) {
+                    Player p = e.getPlayer();
+
+                    utils.unclaimChunk(b, true, p::sendMessage);
+                }
             }
         }
     }
 
     // If a claim lectern is destroyed in an explosion, unclaim the chunk
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onExplosion(EntityExplodeEvent e) {
-        for (Block block : e.blockList())
-            if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
-                utils.unclaimChunk(block, false, (msg) -> {});
+        if(!e.isCancelled())
+            for (Block block : e.blockList())
+                if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
+                    utils.unclaimChunk(block, false, (msg) -> {});
     }
 
     // If a claim lectern is destroyed in a fire, unclaim the chunk
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockBurn(BlockBurnEvent e) {
-        Block block = e.getBlock();
+        if(!e.isCancelled()) {
+            Block block = e.getBlock();
 
-        if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
-            utils.unclaimChunk(block, false, (msg) -> {});
+            if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
+                utils.unclaimChunk(block, false, (msg) -> {
+                });
+        }
     }
 }

@@ -50,9 +50,9 @@ public class BlockPlace implements Listener {
         Block b = e.getBlock();
         Player p = e.getPlayer();
         Material bucket = e.getBucket();
-        String chunkID = utils.getChunkID(b.getLocation()));
+        String chunkID = utils.getChunkID(b.getLocation());
 
-        if(plugin.cfg.getClaimData().contains(chunkID){
+        if(plugin.cfg.getClaimData().contains(chunkID)){
             String[] members = utils.getMembers(b.getLocation());
             if (members != null) {
                 if (bucket == Material.LAVA_BUCKET || bucket == Material.WATER_BUCKET)
