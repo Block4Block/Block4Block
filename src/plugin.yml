@@ -1,6 +1,6 @@
 name: Block4Block
 main: hasjamon.block4block.Block4Block
-api-version: 1.16
+api-version: 1.17
 authors: [ HasJamOn, Bahm, gtg_cya ]
 version: 1.4
 description: Block4Block plugin
