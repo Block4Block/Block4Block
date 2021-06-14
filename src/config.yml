@@ -13,6 +13,8 @@ hints-enabled: true
 seconds-between-hints: 600
 # Minimum time between intruder alerts
 seconds-between-intruder-alerts: 60
+# How many seconds to exempt a block from B4B rules after it's placed
+b4b-grace-period: 5
 # Make lavacasting form andesite instead of cobblestone/stone
 balance-lavacasting: true
 # Give players splash when breaking andesite
@@ -23,6 +25,10 @@ disable-freecam-interactions: true
 golems-guard-claims: true
 # Allow players to create master books that update the contents of their copies
 enable-master-books: true
+# Whether fishing rods should be destroyed when catching a Name Tag or Saddle
+destroy-fishing-rods: true
+# Have chickens lay spawn eggs instead of normal eggs sometimes
+chickens-lay-spawn-eggs: true
 
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:

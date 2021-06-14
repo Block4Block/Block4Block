@@ -93,8 +93,10 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new BlockPlace(this), this);
         if(this.getConfig().getBoolean("balance-lavacasting"))
             pluginManager.registerEvents(new LavaCasting(), this);
-        pluginManager.registerEvents(new EggLay(), this);
-        pluginManager.registerEvents(new PlayerFish(this), this);
+        if(this.getConfig().getBoolean("chickens-lay-spawn-eggs"))
+            pluginManager.registerEvents(new EggLay(), this);
+        if(this.getConfig().getBoolean("destroy-fishing-rods"))
+            pluginManager.registerEvents(new PlayerFish(this), this);
         pluginManager.registerEvents(new EntityDropItem(), this);
         pluginManager.registerEvents(new CreatureSpawn(), this);
         pluginManager.registerEvents(new PlayerChat(this), this);

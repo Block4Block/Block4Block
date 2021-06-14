@@ -53,8 +53,7 @@ public class LecternBreak implements Listener {
             Block block = e.getBlock();
 
             if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
-                utils.unclaimChunk(block, false, (msg) -> {
-                });
+                utils.unclaimChunk(block, false, (msg) -> {});
         }
     }
 }

@@ -23,9 +23,11 @@ import java.util.Set;
 public class BlockBreak implements Listener {
     private final Block4Block plugin;
     private long andesiteLatestBreak = 0;
+    private int gracePeriod = 0;
 
     public BlockBreak(Block4Block plugin){
         this.plugin = plugin;
+        this.gracePeriod = plugin.getConfig().getInt("chickens-lay-spawn-eggs", 0);
     }
 
     // This Class is for the block break event (This runs every time a player breaks a block)
@@ -96,7 +98,7 @@ public class BlockBreak implements Listener {
             Set<Block> expiredGracePeriods = new HashSet<>();
 
             for(Map.Entry<Block, Long> entry : utils.b4bGracePeriods.entrySet())
-                if(System.nanoTime() - entry.getValue() > 5e9)
+                if(System.nanoTime() - entry.getValue() >= gracePeriod * 1e9)
                     expiredGracePeriods.add(entry.getKey());
                 else
                     break;
