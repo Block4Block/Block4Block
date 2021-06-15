@@ -27,7 +27,7 @@ public class BlockBreak implements Listener {
 
     public BlockBreak(Block4Block plugin){
         this.plugin = plugin;
-        this.gracePeriod = plugin.getConfig().getInt("chickens-lay-spawn-eggs", 0);
+        this.gracePeriod = plugin.getConfig().getInt("b4b-grace-period", 0);
     }
 
     // This Class is for the block break event (This runs every time a player breaks a block)
