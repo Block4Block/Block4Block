@@ -33,7 +33,7 @@ public class EggLay implements Listener {
                         Location loc = ne.getLocation();
                         String pos = loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
 
-                        // If not other named chicken has been found at that location
+                        // If no other named chicken has been found at that location
                         if (!namedChickensPos.contains(pos)) {
                             namedChickensPos.add(pos);
                             letterBonuses.merge(chickenName.toLowerCase().charAt(0), 1, Integer::sum);
