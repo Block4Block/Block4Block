@@ -472,7 +472,7 @@ public class utils {
                         playerClaimsIntruded.put(p, new HashSet<>());
                     playerClaimsIntruded.get(p).add(chunkID);
 
-                    if(now - lastIntrusionMessageReceived.getOrDefault(p, 0L) >= minSecBetweenAlerts){
+                    if(now - lastIntrusionMessageReceived.getOrDefault(p, 0L) >= minSecBetweenAlerts * 1e9){
                         p.sendMessage(ChatColor.RED + "An intruder has entered your claim at "+x+", "+y+", "+z);
                         lastIntrusionMessageReceived.put(p, now);
                     }
