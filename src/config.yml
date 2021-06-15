@@ -13,8 +13,8 @@ hints-enabled: true
 seconds-between-hints: 600
 # Minimum time between intruder alerts
 seconds-between-intruder-alerts: 60
-# Minimum time between intruder alerts
-seconds-between-lava-immunity-alerts: 60
+# Minimum time between lava immunity messages
+seconds-between-lava-immunity-msgs: 60
 # How many seconds to exempt a block from B4B rules after it's placed
 b4b-grace-period: 5
 # Make lavacasting form andesite instead of cobblestone/stone

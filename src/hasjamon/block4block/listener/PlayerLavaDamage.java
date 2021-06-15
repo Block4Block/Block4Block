@@ -19,7 +19,7 @@ public class PlayerLavaDamage implements Listener {
     private final int minSecBetweenMsgs;
 
     public PlayerLavaDamage(Block4Block plugin){
-        minSecBetweenMsgs = plugin.getConfig().getInt("seconds-between-intruder-alerts", 60);
+        minSecBetweenMsgs = plugin.getConfig().getInt("seconds-between-lava-immunity-msgs", 60);
     }
 
     @EventHandler
