@@ -128,8 +128,11 @@ public class BookEdit implements Listener {
         BookMeta prevMeta = e.getPreviousBookMeta();
         List<String> lore = meta.getLore();
 
+        if(!plugin.getConfig().getBoolean("enable-master-books"))
+            return;
+
         if(lore == null) {
-            if (plugin.getConfig().getBoolean("enable-master-books") && e.isSigning()) {
+            if (e.isSigning()) {
                 List<String> newLore = new ArrayList<>();
                 newLore.add(utils.chat("&6Master Book &7#" + getNextMasterBookID()));
                 meta.setLore(newLore);
@@ -147,12 +150,14 @@ public class BookEdit implements Listener {
                 FileConfiguration claimData = plugin.cfg.getClaimData();
                 Set<Block> toBeUnclaimed = new HashSet<>();
                 Set<Block> toBeClaimed = new HashSet<>();
+                Set<String> chunksToBeClaimed = new HashSet<>();
 
                 for (String copy : masterBooks.getStringList(bookID + ".copies-on-lecterns")) {
                     String[] parts = copy.split("!");
                     String chunkID = parts[0];
 
-                    if(!wasClaimBook && claimData.contains(chunkID)){
+                    // If the book is turned into a claim book, but the chunk is already claimed
+                    if(!wasClaimBook && (claimData.contains(chunkID) || chunksToBeClaimed.contains(chunkID))){
                         p.sendMessage(ChatColor.GRAY + "A copy of the master book was in a claimed chunk and has been corrupted!");
                     }else{
                         String environment = chunkID.split("\\|")[0];
@@ -167,16 +172,18 @@ public class BookEdit implements Listener {
                         if(world.isPresent()) {
                             Block lectern = world.get().getBlockAt(x, y, z);
 
-                            // If the copy is corrupted / a fake claim book
-                            if(claimData.contains(chunkID))
+                            // If the copy is corrupted / a fake claim book, do nothing
+                            if(claimData.contains(chunkID) || chunksToBeClaimed.contains(chunkID))
                                 if(Math.round(claimData.getDouble(chunkID + ".location.X")) != x ||
                                         Math.round(claimData.getDouble(chunkID + ".location.Y")) != y ||
                                         Math.round(claimData.getDouble(chunkID + ".location.Z")) != z)
                                     continue;
 
                             toBeUnclaimed.add(lectern);
-                            if (isClaimBook)
+                            if (isClaimBook) {
+                                chunksToBeClaimed.add(chunkID);
                                 toBeClaimed.add(lectern);
+                            }
                         }else{
                             p.sendMessage("Something went wrong. Please contact a server admin.");
                         }
