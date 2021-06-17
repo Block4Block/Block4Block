@@ -5,6 +5,7 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.craftbukkit.libs.org.eclipse.sisu.Nullable;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -22,8 +23,9 @@ public class utils {
     public static final Map<String, Set<Player>> intruders = new HashMap<>();
     public static final Map<IronGolem, String> ironGolems = new HashMap<>();
     public static final Map<Player, Set<String>> playerClaimsIntruded = new HashMap<>();
-    public static final Map<Player, Long> lastIntrusionMessageReceived = new HashMap<>();
+    public static final Map<Player, Long> lastIntrusionMsgReceived = new HashMap<>();
     public static int minSecBetweenAlerts;
+    private static boolean masterBookChangeMsgSent = false;
 
     static {
         specialTypes.put(Material.REDSTONE_WIRE, Material.REDSTONE);
@@ -200,22 +202,7 @@ public class utils {
                     return false;
                 }
 
-                String membersString = String.join("\n", members);
-
-                setChunkClaim(block, membersString);
-                plugin.cfg.saveClaimData(); // Save members to claimdata.yml
-
-                OfflinePlayer[] knownPlayers = Bukkit.getServer().getOfflinePlayers();
-
-                // Inform the player of the claim and its members
-                sendMessage.accept(utils.chat("&eThis chunk has now been claimed!"));
-                sendMessage.accept(utils.chat("&aMembers who can access this chunk:"));
-                for (String member : members)
-                    if(Arrays.stream(knownPlayers).anyMatch(kp -> kp.getName() != null && kp.getName().equalsIgnoreCase(member)))
-                        sendMessage.accept(ChatColor.GRAY + " - " + member);
-                    else
-                        sendMessage.accept(ChatColor.GRAY + " - " + member + ChatColor.RED + " (unknown player)");
-
+                setChunkClaim(block, members, sendMessage, null);
                 updateClaimCount();
 
             }else{
@@ -226,7 +213,7 @@ public class utils {
         return true;
     }
 
-    public static boolean claimChunkBulk(Set<Block> blocks, BookMeta meta) {
+    public static void claimChunkBulk(Set<Block> blocks, BookMeta meta, String masterBookID) {
         if (meta != null) {
             List<String> members = findMembersInBook(meta);
 
@@ -237,33 +224,124 @@ public class utils {
                     if (isNextToBedrock(block))
                         continue;
 
-                    String membersString = String.join("\n", members);
-
-                    setChunkClaim(block, membersString);
+                    setChunkClaim(block, members, masterBookID);
                 }
-
-                plugin.cfg.saveClaimData();
                 updateClaimCount();
             }
         }
-
-        return true;
     }
 
-    private static void setChunkClaim(Block block, String membersString) {
+    private static void setChunkClaim(Block block, List<String> members, String masterBookID){
+        setChunkClaim(block, members, null, masterBookID);
+    }
+
+    private static void setChunkClaim(Block block, List<String> members, @Nullable Consumer<String> sendMessage, String masterBookID) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
         Location blockLoc = block.getLocation();
         String chunkID = utils.getChunkID(blockLoc);
+        String membersString = String.join("\n", members);
 
         claimData.set(chunkID + ".location.X", blockLoc.getX());
         claimData.set(chunkID + ".location.Y", blockLoc.getY());
         claimData.set(chunkID + ".location.Z", blockLoc.getZ());
         claimData.set(chunkID + ".members", membersString);
+        plugin.cfg.saveClaimData();
 
-        for (Player player : Bukkit.getOnlinePlayers())
+        onChunkClaim(chunkID, members, sendMessage, masterBookID);
+    }
+
+    private static void onChunkClaim(String chunkID, List<String> members, @Nullable Consumer<String> sendMessage, String masterBookID){
+        if(sendMessage == null)
+            sendMessage = (msg) -> {};
+        OfflinePlayer[] knownPlayers = Bukkit.getOfflinePlayers();
+        Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+
+        // Inform the player of the claim and its members
+        sendMessage.accept(utils.chat("&eThis chunk has now been claimed!"));
+        sendMessage.accept(utils.chat("&aMembers who can access this chunk:"));
+        for (String member : members) {
+            Optional<OfflinePlayer> offlinePlayer = Arrays.stream(knownPlayers).filter(kp -> kp.getName() != null && kp.getName().equalsIgnoreCase(member)).findFirst();
+
+            if (offlinePlayer.isPresent()) {
+                sendMessage.accept(ChatColor.GRAY + " - " + member);
+
+                boolean isOffline = true;
+
+                for(Player player : onlinePlayers) {
+                    if (player.getName().equalsIgnoreCase(member)) {
+                        isOffline = false;
+                        break;
+                    }
+                }
+
+                if(isOffline){
+                    String name = offlinePlayer.get().getName();
+                    FileConfiguration offlineClaimNotifications = plugin.cfg.getOfflineClaimNotifications();
+
+                    if(masterBookID != null)
+                        offlineClaimNotifications.set(name + ".masterbooks." + masterBookID, false);
+                    else
+                        offlineClaimNotifications.set(name + ".chunks." + chunkID, null);
+                    plugin.cfg.saveOfflineClaimNotifications();
+                }
+            } else {
+                sendMessage.accept(ChatColor.GRAY + " - " + member + ChatColor.RED + " (unknown player)");
+            }
+        }
+
+        for (Player player : onlinePlayers)
             if (chunkID.equals(getChunkID(player.getLocation())))
                 if (isIntruder(player, chunkID))
                     onIntruderEnterClaim(player, chunkID);
+    }
+
+    private static void onChunkUnclaim(String chunkID, String[] members, Location lecternLoc, String masterBookID){
+        OfflinePlayer[] knownPlayers = Bukkit.getOfflinePlayers();
+        Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+
+        if(members != null) {
+            for (String member : members) {
+                Optional<OfflinePlayer> offlinePlayer = Arrays.stream(knownPlayers).filter(kp -> kp.getName() != null && kp.getName().equalsIgnoreCase(member)).findFirst();
+
+                if (offlinePlayer.isPresent()) {
+                    boolean isOffline = true;
+                    String xyz = lecternLoc.getBlockX() +", "+ lecternLoc.getBlockY() +", "+ lecternLoc.getBlockZ();
+
+                    // Notify online members that they have lost the claim
+                    for (Player player : onlinePlayers) {
+                        if (player.getName().equalsIgnoreCase(member)) {
+                            isOffline = false;
+                            if(masterBookID != null) {
+                                if(!masterBookChangeMsgSent) {
+                                    String msg = "Your name has been removed from Master Book #" + masterBookID + " and all related claims!";
+                                    player.sendMessage(ChatColor.RED + msg);
+                                    masterBookChangeMsgSent = true;
+                                }
+                            }else {
+                                player.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + xyz);
+                            }
+                            break;
+                        }
+                    }
+
+                    if (isOffline) {
+                        String name = offlinePlayer.get().getName();
+                        FileConfiguration offlineClaimNotifications = plugin.cfg.getOfflineClaimNotifications();
+
+                        if(masterBookID != null) {
+                            offlineClaimNotifications.set(name + ".masterbooks." + masterBookID, true);
+                        }else {
+                            offlineClaimNotifications.set(name + ".chunks." + chunkID, xyz);
+                        }
+                        plugin.cfg.saveOfflineClaimNotifications();
+                    }
+                }
+            }
+        }
+
+        if(intruders.containsKey(chunkID))
+            for(Player intruder : intruders.get(chunkID))
+                onIntruderLeaveClaim(intruder, chunkID);
     }
 
     private static List<String> findMembersInBook(BookMeta meta) {
@@ -304,7 +382,9 @@ public class utils {
 
     public static void unclaimChunk(Block block, boolean causedByPlayer, Consumer<String> sendMessage) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
-        String chunkID = utils.getChunkID(block.getLocation());
+        Location blockLoc = block.getLocation();
+        String chunkID = utils.getChunkID(blockLoc);
+        String[] members = getMembers(chunkID);
 
         claimData.set(chunkID, null);
         plugin.cfg.saveClaimData();
@@ -312,26 +392,25 @@ public class utils {
         if (causedByPlayer)
             sendMessage.accept(ChatColor.RED + "You have removed this claim!");
 
+        onChunkUnclaim(chunkID, members, blockLoc, null);
         updateClaimCount();
-
-        if(intruders.containsKey(chunkID))
-            for(Player intruder : intruders.get(chunkID))
-                onIntruderLeaveClaim(intruder, chunkID);
     }
 
-    public static void unclaimChunkBulk(Set<Block> blocks) {
+    public static void unclaimChunkBulk(Set<Block> blocks, String masterBookID) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
 
         for(Block b : blocks) {
-            String chunkID = utils.getChunkID(b.getLocation());
+            Location bLoc = b.getLocation();
+            String chunkID = utils.getChunkID(bLoc);
+            String[] members = getMembers(chunkID);
+
             claimData.set(chunkID, null);
 
-            if(intruders.containsKey(chunkID))
-                for(Player intruder : intruders.get(chunkID))
-                    onIntruderLeaveClaim(intruder, chunkID);
+            onChunkUnclaim(chunkID, members, bLoc, masterBookID);
         }
         plugin.cfg.saveClaimData();
 
+        masterBookChangeMsgSent = false;
         updateClaimCount();
     }
 
@@ -472,9 +551,9 @@ public class utils {
                         playerClaimsIntruded.put(p, new HashSet<>());
                     playerClaimsIntruded.get(p).add(chunkID);
 
-                    if(now - lastIntrusionMessageReceived.getOrDefault(p, 0L) >= minSecBetweenAlerts * 1e9){
+                    if(now - lastIntrusionMsgReceived.getOrDefault(p, 0L) >= minSecBetweenAlerts * 1e9){
                         p.sendMessage(ChatColor.RED + "An intruder has entered your claim at "+x+", "+y+", "+z);
-                        lastIntrusionMessageReceived.put(p, now);
+                        lastIntrusionMsgReceived.put(p, now);
                     }
                 }
             }

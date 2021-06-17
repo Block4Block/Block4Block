@@ -28,6 +28,8 @@ public class ConfigManager {
     private final FileConfiguration bedCommandUsageCfg = YamlConfiguration.loadConfiguration(bedCommandUsageFile);
     private final File masterBooksFile = new File(this.plugin.getDataFolder(), "masterbooks.yml");
     private final FileConfiguration masterBooksCfg = YamlConfiguration.loadConfiguration(masterBooksFile);
+    private final File offlineClaimNotificationsFile = new File(this.plugin.getDataFolder(), "offlineclaimnotifications.yml");
+    private final FileConfiguration offlineClaimNotificationsCfg = YamlConfiguration.loadConfiguration(offlineClaimNotificationsFile);
 
     public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
@@ -41,6 +43,7 @@ public class ConfigManager {
         saveClaimContest();
         saveBedCommandUsage();
         saveMasterBooks();
+        saveOfflineClaimNotifications();
     }
 
     // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
@@ -137,6 +140,19 @@ public class ConfigManager {
             consoleSender.sendMessage(ChatColor.AQUA + "Master books have been saved to masterbooks.yml");
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save master books to masterbooks.yml");
+        }
+    }
+
+    public FileConfiguration getOfflineClaimNotifications() {
+        return this.offlineClaimNotificationsCfg;
+    }
+
+    public void saveOfflineClaimNotifications() {
+        try {
+            this.offlineClaimNotificationsCfg.save(this.offlineClaimNotificationsFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Offline claim notifications have been saved to offlineclaimnotifications.yml");
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save offline claim notifications to offlineclaimnotifications.yml");
         }
     }
 }
