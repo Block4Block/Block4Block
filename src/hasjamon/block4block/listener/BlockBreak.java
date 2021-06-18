@@ -22,8 +22,8 @@ import java.util.Set;
 
 public class BlockBreak implements Listener {
     private final Block4Block plugin;
+    private final int gracePeriod;
     private long andesiteLatestBreak = 0;
-    private int gracePeriod = 0;
 
     public BlockBreak(Block4Block plugin){
         this.plugin = plugin;
