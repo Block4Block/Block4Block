@@ -182,12 +182,14 @@ public class utils {
     public static boolean isClaimBlock(Block b) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
         String cID = getChunkID(b.getLocation());
+        double lecternX = claimData.getDouble(cID + ".location.X", Double.MAX_VALUE);
+        double lecternY = claimData.getDouble(cID + ".location.Y", Double.MAX_VALUE);
+        double lecternZ = claimData.getDouble(cID + ".location.Z", Double.MAX_VALUE);
 
-        if (claimData.get(cID + ".location.X").equals(b.getLocation().getX()))
-            if (claimData.get(cID + ".location.Y").equals(b.getLocation().getY()))
-                if (claimData.get(cID + ".location.Z").equals(b.getLocation().getZ()))
-                    return true;
-        return false;
+        if(lecternX == Double.MAX_VALUE || lecternY == Double.MAX_VALUE || lecternZ == Double.MAX_VALUE)
+            return false;
+
+        return lecternX == b.getLocation().getX() && lecternY == b.getLocation().getY() && lecternZ == b.getLocation().getZ();
     }
 
     public static boolean claimChunk(Block block, BookMeta meta, Consumer<String> sendMessage) {
@@ -529,7 +531,7 @@ public class utils {
         intruders.get(chunkID).add(intruder);
 
         // Make all iron golems in chunk hostile to the intruder
-        if(plugin.getConfig().getBoolean("golems-guard-claims", true))
+        if(plugin.getConfig().getBoolean("golems-guard-claims"))
             for(IronGolem golem : ironGolems.keySet())
                 if(chunkID.equals(getChunkID(golem.getLocation())))
                     golem.damage(0, intruder);
