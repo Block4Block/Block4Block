@@ -19,41 +19,36 @@ public class LecternBreak implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent e){
-        if(!e.isCancelled()) {
-            Block b = e.getBlock();
+        Block b = e.getBlock();
 
-            if (b.getType() == Material.LECTERN) {
-                String chunkID = utils.getChunkID(b.getLocation());
+        if (b.getType() == Material.LECTERN) {
+            String chunkID = utils.getChunkID(b.getLocation());
 
-                // If the block is in a claimed chunk
-                if (plugin.cfg.getClaimData().contains(chunkID) && utils.isClaimBlock(b)) {
-                    Player p = e.getPlayer();
+            // If the block is in a claimed chunk
+            if (plugin.cfg.getClaimData().contains(chunkID) && utils.isClaimBlock(b)) {
+                Player p = e.getPlayer();
 
-                    utils.unclaimChunk(b, true, p::sendMessage);
-                }
+                utils.unclaimChunk(b, true, p::sendMessage);
             }
         }
     }
 
     // If a claim lectern is destroyed in an explosion, unclaim the chunk
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onExplosion(EntityExplodeEvent e) {
-        if(!e.isCancelled())
-            for (Block block : e.blockList())
-                if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
-                    utils.unclaimChunk(block, false, (msg) -> {});
+        for (Block block : e.blockList())
+            if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
+                utils.unclaimChunk(block, false, (msg) -> {});
     }
 
     // If a claim lectern is destroyed in a fire, unclaim the chunk
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockBurn(BlockBurnEvent e) {
-        if(!e.isCancelled()) {
-            Block block = e.getBlock();
+        Block block = e.getBlock();
 
-            if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
-                utils.unclaimChunk(block, false, (msg) -> {});
-        }
+        if (block.getType() == Material.LECTERN && utils.isClaimBlock(block))
+            utils.unclaimChunk(block, false, (msg) -> {});
     }
 }
