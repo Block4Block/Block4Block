@@ -33,7 +33,7 @@ public class PlayerLavaDamage implements Listener {
                     long now = System.nanoTime();
 
                     if(now - lastImmunityMessageReceived.getOrDefault(p, 0L) >= minSecBetweenMsgs * 1e9) {
-                        String msg = "The lava wants to burn your items, but you have none, so it will let you go unharmed. This time.";
+                        String msg = "The lava wants to burn your items, but you have none, so it will let you go unharmed.";
 
                         p.sendMessage(ChatColor.YELLOW + msg);
                         lastImmunityMessageReceived.put(p, now);
