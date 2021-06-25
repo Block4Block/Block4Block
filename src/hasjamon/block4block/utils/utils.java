@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
+import oshi.util.tuples.Pair;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -19,7 +20,7 @@ public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
     private static final Map<Material, Material> specialTypes = new HashMap<>();
     private static final Map<Material, Integer> spawnEggs = new HashMap<>();
-    public static final Map<Block, Long> b4bGracePeriods = new LinkedHashMap<>();
+    public static final Map<Block, Pair<Long, String>> b4bGracePeriods = new LinkedHashMap<>();
     public static final Map<String, Set<Player>> intruders = new HashMap<>();
     public static final Map<IronGolem, String> ironGolems = new HashMap<>();
     public static final Map<Player, Set<String>> playerClaimsIntruded = new HashMap<>();

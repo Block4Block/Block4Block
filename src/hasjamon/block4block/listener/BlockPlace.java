@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
+import oshi.util.tuples.Pair;
 
 public class BlockPlace implements Listener {
     private final Block4Block plugin;
@@ -23,7 +24,8 @@ public class BlockPlace implements Listener {
         Block b = e.getBlock();
         Player p = e.getPlayer();
 
-        utils.b4bGracePeriods.put(b, System.nanoTime());
+        if(e.getBlockReplacedState().getType() == Material.AIR)
+            utils.b4bGracePeriods.put(b, new Pair<>(System.nanoTime(), b.getType().name()));
 
         if(b.getType() == Material.LECTERN)
             return;

@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+import oshi.util.tuples.Pair;
 
 import java.util.HashSet;
 import java.util.List;
@@ -87,19 +88,17 @@ public class BlockBreak implements Listener {
             // Are drops disabled for this block type
             boolean noloot = lootDisabled.contains(b.getType().toString());
 
-            // Remove all expired grace periods
             Set<Block> expiredGracePeriods = new HashSet<>();
 
-            for(Map.Entry<Block, Long> entry : utils.b4bGracePeriods.entrySet())
-                if(System.nanoTime() - entry.getValue() >= gracePeriod * 1e9)
+            // Grace periods count as expired if x seconds have passed or the block's material has changed
+            for(Map.Entry<Block, Pair<Long, String>> entry : utils.b4bGracePeriods.entrySet())
+                if (System.nanoTime() - entry.getValue().getA() >= gracePeriod * 1e9 || !entry.getValue().getB().equals(entry.getKey().getType().name()))
                     expiredGracePeriods.add(entry.getKey());
-                else
-                    break;
 
             for(Block expired : expiredGracePeriods)
                 utils.b4bGracePeriods.remove(expired);
 
-            // If the block was placed less than 5 seconds ago, do not apply B4B rules
+            // If the block is still covered by the grace period, do not apply B4B rules
             if(utils.b4bGracePeriods.containsKey(b))
                 return;
 
