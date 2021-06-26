@@ -66,11 +66,23 @@ hints:
 # Entities that cannot blow up blocks in claims
 # Add from here: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/entity/EntityType.html
 claim-explosion-immunity:
-  - PRIMED_TNT
-  - MINECART_TNT
-  - FIREBALL
-  - WITHER_SKULL
-  - ENDER_CRYSTAL
+  overworld:
+    - PRIMED_TNT
+    - MINECART_TNT
+    - FIREBALL
+    - WITHER_SKULL
+    - ENDER_CRYSTAL
+  nether:
+    - PRIMED_TNT
+    - MINECART_TNT
+    - WITHER_SKULL
+    - ENDER_CRYSTAL
+  end:
+    - PRIMED_TNT
+    - MINECART_TNT
+    - FIREBALL
+    - WITHER_SKULL
+    - ENDER_CRYSTAL
 
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
