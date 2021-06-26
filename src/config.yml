@@ -82,7 +82,6 @@ claim-explosion-immunity:
     - MINECART_TNT
     - FIREBALL
     - WITHER_SKULL
-    - ENDER_CRYSTAL
 
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
