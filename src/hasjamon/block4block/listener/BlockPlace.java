@@ -57,7 +57,7 @@ public class BlockPlace implements Listener {
         if(plugin.cfg.getClaimData().contains(chunkID)){
             String[] members = utils.getMembers(b.getLocation());
             if (members != null) {
-                if (bucket == Material.LAVA_BUCKET || bucket == Material.WATER_BUCKET)
+                if (bucket == Material.LAVA_BUCKET || bucket == Material.WATER_BUCKET || bucket == Material.TROPICAL_FISH_BUCKET || bucket == Material.AXOLOTL_BUCKET || bucket == Material.COD_BUCKET || bucket == Material.SALMON_BUCKET || bucket == Material.PUFFERFISH_BUCKET || bucket == Material.POWDER_SNOW_BUCKET)
                     for (String member : members)
                         if (member.equalsIgnoreCase(p.getName()))
                             return;
