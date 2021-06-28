@@ -48,21 +48,20 @@ public class BlockPlace implements Listener {
     }
 
     @EventHandler
-    public void onEmpty(PlayerBucketEmptyEvent e){
+    public void onBucketEmpty(PlayerBucketEmptyEvent e){
         Block b = e.getBlock();
         Player p = e.getPlayer();
-        Material bucket = e.getBucket();
         String chunkID = utils.getChunkID(b.getLocation());
 
         if(plugin.cfg.getClaimData().contains(chunkID)){
             String[] members = utils.getMembers(b.getLocation());
-            if (members != null) {
-                if (bucket == Material.LAVA_BUCKET || bucket == Material.WATER_BUCKET || bucket == Material.TROPICAL_FISH_BUCKET || bucket == Material.AXOLOTL_BUCKET || bucket == Material.COD_BUCKET || bucket == Material.SALMON_BUCKET || bucket == Material.PUFFERFISH_BUCKET || bucket == Material.POWDER_SNOW_BUCKET)
-                    for (String member : members)
-                        if (member.equalsIgnoreCase(p.getName()))
-                            return;
 
-                p.sendMessage(utils.chat("&cYou cannot place Lava/Water inside this claim"));
+            if (members != null) {
+                for (String member : members)
+                    if (member.equalsIgnoreCase(p.getName()))
+                        return;
+
+                p.sendMessage(utils.chat("&cYou cannot empty buckets in this claim"));
                 e.setCancelled(true);
             }
         }

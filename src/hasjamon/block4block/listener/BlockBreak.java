@@ -113,16 +113,22 @@ public class BlockBreak implements Listener {
     public void onBucketFill(PlayerBucketFillEvent e) {
         Player p = e.getPlayer();
         Block b = e.getBlock();
+        String chunkID = utils.getChunkID(b.getLocation());
 
-        if (plugin.cfg.getClaimData().contains(utils.getChunkID(b.getLocation()))) {
+        // Allow milking
+        if(b.getType() == Material.AIR)
+            return;
+
+        // Disallow filling buckets with anything other than milk
+        if (plugin.cfg.getClaimData().contains(chunkID)) {
             String[] members = utils.getMembers(b.getLocation());
+
             if (members != null) {
                 for (String member : members)
                     if (member.equalsIgnoreCase(p.getName()))
-                        if (b.getType() == Material.LAVA || b.getType() == Material.WATER)
                             return;
 
-                p.sendMessage(utils.chat("&cYou cannot take Lava/Water inside this claim"));
+                p.sendMessage(utils.chat("&cYou cannot fill buckets in this claim"));
                 e.setCancelled(true);
             }
         }
