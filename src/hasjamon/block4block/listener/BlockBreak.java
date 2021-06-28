@@ -72,7 +72,10 @@ public class BlockBreak implements Listener {
                         for (int y = -1; y <= 1; y++)
                             for (int z = -1; z <= 1; z++)
                                 if (b.getRelative(x, y, z).getType() == Material.ANDESITE)
-                                    p.breakBlock(b.getRelative(x, y, z));
+                                    if(plugin.getConfig().getBoolean("andesite-splash-reduce-durability"))
+                                        p.breakBlock(b.getRelative(x, y, z));
+                                    else
+                                        b.getRelative(x, y, z).breakNaturally(p.getInventory().getItemInMainHand());
                 }
                 return;
             }
