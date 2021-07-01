@@ -2,7 +2,9 @@ package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -34,5 +36,10 @@ public class EntityExplode implements Listener {
 
             e.blockList().removeIf(b -> claimData.contains(utils.getChunkID(b.getLocation())));
         }
+
+        // Remove sand drops
+        for(Block block : e.blockList())
+            if (block.getType() == Material.SAND)
+                block.setType(Material.AIR);
     }
 }
