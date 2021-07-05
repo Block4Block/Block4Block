@@ -39,6 +39,8 @@ spawn-egg-chance: 0.01
 named-chicken-radius: 5
 # Enable lava immunity for itemless players
 enable-lava-immunity: true
+# When sand explodes, should it drop sand?
+sand-drop-when-exploded: false
 
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:
