@@ -18,7 +18,6 @@ import java.util.function.Consumer;
 
 public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
-    private static final Map<Material, Material> specialTypes = new HashMap<>();
     public static final Map<Block, Pair<Long, String>> b4bGracePeriods = new LinkedHashMap<>();
     public static final Map<String, Set<Player>> intruders = new HashMap<>();
     public static final Map<IronGolem, String> ironGolems = new HashMap<>();
