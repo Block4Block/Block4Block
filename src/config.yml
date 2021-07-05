@@ -1000,7 +1000,7 @@ no-loot-on-break:
 - DIAMOND_BLOCK
 - EMERALD_BLOCK
 
-# Blocks that require a different blocks to break (BlockToBreak: BlockToSpend)
+# Blocks that require different blocks to break (BlockToBreak: BlockToSpend)
 b4b-substitutions:
   REDSTONE_WIRE: REDSTONE
   WALL_TORCH: TORCH
