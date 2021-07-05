@@ -23,6 +23,7 @@ public class Block4Block extends JavaPlugin{
 
     @Override
     public void onEnable() {
+        this.getConfig().options().copyDefaults(true); // Makes config work properly
         instance = this; // Creates instance of the plugin
         cfg = new ConfigManager(); // Initializes config
         registerEvents(); // Registers all the listeners
@@ -94,7 +95,7 @@ public class Block4Block extends JavaPlugin{
         if(this.getConfig().getBoolean("balance-lavacasting"))
             pluginManager.registerEvents(new LavaCasting(), this);
         if(this.getConfig().getBoolean("chickens-lay-spawn-eggs"))
-            pluginManager.registerEvents(new EggLay(), this);
+            pluginManager.registerEvents(new EggLay(this), this);
         if(this.getConfig().getBoolean("destroy-fishing-rods"))
             pluginManager.registerEvents(new PlayerFish(this), this);
         pluginManager.registerEvents(new EntityDropItem(), this);

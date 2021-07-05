@@ -1,5 +1,6 @@
 package hasjamon.block4block.listener;
 
+import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -14,14 +15,21 @@ import org.bukkit.inventory.ItemStack;
 import java.util.*;
 
 public class EggLay implements Listener {
+    private final Block4Block plugin;
+
+    public EggLay(Block4Block plugin){
+        this.plugin = plugin;
+    }
+
     @EventHandler
     public void onItemSpawn(ItemSpawnEvent e) {
         Item item = e.getEntity();
         ItemStack itemStack = item.getItemStack();
 
-        // If it's an egg and wasn't dropped by a player: 1% chance to lay a random spawn egg instead
+        // If it's an egg and wasn't dropped by a player: Chance to lay a random spawn egg instead
         if (itemStack.getType() == Material.EGG && item.getThrower() == null && item.getPickupDelay() == 10) {
-            List<Entity> nearbyEntities = item.getNearbyEntities(5, 5, 5);
+            int radius = plugin.getConfig().getInt("named-chicken-radius");
+            List<Entity> nearbyEntities = item.getNearbyEntities(radius, radius, radius);
             Set<String> namedChickensPos = new HashSet<>();
             Map<Character, Integer> letterBonuses = new HashMap<>();
 
@@ -42,7 +50,8 @@ public class EggLay implements Listener {
                 }
             }
 
-            if (Math.random() <= 0.01 * calcSpawnChanceBonus(namedChickensPos.size())) {
+            double spawnChance = plugin.getConfig().getDouble("spawn-egg-chance");
+            if (Math.random() <= spawnChance * calcSpawnChanceBonus(namedChickensPos.size())) {
                 itemStack.setType(utils.getRandomSpawnEgg(letterBonuses));
             }
         }

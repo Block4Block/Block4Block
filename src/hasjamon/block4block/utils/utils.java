@@ -84,74 +84,6 @@ public class utils {
         specialTypes.put(Material.INFESTED_CRACKED_STONE_BRICKS, Material.CRACKED_STONE_BRICKS);
         specialTypes.put(Material.INFESTED_MOSSY_STONE_BRICKS, Material.MOSSY_STONE_BRICKS);
         specialTypes.put(Material.INFESTED_CHISELED_STONE_BRICKS, Material.CHISELED_STONE_BRICKS);
-
-        spawnEggs.put(Material.TROPICAL_FISH_SPAWN_EGG, 250);
-        spawnEggs.put(Material.COW_SPAWN_EGG, 150);
-        spawnEggs.put(Material.SHEEP_SPAWN_EGG, 150);
-        spawnEggs.put(Material.PIG_SPAWN_EGG, 150);
-        spawnEggs.put(Material.HORSE_SPAWN_EGG, 100);
-        spawnEggs.put(Material.COD_SPAWN_EGG, 100);
-        spawnEggs.put(Material.SALMON_SPAWN_EGG, 100);
-        spawnEggs.put(Material.DONKEY_SPAWN_EGG, 100);
-        spawnEggs.put(Material.RABBIT_SPAWN_EGG, 100);
-        spawnEggs.put(Material.GOAT_SPAWN_EGG, 100);
-        spawnEggs.put(Material.WOLF_SPAWN_EGG, 50);
-        spawnEggs.put(Material.BAT_SPAWN_EGG, 50);
-        spawnEggs.put(Material.SQUID_SPAWN_EGG, 50);
-        spawnEggs.put(Material.BEE_SPAWN_EGG, 50);
-        spawnEggs.put(Material.PARROT_SPAWN_EGG, 50);
-        spawnEggs.put(Material.LLAMA_SPAWN_EGG, 50);
-        spawnEggs.put(Material.CAT_SPAWN_EGG, 50);
-        spawnEggs.put(Material.FOX_SPAWN_EGG, 50);
-        spawnEggs.put(Material.MULE_SPAWN_EGG, 50);
-        spawnEggs.put(Material.TURTLE_SPAWN_EGG, 50);
-        spawnEggs.put(Material.PANDA_SPAWN_EGG, 50);
-        spawnEggs.put(Material.POLAR_BEAR_SPAWN_EGG, 50);
-        spawnEggs.put(Material.DOLPHIN_SPAWN_EGG, 50);
-        spawnEggs.put(Material.OCELOT_SPAWN_EGG, 35);
-        spawnEggs.put(Material.PUFFERFISH_SPAWN_EGG, 35);
-        spawnEggs.put(Material.TRADER_LLAMA_SPAWN_EGG, 35);
-        spawnEggs.put(Material.GLOW_SQUID_SPAWN_EGG, 35);
-        spawnEggs.put(Material.ZOMBIE_SPAWN_EGG, 20);
-        spawnEggs.put(Material.SKELETON_SPAWN_EGG, 20);
-        spawnEggs.put(Material.SPIDER_SPAWN_EGG, 20);
-        spawnEggs.put(Material.CAVE_SPIDER_SPAWN_EGG, 20);
-        spawnEggs.put(Material.CREEPER_SPAWN_EGG, 20);
-        spawnEggs.put(Material.DROWNED_SPAWN_EGG, 20);
-        spawnEggs.put(Material.HUSK_SPAWN_EGG, 20);
-        spawnEggs.put(Material.PHANTOM_SPAWN_EGG, 20);
-        spawnEggs.put(Material.SILVERFISH_SPAWN_EGG, 20);
-        spawnEggs.put(Material.ENDERMITE_SPAWN_EGG, 20);
-        spawnEggs.put(Material.PILLAGER_SPAWN_EGG, 20);
-        spawnEggs.put(Material.STRIDER_SPAWN_EGG, 15);
-        spawnEggs.put(Material.SLIME_SPAWN_EGG, 15);
-        spawnEggs.put(Material.WANDERING_TRADER_SPAWN_EGG, 15);
-        spawnEggs.put(Material.AXOLOTL_SPAWN_EGG, 15);
-        spawnEggs.put(Material.ZOMBIFIED_PIGLIN_SPAWN_EGG, 10);
-        spawnEggs.put(Material.VEX_SPAWN_EGG, 10);
-        spawnEggs.put(Material.WITCH_SPAWN_EGG, 10);
-        spawnEggs.put(Material.VINDICATOR_SPAWN_EGG, 10);
-        spawnEggs.put(Material.STRAY_SPAWN_EGG, 10);
-        spawnEggs.put(Material.GUARDIAN_SPAWN_EGG, 10);
-        spawnEggs.put(Material.ENDERMAN_SPAWN_EGG, 10);
-        spawnEggs.put(Material.PIGLIN_SPAWN_EGG, 10);
-        spawnEggs.put(Material.PIGLIN_BRUTE_SPAWN_EGG, 10);
-        spawnEggs.put(Material.ZOGLIN_SPAWN_EGG, 10);
-        spawnEggs.put(Material.HOGLIN_SPAWN_EGG, 10);
-        spawnEggs.put(Material.MAGMA_CUBE_SPAWN_EGG, 10);
-        spawnEggs.put(Material.BLAZE_SPAWN_EGG, 7);
-        spawnEggs.put(Material.RAVAGER_SPAWN_EGG, 7);
-        spawnEggs.put(Material.WITHER_SKELETON_SPAWN_EGG, 5);
-        spawnEggs.put(Material.SHULKER_SPAWN_EGG, 5);
-        spawnEggs.put(Material.EVOKER_SPAWN_EGG, 5);
-        spawnEggs.put(Material.SKELETON_HORSE_SPAWN_EGG, 5);
-        spawnEggs.put(Material.VILLAGER_SPAWN_EGG, 5);
-        spawnEggs.put(Material.ZOMBIE_VILLAGER_SPAWN_EGG, 5);
-        spawnEggs.put(Material.MOOSHROOM_SPAWN_EGG, 3);
-        spawnEggs.put(Material.ELDER_GUARDIAN_SPAWN_EGG, 3);
-        spawnEggs.put(Material.GHAST_SPAWN_EGG, 3);
-        spawnEggs.put(Material.CHICKEN_SPAWN_EGG, 1);
-        spawnEggs.put(Material.ZOMBIE_HORSE_SPAWN_EGG, 1);
     }
 
     public static String chat(String message) {
@@ -485,21 +417,24 @@ public class utils {
     }
 
     public static Material getRandomSpawnEgg(Map<Character, Integer> letterBonuses){
+        ConfigurationSection weightConfig = plugin.getConfig().getConfigurationSection("spawn-egg-weights");
         Random rand = new Random();
         int totalWeight = calcTotalWeight(letterBonuses);
         int i = rand.nextInt(totalWeight);
 
-        for(Map.Entry<Material, Integer> egg : spawnEggs.entrySet()){
-            Character firstLetter = egg.getKey().name().toLowerCase().charAt(0);
-            Integer bonus = letterBonuses.get(firstLetter);
-            int weight = egg.getValue();
+        if(weightConfig != null) {
+            for (String eggName : weightConfig.getKeys(false)) {
+                Character firstLetter = eggName.toLowerCase().charAt(0);
+                Integer bonus = letterBonuses.get(firstLetter);
+                int weight = weightConfig.getInt(eggName);
 
-            if(bonus != null)
-                weight *= (1 + bonus);
-            i -= weight;
+                if (bonus != null)
+                    weight *= (1 + bonus);
+                i -= weight;
 
-            if(i <= 0)
-                return egg.getKey();
+                if (i <= 0)
+                    return Material.valueOf(eggName);
+            }
         }
 
         // We should never get this far
@@ -507,16 +442,19 @@ public class utils {
     }
 
     private static int calcTotalWeight(Map<Character, Integer> letterBonuses){
+        ConfigurationSection weightConfig = plugin.getConfig().getConfigurationSection("spawn-egg-weights");
         int totalWeight = 0;
 
-        for(Map.Entry<Material, Integer> egg : spawnEggs.entrySet()){
-            Character firstLetter = egg.getKey().name().toLowerCase().charAt(0);
-            Integer bonus = letterBonuses.get(firstLetter);
-            Integer weight = egg.getValue();
+        if(weightConfig != null) {
+            for (String eggName : weightConfig.getKeys(false)) {
+                Character firstLetter = eggName.toLowerCase().charAt(0);
+                Integer bonus = letterBonuses.get(firstLetter);
+                int weight = weightConfig.getInt(eggName);
 
-            if(bonus != null)
-                weight *= (1 + bonus);
-            totalWeight += weight;
+                if (bonus != null)
+                    weight *= (1 + bonus);
+                totalWeight += weight;
+            }
         }
 
         return totalWeight;
