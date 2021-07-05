@@ -36,7 +36,7 @@ public class ConfigManager {
             if(!this.plugin.getDataFolder().mkdir())
                 consoleSender.sendMessage("Failed to create data folder.");
 
-        saveDefaultConfig();
+        saveConfigAsDefault();
         saveClaimData();
         saveHintSettings();
         saveIgnoreLists();
@@ -47,7 +47,7 @@ public class ConfigManager {
     }
 
     // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
-    private void saveDefaultConfig() {
+    private void saveConfigAsDefault() {
         File defaultFile = new File(this.plugin.getDataFolder(), "default.yml");
         InputStream cfgStream = plugin.getResource("config.yml");
 
