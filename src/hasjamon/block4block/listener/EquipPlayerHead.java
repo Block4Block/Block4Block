@@ -98,8 +98,6 @@ public class EquipPlayerHead implements Listener {
         Method getProfile;
 
         try{
-            // TODO: add ProtocolLib as a dependency in... plugin.yml?
-            // WARN: Loaded class com.comphenix.protocol.utility.MinecraftReflection from ProtocolLib v4.7.0-SNAPSHOT-b522 which is not a depend, softdepend or loadbefore of this plugin.
             getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
 
             GameProfile gpA = (GameProfile) getProfile.invoke(disguisee);
