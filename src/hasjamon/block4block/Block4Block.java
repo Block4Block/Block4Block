@@ -112,6 +112,7 @@ public class Block4Block extends JavaPlugin{
         if(this.getConfig().getBoolean("enable-lava-immunity"))
             pluginManager.registerEvents(new PlayerLavaDamage(this), this);
         pluginManager.registerEvents(new EntityExplode(this), this);
+        pluginManager.registerEvents(new EquipPlayerHead(this), this);
     }
 
     public static Block4Block getInstance(){

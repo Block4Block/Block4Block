@@ -41,6 +41,8 @@ named-chicken-radius: 5
 enable-lava-immunity: true
 # When sand explodes, should it drop sand?
 sand-drop-when-exploded: false
+# How many milliseconds disguises should be active
+disguise-duration: 5000
 
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:
