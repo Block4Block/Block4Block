@@ -71,16 +71,7 @@ public class BookPlaceTake implements Listener {
                 String[] members = utils.getMembers(chunkID);
 
                 if(members != null){
-                    boolean isMember = false;
-
-                    for (String member : members) {
-                        if (member.equalsIgnoreCase(p.getName())) {
-                            isMember = true;
-                            break;
-                        }
-                    }
-
-                    if(!isMember) {
+                    if(!utils.isMemberOfClaim(members, p)) {
                         canPlace = false;
                         p.sendMessage(utils.chat("&cYou cannot place blocks in this claim"));
                     }

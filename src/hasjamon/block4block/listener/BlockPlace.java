@@ -37,9 +37,8 @@ public class BlockPlace implements Listener {
             if (!utils.isClaimBlock(b)){
                 // If the player placing the block is a member: Don't prevent block placement
                 if (members != null)
-                    for (String member : members)
-                        if (member.equalsIgnoreCase(p.getName()))
-                            return;
+                    if(utils.isMemberOfClaim(members, p))
+                        return;
 
                 e.setCancelled(true);
                 p.sendMessage(utils.chat("&cYou cannot place blocks in this claim"));
@@ -57,9 +56,8 @@ public class BlockPlace implements Listener {
             String[] members = utils.getMembers(b.getLocation());
 
             if (members != null) {
-                for (String member : members)
-                    if (member.equalsIgnoreCase(p.getName()))
-                        return;
+                if(utils.isMemberOfClaim(members, p))
+                    return;
 
                 p.sendMessage(utils.chat("&cYou cannot empty buckets in this claim"));
                 e.setCancelled(true);
