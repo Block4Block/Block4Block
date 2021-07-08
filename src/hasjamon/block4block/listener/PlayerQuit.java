@@ -16,5 +16,7 @@ public class PlayerQuit implements Listener {
 
         // Stop keeping track of the player's intruded claims
         utils.playerClaimsIntruded.remove(p);
+
+        utils.onLoseDisguise(p);
     }
 }

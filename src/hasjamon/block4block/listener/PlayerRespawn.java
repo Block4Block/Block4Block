@@ -14,5 +14,7 @@ public class PlayerRespawn implements Listener {
 
         if(utils.isIntruder(p, chunkID))
             utils.onIntruderEnterClaim(p, chunkID);
+
+        utils.restorePlayerSkin(p);
     }
 }

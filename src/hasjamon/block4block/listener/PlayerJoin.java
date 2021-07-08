@@ -66,5 +66,7 @@ public class PlayerJoin implements Listener {
 
         offlineClaimNotifications.set(pName, null);
         plugin.cfg.saveOfflineClaimNotifications();
+
+        utils.originalPlayerTextures.put(p, utils.getTextures(p));
     }
 }

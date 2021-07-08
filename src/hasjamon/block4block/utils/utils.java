@@ -1,5 +1,16 @@
 package hasjamon.block4block.utils;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.utility.MinecraftReflection;
+import com.comphenix.protocol.wrappers.EnumWrappers;
+import com.comphenix.protocol.wrappers.PlayerInfoData;
+import com.comphenix.protocol.wrappers.WrappedChatComponent;
+import com.comphenix.protocol.wrappers.WrappedGameProfile;
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -11,11 +22,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.scheduler.BukkitTask;
 import oshi.util.tuples.Pair;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
@@ -24,6 +37,9 @@ public class utils {
     public static final Map<IronGolem, String> ironGolems = new HashMap<>();
     public static final Map<Player, Set<String>> playerClaimsIntruded = new HashMap<>();
     public static final Map<Player, Long> lastIntrusionMsgReceived = new HashMap<>();
+    public static final Map<Player, Collection<Property>> originalPlayerTextures = new HashMap<>();
+    public static final Map<Player, BukkitTask> undisguiseTasks = new HashMap<>();
+    public static final Map<Player, String> activeDisguises = new HashMap<>();
     public static int minSecBetweenAlerts;
     private static boolean masterBookChangeMsgSent = false;
 
@@ -503,5 +519,97 @@ public class utils {
                 }
             }
         }
+    }
+
+    public static void disguisePlayer(Player disguiser, OfflinePlayer disguisee) {
+        Collection<Property> textures = getTextures(disguisee);
+        disguisePlayer(disguiser, textures);
+    }
+
+    public static void disguisePlayer(Player disguiser, Collection<Property> textures) {
+        setTextures(disguiser, textures);
+        updateTexturesForOthers();
+        updateTexturesForSelf(disguiser);
+    }
+
+    public static Collection<Property> getTextures(OfflinePlayer p){
+        try{
+            Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
+            GameProfile gp = (GameProfile) getProfile.invoke(p);
+
+            return gp.getProperties().get("textures");
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static void setTextures(Player p, Collection<Property> textures){
+        try{
+            Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
+            GameProfile gp = (GameProfile) getProfile.invoke(p);
+
+            gp.getProperties().removeAll("textures");
+            gp.getProperties().putAll("textures", textures);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void updateTexturesForOthers() {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.hidePlayer(plugin, p);
+            p.showPlayer(plugin, p);
+        }
+    }
+
+    public static void updateTexturesForSelf(Player p) {
+        sendPlayerInfoAction(p, EnumWrappers.PlayerInfoAction.REMOVE_PLAYER);
+        sendPlayerInfoAction(p, EnumWrappers.PlayerInfoAction.ADD_PLAYER);
+    }
+
+    private static void sendPlayerInfoAction(Player p, EnumWrappers.PlayerInfoAction action) {
+        final ProtocolManager manager = ProtocolLibrary.getProtocolManager();
+        PacketContainer packetPlayOutPlayerInfo = getPacketPlayerInfo(p, action);
+
+        try {
+            manager.sendServerPacket(p, packetPlayOutPlayerInfo);
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void restorePlayerSkin(Player p) {
+        disguisePlayer(p, utils.originalPlayerTextures.get(p));
+    }
+
+    public static void onLoseDisguise(Player disguiser) {
+        if (activeDisguises.containsKey(disguiser)) {
+            activeDisguises.remove(disguiser);
+            disguiser.sendMessage("Your disguise has expired!");
+
+            if (utils.undisguiseTasks.containsKey(disguiser)) {
+                utils.undisguiseTasks.get(disguiser).cancel();
+                utils.undisguiseTasks.remove(disguiser);
+            }
+        }
+    }
+
+    private static PacketContainer getPacketPlayerInfo(Player player, EnumWrappers.PlayerInfoAction action) {
+        List<PlayerInfoData> datas = new ArrayList<>();
+        PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
+
+        datas.add(getPlayerInfoData(player));
+        packet.getPlayerInfoAction().write(0, action);
+        packet.getPlayerInfoDataLists().write(0, datas);
+
+        return packet;
+    }
+
+    private static PlayerInfoData getPlayerInfoData(Player player) {
+        return new PlayerInfoData(WrappedGameProfile.fromPlayer(player),
+                player.getPing(),
+                EnumWrappers.NativeGameMode.fromBukkit(player.getGameMode()),
+                WrappedChatComponent.fromText(player.getPlayerListName()));
     }
 }

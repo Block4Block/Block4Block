@@ -13,5 +13,7 @@ public class PlayerDeath implements Listener {
         String chunkID = utils.getChunkID(p.getLocation());
 
         utils.onIntruderLeaveClaim(p, chunkID);
+
+        utils.onLoseDisguise(p);
     }
 }
