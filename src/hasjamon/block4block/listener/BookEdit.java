@@ -191,7 +191,7 @@ public class BookEdit implements Listener {
                 }
 
                 if(toBeUnclaimed.size() > 0)
-                    utils.unclaimChunkBulk(toBeUnclaimed, bookID);
+                    utils.unclaimChunkBulk(toBeUnclaimed, bookID, meta);
                 if(toBeClaimed.size() > 0)
                     utils.claimChunkBulk(toBeClaimed, meta, bookID);
             }
