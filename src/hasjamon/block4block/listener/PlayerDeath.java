@@ -14,6 +14,7 @@ public class PlayerDeath implements Listener {
 
         utils.onIntruderLeaveClaim(p, chunkID);
 
+        utils.restorePlayerSkin(p);
         utils.onLoseDisguise(p);
     }
 }

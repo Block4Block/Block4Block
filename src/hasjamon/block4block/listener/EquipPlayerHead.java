@@ -56,20 +56,22 @@ public class EquipPlayerHead implements Listener {
             if(disguisee != null && disguisee.getFirstPlayed() > 0) {
                 long duration = plugin.getConfig().getLong("disguise-duration");
                 Player disguiser = (Player) whoClicked;
+                String disguiseMsg = "You're now disguised as " + disguisee.getName() + " for " + (duration / 1000) + " seconds";
 
                 utils.onLoseDisguise(disguiser);
                 utils.disguisePlayer(disguiser, disguisee);
-                disguiser.sendMessage("You're now disguised as " + disguisee.getName() + " for " + (duration / 1000) + " seconds");
-
                 utils.activeDisguises.put(disguiser, disguisee.getName());
 
-
                 BukkitTask undisguiseTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    utils.undisguiseTasks.remove(disguiser);
                     utils.restorePlayerSkin(disguiser);
                     utils.onLoseDisguise(disguiser);
-                    utils.undisguiseTasks.remove(disguiser);
                 }, 20 * duration / 1000);
                 utils.undisguiseTasks.put(disguiser, undisguiseTask);
+
+                if(!utils.isPaperServer)
+                    disguiseMsg += " (only visible to other players)";
+                disguiser.sendMessage(disguiseMsg);
 
                 itemOnCursor.setAmount(itemOnCursor.getAmount() - 1);
                 return true;

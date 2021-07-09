@@ -30,6 +30,8 @@ public class ConfigManager {
     private final FileConfiguration masterBooksCfg = YamlConfiguration.loadConfiguration(masterBooksFile);
     private final File offlineClaimNotificationsFile = new File(this.plugin.getDataFolder(), "offlineclaimnotifications.yml");
     private final FileConfiguration offlineClaimNotificationsCfg = YamlConfiguration.loadConfiguration(offlineClaimNotificationsFile);
+    private final File playerTexturesFile = new File(this.plugin.getDataFolder(), "playertextures.yml");
+    private final FileConfiguration playerTexturesCfg = YamlConfiguration.loadConfiguration(playerTexturesFile);
 
     public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
@@ -44,6 +46,7 @@ public class ConfigManager {
         saveBedCommandUsage();
         saveMasterBooks();
         saveOfflineClaimNotifications();
+        savePlayerTextures();
     }
 
     // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
@@ -153,6 +156,19 @@ public class ConfigManager {
             consoleSender.sendMessage(ChatColor.AQUA + "Offline claim notifications have been saved to offlineclaimnotifications.yml");
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save offline claim notifications to offlineclaimnotifications.yml");
+        }
+    }
+
+    public FileConfiguration getPlayerTextures() {
+        return this.playerTexturesCfg;
+    }
+
+    public void savePlayerTextures() {
+        try {
+            this.playerTexturesCfg.save(this.playerTexturesFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Player textures have been saved to playertextures.yml");
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save player textures to playertextures.yml");
         }
     }
 }

@@ -1,14 +1,6 @@
 package hasjamon.block4block.utils;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.utility.MinecraftReflection;
-import com.comphenix.protocol.wrappers.EnumWrappers;
-import com.comphenix.protocol.wrappers.PlayerInfoData;
-import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import com.comphenix.protocol.wrappers.WrappedGameProfile;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
@@ -17,6 +9,7 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.craftbukkit.libs.org.eclipse.sisu.Nullable;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -37,11 +30,11 @@ public class utils {
     public static final Map<IronGolem, String> ironGolems = new HashMap<>();
     public static final Map<Player, Set<String>> playerClaimsIntruded = new HashMap<>();
     public static final Map<Player, Long> lastIntrusionMsgReceived = new HashMap<>();
-    public static final Map<Player, Collection<Property>> originalPlayerTextures = new HashMap<>();
     public static final Map<Player, BukkitTask> undisguiseTasks = new HashMap<>();
     public static final Map<Player, String> activeDisguises = new HashMap<>();
     public static int minSecBetweenAlerts;
     private static boolean masterBookChangeMsgSent = false;
+    public static boolean isPaperServer = true;
 
     public static String chat(String message) {
         return ChatColor.translateAlternateColorCodes('&', message);
@@ -507,14 +500,26 @@ public class utils {
         }
     }
 
+    public static boolean isMemberOfClaim(String[] members, Player p) {
+        return isMemberOfClaim(members, p, true);
+    }
+
+    public static boolean isMemberOfClaim(String[] members, Player p, boolean allowDisguise) {
+        for (String member : members)
+            if (member.equalsIgnoreCase(p.getName()) || (member.equalsIgnoreCase(activeDisguises.get(p)) && allowDisguise))
+                return true;
+
+        return false;
+    }
+
     public static void disguisePlayer(Player disguiser, OfflinePlayer disguisee) {
-        Collection<Property> textures = getTextures(disguisee);
+        Collection<Property> textures = getCachedTextures(disguisee);
         disguisePlayer(disguiser, textures);
     }
 
     public static void disguisePlayer(Player disguiser, Collection<Property> textures) {
         setTextures(disguiser, textures);
-        updateTexturesForOthers();
+        updateTexturesForOthers(disguiser);
         updateTexturesForSelf(disguiser);
     }
 
@@ -530,6 +535,18 @@ public class utils {
         }
     }
 
+    public static Collection<Property> getCachedTextures(OfflinePlayer p){
+        List<String> strs = plugin.cfg.getPlayerTextures().getStringList(p.getUniqueId().toString());
+        Collection<Property> textures = new ArrayList<>();
+
+        if(strs.size() == 3)
+            textures.add(new Property(strs.get(0), strs.get(1), strs.get(2)));
+        else
+            textures.add(new Property(strs.get(0), strs.get(1)));
+
+        return textures;
+    }
+
     public static void setTextures(Player p, Collection<Property> textures){
         try{
             Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
@@ -542,31 +559,38 @@ public class utils {
         }
     }
 
-    public static void updateTexturesForOthers() {
+    public static void updateTexturesForOthers(Player disguiser) {
         for (Player p : Bukkit.getOnlinePlayers()) {
-            p.hidePlayer(plugin, p);
-            p.showPlayer(plugin, p);
+            p.hidePlayer(plugin, disguiser);
+            p.showPlayer(plugin, disguiser);
         }
     }
 
-    public static void updateTexturesForSelf(Player p) {
-        sendPlayerInfoAction(p, EnumWrappers.PlayerInfoAction.REMOVE_PLAYER);
-        sendPlayerInfoAction(p, EnumWrappers.PlayerInfoAction.ADD_PLAYER);
-    }
+    public static void updateTexturesForSelf(Player disguiser) {
+        Entity vehicle = disguiser.getVehicle();
 
-    private static void sendPlayerInfoAction(Player p, EnumWrappers.PlayerInfoAction action) {
-        final ProtocolManager manager = ProtocolLibrary.getProtocolManager();
-        PacketContainer packetPlayOutPlayerInfo = getPacketPlayerInfo(p, action);
+        if (vehicle != null) {
+            vehicle.removePassenger(disguiser);
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                vehicle.addPassenger(disguiser);
+            }, 1);
+        }
 
         try {
-            manager.sendServerPacket(p, packetPlayOutPlayerInfo);
-        } catch (InvocationTargetException e) {
+            Method refreshPlayerMethod = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("refreshPlayer");
+
+            refreshPlayerMethod.setAccessible(true);
+            refreshPlayerMethod.invoke(disguiser);
+        } catch (InvocationTargetException | IllegalAccessException e) {
             e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            isPaperServer = false;
         }
     }
 
     public static void restorePlayerSkin(Player p) {
-        disguisePlayer(p, originalPlayerTextures.get(p));
+        disguisePlayer(p, getCachedTextures(p));
     }
 
     public static void onLoseDisguise(Player disguiser) {
@@ -577,41 +601,11 @@ public class utils {
             if (undisguiseTasks.containsKey(disguiser)) {
                 undisguiseTasks.get(disguiser).cancel();
                 undisguiseTasks.remove(disguiser);
+            }else {
+                String chunkID = getChunkID(disguiser.getLocation());
+                if (isIntruder(disguiser, chunkID))
+                    onIntruderEnterClaim(disguiser, chunkID);
             }
-
-            String chunkID = getChunkID(disguiser.getLocation());
-            if (isIntruder(disguiser, chunkID))
-                onIntruderEnterClaim(disguiser, chunkID);
         }
-    }
-
-    private static PacketContainer getPacketPlayerInfo(Player player, EnumWrappers.PlayerInfoAction action) {
-        List<PlayerInfoData> datas = new ArrayList<>();
-        PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
-
-        datas.add(getPlayerInfoData(player));
-        packet.getPlayerInfoAction().write(0, action);
-        packet.getPlayerInfoDataLists().write(0, datas);
-
-        return packet;
-    }
-
-    private static PlayerInfoData getPlayerInfoData(Player player) {
-        return new PlayerInfoData(WrappedGameProfile.fromPlayer(player),
-                player.getPing(),
-                EnumWrappers.NativeGameMode.fromBukkit(player.getGameMode()),
-                WrappedChatComponent.fromText(player.getPlayerListName()));
-    }
-
-    public static boolean isMemberOfClaim(String[] members, Player p) {
-        return isMemberOfClaim(members, p, true);
-    }
-
-    public static boolean isMemberOfClaim(String[] members, Player p, boolean allowDisguise) {
-        for (String member : members)
-            if (member.equalsIgnoreCase(p.getName()) || (member.equalsIgnoreCase(activeDisguises.get(p)) && allowDisguise))
-                return true;
-
-        return false;
     }
 }

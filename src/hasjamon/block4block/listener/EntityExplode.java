@@ -38,7 +38,7 @@ public class EntityExplode implements Listener {
         }
 
         // Remove sand drops
-        if(!plugin.getConfig().getBoolean("sand-drop-when-exploded"))
+        if(!plugin.getConfig().getBoolean("sand-drops-when-exploded"))
             for(Block block : e.blockList())
                 if (block.getType() == Material.SAND)
                     block.setType(Material.AIR);

@@ -40,7 +40,9 @@ named-chicken-radius: 5
 # Enable lava immunity for itemless players
 enable-lava-immunity: true
 # When sand explodes, should it drop sand?
-sand-drop-when-exploded: false
+sand-drops-when-exploded: false
+# Whether or not equipping a player head should activate a disguise
+enable-disguises: true
 # How many milliseconds disguises should be active
 disguise-duration: 5000
 
