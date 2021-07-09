@@ -17,7 +17,7 @@ public class FreecamInteract implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onInteract(PlayerInteractEvent e){
         if(e.getAction() == Action.RIGHT_CLICK_BLOCK)
-            if(notLookingAtBlock(e.getClickedBlock(), e.getPlayer()))
+            if(!lookingAtBlock(e.getClickedBlock(), e.getPlayer()))
                 e.setCancelled(true);
     }
 
@@ -25,21 +25,21 @@ public class FreecamInteract implements Listener {
     public void onBlockBreak(BlockBreakEvent e){
         Block b = e.getBlock();
 
-        if(b.getType() != Material.ANDESITE && notLookingAtBlock(b, e.getPlayer()))
+        if(b.getType() != Material.ANDESITE && !lookingAtBlock(b, e.getPlayer()))
             e.setCancelled(true);
     }
 
-    private boolean notLookingAtBlock(Block b, Player p){
+    private boolean lookingAtBlock(Block b, Player p){
         if(b != null){
             Location pEyeLoc = p.getEyeLocation();
             Vector direction = pEyeLoc.getDirection();
 
             RayTraceResult result = p.getWorld().rayTraceBlocks(pEyeLoc, direction, 6.0);
 
-            if(result != null && result.getHitBlock() != null)
-                return !result.getHitBlock().equals(b);
+            if(result == null || result.getHitBlock() == null || !result.getHitBlock().equals(b))
+                return false;
         }
 
-        return false;
+        return true;
     }
 }
