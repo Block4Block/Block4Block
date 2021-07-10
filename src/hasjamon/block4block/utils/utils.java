@@ -494,7 +494,6 @@ public class utils {
 
                     // Add the chunk as one of p's intruded claims
                     playerClaimsIntruded.get(p).add(chunkID);
-                    break;
                 }
             }
         }
