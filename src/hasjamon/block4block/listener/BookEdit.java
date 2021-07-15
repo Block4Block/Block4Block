@@ -155,13 +155,13 @@ public class BookEdit implements Listener {
                 for (String copy : masterBooks.getStringList(bookID + ".copies-on-lecterns")) {
                     String[] parts = copy.split("!");
                     String chunkID = parts[0];
+                    String[] xyz = parts[1].split(",");
 
                     // If the book is turned into a claim book, but the chunk is already claimed
                     if(!wasClaimBook && (claimData.contains(chunkID) || chunksToBeClaimed.contains(chunkID))){
-                        p.sendMessage(ChatColor.GRAY + "A copy of the master book was in a claimed chunk and has been corrupted!");
+                        p.sendMessage(ChatColor.GRAY + "A copy of the master book at (" + String.join(", ", xyz) + ") was in a claimed chunk and has been corrupted!");
                     }else{
                         String environment = chunkID.split("\\|")[0];
-                        String[] xyz = parts[1].split(",");
                         int x = Integer.parseInt(xyz[0]);
                         int y = Integer.parseInt(xyz[1]);
                         int z = Integer.parseInt(xyz[2]);
