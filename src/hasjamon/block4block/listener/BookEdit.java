@@ -133,10 +133,12 @@ public class BookEdit implements Listener {
 
         if(lore == null) {
             if (e.isSigning()) {
+                long nextID = getNextMasterBookID();
                 List<String> newLore = new ArrayList<>();
-                newLore.add(utils.chat("&6Master Book &7#" + getNextMasterBookID()));
+                newLore.add(utils.chat("&6Master Book &7#" + nextID));
                 meta.setLore(newLore);
                 e.setNewBookMeta(meta);
+                masterBooks.set(nextID + ".pages", meta.getPages());
             }
         }else{
             String bookID = String.join("", lore).substring(17);
