@@ -45,6 +45,8 @@ sand-drops-when-exploded: false
 enable-disguises: true
 # How many milliseconds disguises should be active
 disguise-duration: 5000
+# BETA FEATURE: When one player kills another, should the killed player's claims be transferred to the killer?
+enable-claim-takeovers: false
 
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:

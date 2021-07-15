@@ -135,7 +135,7 @@ public class utils {
         onChunkClaim(chunkID, members, sendMessage, masterBookID);
     }
 
-    private static void onChunkClaim(String chunkID, List<String> members, @Nullable Consumer<String> sendMessage, String masterBookID){
+    public static void onChunkClaim(String chunkID, List<String> members, @Nullable Consumer<String> sendMessage, String masterBookID){
         if(sendMessage == null)
             sendMessage = (msg) -> {};
         OfflinePlayer[] knownPlayers = Bukkit.getOfflinePlayers();
@@ -173,7 +173,13 @@ public class utils {
                     onIntruderEnterClaim(player, chunkID);
     }
 
-    private static void onChunkUnclaim(String chunkID, String[] members, Location lecternLoc, String masterBookID){
+    public static void onChunkUnclaim(String chunkID, String[] members, Location lecternLoc, String masterBookID){
+        String xyz = lecternLoc.getBlockX() +", "+ lecternLoc.getBlockY() +", "+ lecternLoc.getBlockZ();
+
+        onChunkUnclaim(chunkID, members, xyz, masterBookID);
+    }
+
+    public static void onChunkUnclaim(String chunkID, String[] members, String lecternXYZ, String masterBookID){
         OfflinePlayer[] knownPlayers = Bukkit.getOfflinePlayers();
         Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
 
@@ -183,7 +189,6 @@ public class utils {
 
                 if (offlinePlayer.isPresent()) {
                     boolean isOffline = true;
-                    String xyz = lecternLoc.getBlockX() +", "+ lecternLoc.getBlockY() +", "+ lecternLoc.getBlockZ();
 
                     // Notify online members that they have lost the claim
                     for (Player player : onlinePlayers) {
@@ -196,7 +201,7 @@ public class utils {
                                     masterBookChangeMsgSent = true;
                                 }
                             }else {
-                                player.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + xyz);
+                                player.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + lecternXYZ);
                             }
                             break;
                         }
@@ -209,7 +214,7 @@ public class utils {
                         if(masterBookID != null) {
                             offlineClaimNotifications.set(name + ".masterbooks." + masterBookID, true);
                         }else {
-                            offlineClaimNotifications.set(name + ".chunks." + chunkID, xyz);
+                            offlineClaimNotifications.set(name + ".chunks." + chunkID, lecternXYZ);
                         }
                         plugin.cfg.saveOfflineClaimNotifications();
                     }
@@ -222,8 +227,13 @@ public class utils {
                 onIntruderLeaveClaim(intruder, chunkID);
     }
 
-    private static List<String> findMembersInBook(BookMeta meta) {
+    public static List<String> findMembersInBook(BookMeta meta) {
         List<String> pages = meta.getPages();
+
+        return findMembersInBook(pages);
+    }
+
+    public static List<String> findMembersInBook(List<String> pages){
         List<String> members = new ArrayList<>();
 
         for (String page : pages) {
@@ -272,6 +282,9 @@ public class utils {
 
         onChunkUnclaim(chunkID, members, blockLoc, null);
         updateClaimCount();
+
+        plugin.cfg.getClaimTakeovers().set(chunkID, null);
+        plugin.cfg.saveClaimTakeovers();
     }
 
     public static void unclaimChunkBulk(Set<Block> blocks, String masterBookID, BookMeta meta) {
@@ -605,6 +618,23 @@ public class utils {
                 if (isIntruder(disguiser, chunkID))
                     onIntruderEnterClaim(disguiser, chunkID);
             }
+        }
+    }
+
+    public static void replaceInClaimPages(List<String> pages, String search, String replace) {
+        for(int i = 0; i < pages.size(); i++){
+            String page = pages.get(i);
+
+            if (!utils.isClaimPage(page))
+                break;
+
+            String[] membersArray = page.split("\\n");
+
+            for (int j = 1; j < membersArray.length; j++)
+                if (membersArray[j].equalsIgnoreCase(search))
+                    membersArray[j] = replace;
+
+            pages.set(i, String.join("\n", membersArray));
         }
     }
 }

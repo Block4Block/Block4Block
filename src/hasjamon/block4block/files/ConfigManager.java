@@ -32,6 +32,8 @@ public class ConfigManager {
     private final FileConfiguration offlineClaimNotificationsCfg = YamlConfiguration.loadConfiguration(offlineClaimNotificationsFile);
     private final File playerTexturesFile = new File(this.plugin.getDataFolder(), "playertextures.yml");
     private final FileConfiguration playerTexturesCfg = YamlConfiguration.loadConfiguration(playerTexturesFile);
+    private final File claimTakeoversFile = new File(this.plugin.getDataFolder(), "claimtakeovers.yml");
+    private final FileConfiguration claimTakeoversCfg = YamlConfiguration.loadConfiguration(claimTakeoversFile);
 
     public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
@@ -47,6 +49,7 @@ public class ConfigManager {
         saveMasterBooks();
         saveOfflineClaimNotifications();
         savePlayerTextures();
+        saveClaimTakeovers();
     }
 
     // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
@@ -169,6 +172,19 @@ public class ConfigManager {
             consoleSender.sendMessage(ChatColor.AQUA + "Player textures have been saved to playertextures.yml");
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save player textures to playertextures.yml");
+        }
+    }
+
+    public FileConfiguration getClaimTakeovers() {
+        return this.claimTakeoversCfg;
+    }
+
+    public void saveClaimTakeovers() {
+        try {
+            this.claimTakeoversCfg.save(this.claimTakeoversFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Claim takeovers have been saved to claimtakeovers.yml");
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save claim takeovers to claimtakeovers.yml");
         }
     }
 }

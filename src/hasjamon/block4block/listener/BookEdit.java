@@ -35,49 +35,69 @@ public class BookEdit implements Listener {
 
         if(e.getAction() == Action.RIGHT_CLICK_BLOCK && clickedBlock != null && clickedBlock.getType() == Material.LECTERN) {
             Lectern lectern = (Lectern) clickedBlock.getState();
-            int slot = lectern.getInventory().first(Material.WRITTEN_BOOK);
+            ItemStack book = lectern.getInventory().getItem(0);
 
-            if (slot > -1) {
-                ItemStack book = lectern.getInventory().getItem(slot);
-                BookMeta meta = (BookMeta) book.getItemMeta();
+            if (book != null) {
+                String chunkID = utils.getChunkID(lectern.getLocation());
 
-                if (meta != null && meta.getLore() != null) {
-                    FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
-                    String bookID = String.join("", meta.getLore()).substring(17);
+                if(book.getType() == Material.WRITTEN_BOOK) {
+                    BookMeta meta = (BookMeta) book.getItemMeta();
 
-                    if (masterBooks.contains(bookID + ".pages")) {
-                        // Check if it's a claim book, then check if it's the one that claimed the chunk
-                        if (utils.isClaimPage(masterBooks.getStringList(bookID + ".pages").get(0))) {
-                            FileConfiguration claimData = plugin.cfg.getClaimData();
-                            String chunkID = utils.getChunkID(lectern.getLocation());
-                            Location bLoc = lectern.getLocation();
-                            boolean isCorrupted = true;
+                    if (meta != null && meta.getLore() != null) {
+                        FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
+                        String bookID = String.join("", meta.getLore()).substring(17);
 
-                            if (claimData.contains(chunkID + ".location"))
-                                if (claimData.get(chunkID + ".location.X").equals(bLoc.getX()))
-                                    if (claimData.get(chunkID + ".location.Y").equals(bLoc.getY()))
-                                        if (claimData.get(chunkID + ".location.Z").equals(bLoc.getZ()))
-                                            isCorrupted = false;
+                        if (masterBooks.contains(bookID + ".pages")) {
+                            // Check if it's a claim book, then check if it's the one that claimed the chunk
+                            if (utils.isClaimPage(masterBooks.getStringList(bookID + ".pages").get(0))) {
+                                FileConfiguration claimData = plugin.cfg.getClaimData();
+                                Location bLoc = lectern.getLocation();
+                                boolean isCorrupted = true;
 
-                            if (isCorrupted) {
-                                lectern.getInventory().clear();
+                                if (claimData.contains(chunkID + ".location"))
+                                    if (claimData.get(chunkID + ".location.X").equals(bLoc.getX()))
+                                        if (claimData.get(chunkID + ".location.Y").equals(bLoc.getY()))
+                                            if (claimData.get(chunkID + ".location.Z").equals(bLoc.getZ()))
+                                                isCorrupted = false;
 
-                                List<String> copies = masterBooks.getStringList(bookID + ".copies-on-lecterns");
-                                String xyz = bLoc.getBlockX() + "," + bLoc.getBlockY() + "," + bLoc.getBlockZ();
-                                copies.remove(chunkID + "!" + xyz);
-                                masterBooks.set(bookID + ".copies-on-lecterns", copies);
-                                plugin.cfg.saveMasterBooks();
+                                if (isCorrupted) {
+                                    lectern.getInventory().clear();
 
-                                p.sendMessage(ChatColor.GRAY + "The book was corrupted and turns to dust in your hands.");
+                                    List<String> copies = masterBooks.getStringList(bookID + ".copies-on-lecterns");
+                                    String xyz = bLoc.getBlockX() + "," + bLoc.getBlockY() + "," + bLoc.getBlockZ();
+                                    copies.remove(chunkID + "!" + xyz);
+                                    masterBooks.set(bookID + ".copies-on-lecterns", copies);
+                                    plugin.cfg.saveMasterBooks();
 
-                                e.setCancelled(true);
-                                return;
+                                    p.sendMessage(ChatColor.GRAY + "The book was corrupted and turns to dust in your hands.");
+
+                                    e.setCancelled(true);
+                                    return;
+                                }
                             }
+
+                            if (plugin.getConfig().getBoolean("enable-master-books"))
+                                meta.setPages(masterBooks.getStringList(bookID + ".pages"));
+                            book.setItemMeta(meta);
+                        }
+                    }
+                }else if(book.getType() == Material.WRITABLE_BOOK){
+                    BookMeta meta = (BookMeta) book.getItemMeta();
+
+                    if(meta != null && plugin.getConfig().getBoolean("enable-claim-takeovers")) {
+                        FileConfiguration claimTakeovers = plugin.cfg.getClaimTakeovers();
+                        List<String> replacements = claimTakeovers.getStringList(chunkID);
+                        List<String> pages = new ArrayList<>(meta.getPages());
+
+                        for (String replacement : replacements) {
+                            String[] parts = replacement.split("\\|");
+                            utils.replaceInClaimPages(pages, parts[0], parts[1]);
                         }
 
-                        if(plugin.getConfig().getBoolean("enable-master-books"))
-                            meta.setPages(masterBooks.getStringList(bookID + ".pages"));
+                        meta.setPages(pages);
                         book.setItemMeta(meta);
+                        claimTakeovers.set(chunkID, null);
+                        plugin.cfg.saveClaimTakeovers();
                     }
                 }
             }
