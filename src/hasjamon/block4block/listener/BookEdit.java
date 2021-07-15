@@ -139,6 +139,7 @@ public class BookEdit implements Listener {
                 meta.setLore(newLore);
                 e.setNewBookMeta(meta);
                 masterBooks.set(nextID + ".pages", meta.getPages());
+                plugin.cfg.saveMasterBooks();
             }
         }else{
             String bookID = String.join("", lore).substring(17);
