@@ -123,6 +123,7 @@ public class Block4Block extends JavaPlugin{
             pluginManager.registerEvents(new EquipPlayerHead(this), this);
         if(this.getConfig().getBoolean("enable-claim-maps"))
             pluginManager.registerEvents(new LecternRightClick(this), this);
+        pluginManager.registerEvents(new MapCraft(), this);
     }
 
     private void addMapRenderers() {
