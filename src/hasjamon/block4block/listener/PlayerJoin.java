@@ -4,6 +4,7 @@ import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.ChatColor;
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -28,11 +29,13 @@ public class PlayerJoin implements Listener {
         Player p = e.getPlayer();
         List<String> welcomeMessages = plugin.getConfig().getStringList("welcome-messages");
 
-        if(!p.hasPlayedBefore())
-            for(String msg : welcomeMessages)
+        if(!p.hasPlayedBefore()) {
+            utils.knownPlayers.add(p.getName().toLowerCase());
+            for (String msg : welcomeMessages)
                 p.sendMessage(utils.chat(msg));
-        else
+        }else {
             utils.populatePlayerClaimsIntruded(p);
+        }
 
         utils.updateClaimCount();
 
@@ -41,7 +44,7 @@ public class PlayerJoin implements Listener {
             utils.onIntruderEnterClaim(p, chunkID);
 
 
-        String pName = p.getName();
+        String pName = p.getName().toLowerCase();
         FileConfiguration offlineClaimNotifications = plugin.cfg.getOfflineClaimNotifications();
         ConfigurationSection chunksLost = offlineClaimNotifications.getConfigurationSection(pName + ".chunks");
         ConfigurationSection masterBooksRemovedFrom = offlineClaimNotifications.getConfigurationSection(pName + ".masterbooks");
@@ -57,7 +60,8 @@ public class PlayerJoin implements Listener {
                 }
 
                 String xyz = chunksLost.getString(cID);
-                p.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + xyz);
+                String worldName = utils.getWorldName(World.Environment.valueOf(chunkID.split("\\|")[0]));
+                p.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + xyz + " in " + worldName);
             }
         }
 

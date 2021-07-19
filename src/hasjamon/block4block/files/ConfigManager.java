@@ -34,6 +34,8 @@ public class ConfigManager {
     private final FileConfiguration playerTexturesCfg = YamlConfiguration.loadConfiguration(playerTexturesFile);
     private final File claimTakeoversFile = new File(this.plugin.getDataFolder(), "claimtakeovers.yml");
     private final FileConfiguration claimTakeoversCfg = YamlConfiguration.loadConfiguration(claimTakeoversFile);
+    private final File claimMapsFile = new File(this.plugin.getDataFolder(), "claimmaps.yml");
+    private final FileConfiguration claimMapsCfg = YamlConfiguration.loadConfiguration(claimMapsFile);
 
     public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
@@ -50,6 +52,7 @@ public class ConfigManager {
         saveOfflineClaimNotifications();
         savePlayerTextures();
         saveClaimTakeovers();
+        saveClaimMaps();
     }
 
     // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
@@ -185,6 +188,19 @@ public class ConfigManager {
             consoleSender.sendMessage(ChatColor.AQUA + "Claim takeovers have been saved to claimtakeovers.yml");
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save claim takeovers to claimtakeovers.yml");
+        }
+    }
+
+    public FileConfiguration getClaimMaps() {
+        return this.claimMapsCfg;
+    }
+
+    public void saveClaimMaps() {
+        try {
+            this.claimMapsCfg.save(this.claimMapsFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Claim maps have been saved to claimmaps.yml");
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save claim maps to claimmaps.yml");
         }
     }
 }

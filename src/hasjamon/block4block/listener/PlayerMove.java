@@ -22,6 +22,8 @@ public class PlayerMove implements Listener {
                 if (utils.isIntruder(p, currentChunkID))
                     utils.onIntruderEnterClaim(p, currentChunkID);
             }
+
+            utils.lastPlayerMoves.put(p, System.nanoTime());
         }
     }
 }

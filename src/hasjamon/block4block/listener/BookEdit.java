@@ -153,7 +153,7 @@ public class BookEdit implements Listener {
 
         if(lore == null) {
             if (e.isSigning()) {
-                long nextID = getNextMasterBookID();
+                long nextID = getNextMasterBookID(false);
                 List<String> newLore = new ArrayList<>();
                 newLore.add(utils.chat("&6Master Book &7#" + nextID));
                 meta.setLore(newLore);
@@ -221,12 +221,14 @@ public class BookEdit implements Listener {
         }
     }
 
-    private long getNextMasterBookID() {
+    private long getNextMasterBookID(boolean saveConfig) {
         FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
         long nextID = masterBooks.getLong("next-id", 0);
 
         masterBooks.set("next-id", nextID + 1);
-        plugin.cfg.saveMasterBooks();
+
+        if(saveConfig)
+            plugin.cfg.saveMasterBooks();
 
         return nextID;
     }

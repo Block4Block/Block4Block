@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.map.*;
 import org.bukkit.scheduler.BukkitTask;
 import oshi.util.tuples.Pair;
 
@@ -32,9 +33,12 @@ public class utils {
     public static final Map<Player, Long> lastIntrusionMsgReceived = new HashMap<>();
     public static final Map<Player, BukkitTask> undisguiseTasks = new HashMap<>();
     public static final Map<Player, String> activeDisguises = new HashMap<>();
+    public static final Map<Player, Long> lastPlayerMoves = new HashMap<>();
+    public static final Set<String> knownPlayers = new HashSet<>();
     public static int minSecBetweenAlerts;
     private static boolean masterBookChangeMsgSent = false;
     public static boolean isPaperServer = true;
+    public static long lastClaimUpdate = 0;
 
     public static String chat(String message) {
         return ChatColor.translateAlternateColorCodes('&', message);
@@ -89,6 +93,7 @@ public class utils {
 
                 setChunkClaim(block, members, sendMessage, null);
                 updateClaimCount();
+                plugin.cfg.saveClaimData();
 
             }else{
                 sendMessage.accept(chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
@@ -112,6 +117,7 @@ public class utils {
                     setChunkClaim(block, members, masterBookID);
                 }
                 updateClaimCount();
+                plugin.cfg.saveClaimData();
             }
         }
     }
@@ -130,7 +136,6 @@ public class utils {
         claimData.set(chunkID + ".location.Y", blockLoc.getY());
         claimData.set(chunkID + ".location.Z", blockLoc.getZ());
         claimData.set(chunkID + ".members", membersString);
-        plugin.cfg.saveClaimData();
 
         onChunkClaim(chunkID, members, sendMessage, masterBookID);
     }
@@ -138,22 +143,19 @@ public class utils {
     public static void onChunkClaim(String chunkID, List<String> members, @Nullable Consumer<String> sendMessage, String masterBookID){
         if(sendMessage == null)
             sendMessage = (msg) -> {};
-        OfflinePlayer[] knownPlayers = Bukkit.getOfflinePlayers();
         Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
 
         // Inform the player of the claim and its members
         sendMessage.accept(chat("&eThis chunk has now been claimed!"));
         sendMessage.accept(chat("&aMembers who can access this chunk:"));
         for (String member : members) {
-            Optional<OfflinePlayer> offlinePlayer = Arrays.stream(knownPlayers).filter(kp -> kp.getName() != null && kp.getName().equalsIgnoreCase(member)).findFirst();
-
-            if (offlinePlayer.isPresent()) {
+            if (knownPlayers.contains(member)) {
                 sendMessage.accept(ChatColor.GRAY + " - " + member);
 
                 boolean isOffline = onlinePlayers.stream().noneMatch(op -> op.getName().equalsIgnoreCase(member));
 
                 if(isOffline){
-                    String name = offlinePlayer.get().getName();
+                    String name = member.toLowerCase();
                     FileConfiguration offlineClaimNotifications = plugin.cfg.getOfflineClaimNotifications();
 
                     if(masterBookID != null)
@@ -171,6 +173,8 @@ public class utils {
             if (chunkID.equals(getChunkID(player.getLocation())))
                 if (isIntruder(player, chunkID))
                     onIntruderEnterClaim(player, chunkID);
+
+        lastClaimUpdate = System.nanoTime();
     }
 
     public static void onChunkUnclaim(String chunkID, String[] members, Location lecternLoc, String masterBookID){
@@ -180,14 +184,11 @@ public class utils {
     }
 
     public static void onChunkUnclaim(String chunkID, String[] members, String lecternXYZ, String masterBookID){
-        OfflinePlayer[] knownPlayers = Bukkit.getOfflinePlayers();
         Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
 
         if(members != null) {
             for (String member : members) {
-                Optional<OfflinePlayer> offlinePlayer = Arrays.stream(knownPlayers).filter(kp -> kp.getName() != null && kp.getName().equalsIgnoreCase(member)).findFirst();
-
-                if (offlinePlayer.isPresent()) {
+                if (knownPlayers.contains(member.toLowerCase())) {
                     boolean isOffline = true;
 
                     // Notify online members that they have lost the claim
@@ -201,14 +202,15 @@ public class utils {
                                     masterBookChangeMsgSent = true;
                                 }
                             }else {
-                                player.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + lecternXYZ);
+                                String worldName = getWorldName(World.Environment.valueOf(chunkID.split("\\|")[0]));
+                                player.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + lecternXYZ + " in " + worldName);
                             }
                             break;
                         }
                     }
 
                     if (isOffline) {
-                        String name = offlinePlayer.get().getName();
+                        String name = member.toLowerCase();
                         FileConfiguration offlineClaimNotifications = plugin.cfg.getOfflineClaimNotifications();
 
                         if(masterBookID != null) {
@@ -222,9 +224,15 @@ public class utils {
             }
         }
 
+        Map<Player, String> intrudersThatLeft = new HashMap<>();
         if(intruders.containsKey(chunkID))
             for(Player intruder : intruders.get(chunkID))
-                onIntruderLeaveClaim(intruder, chunkID);
+                intrudersThatLeft.put(intruder, chunkID);
+
+        for(Player intruder : intrudersThatLeft.keySet())
+            onIntruderLeaveClaim(intruder, intrudersThatLeft.get(intruder));
+
+        lastClaimUpdate = System.nanoTime();
     }
 
     public static List<String> findMembersInBook(BookMeta meta) {
@@ -455,7 +463,8 @@ public class utils {
                     playerClaimsIntruded.get(p).add(chunkID);
 
                     if(now - lastIntrusionMsgReceived.getOrDefault(p, 0L) >= minSecBetweenAlerts * 1e9){
-                        p.sendMessage(ChatColor.RED + "An intruder has entered your claim at "+x+", "+y+", "+z);
+                        String worldName = getWorldName(World.Environment.valueOf(chunkID.split("\\|")[0]));
+                        p.sendMessage(ChatColor.RED + "An intruder has entered your claim at "+x+", "+y+", "+z+" in "+worldName);
                         lastIntrusionMsgReceived.put(p, now);
                     }
                 }
@@ -464,8 +473,12 @@ public class utils {
     }
 
     public static void onIntruderLeaveClaim(Player intruder, String chunkID) {
-        if(intruders.containsKey(chunkID))
+        if(intruders.containsKey(chunkID)) {
             intruders.get(chunkID).remove(intruder);
+
+            if (intruders.get(chunkID).size() == 0)
+                intruders.remove(chunkID);
+        }
     }
 
     public static boolean isIntruder(Player p, String chunkID){
@@ -512,13 +525,13 @@ public class utils {
         }
     }
 
-    public static boolean isMemberOfClaim(String[] members, Player p) {
+    public static boolean isMemberOfClaim(String[] members, OfflinePlayer p) {
         return isMemberOfClaim(members, p, true);
     }
 
-    public static boolean isMemberOfClaim(String[] members, Player p, boolean allowDisguise) {
+    public static boolean isMemberOfClaim(String[] members, OfflinePlayer p, boolean allowDisguise) {
         for (String member : members)
-            if (member.equalsIgnoreCase(p.getName()) || (member.equalsIgnoreCase(activeDisguises.get(p)) && allowDisguise))
+            if (member.equalsIgnoreCase(p.getName()) || (allowDisguise && member.equalsIgnoreCase(activeDisguises.get(p))))
                 return true;
 
         return false;
@@ -625,7 +638,7 @@ public class utils {
         for(int i = 0; i < pages.size(); i++){
             String page = pages.get(i);
 
-            if (!utils.isClaimPage(page))
+            if (!isClaimPage(page))
                 break;
 
             String[] membersArray = page.split("\\n");
@@ -636,5 +649,180 @@ public class utils {
 
             pages.set(i, String.join("\n", membersArray));
         }
+    }
+
+    private static int getBlocksPerPixel(MapView.Scale scale) {
+        int blocksPerPixel = 0;
+
+        switch (scale) {
+            case CLOSEST -> blocksPerPixel = 1;
+            case CLOSE -> blocksPerPixel = 2;
+            case NORMAL -> blocksPerPixel = 4;
+            case FAR -> blocksPerPixel = 8;
+            case FARTHEST -> blocksPerPixel = 16;
+        }
+
+        return blocksPerPixel;
+    }
+
+    public static MapRenderer createClaimRenderer(OfflinePlayer creator) {
+        return new MapRenderer() {
+            final OfflinePlayer owner = creator;
+            long lastUpdate = 0;
+            Map<String, Pair<Integer, Integer>> claims = null;
+            int blocksPerPixel = 0;
+
+            public void render(MapView view, MapCanvas canvas, Player p) {
+                int centerX = view.getCenterX();
+                int centerZ = view.getCenterZ();
+
+                if(blocksPerPixel == 0)
+                    blocksPerPixel = getBlocksPerPixel(view.getScale());
+
+                if (lastUpdate <= lastClaimUpdate || claims == null) {
+                    World world = view.getWorld();
+
+                    if (world != null) {
+                        World.Environment env = world.getEnvironment();
+                        Map<String, Pair<Integer, Integer>> claimsNow = findClaimsOnCanvas(env, centerX, centerZ, blocksPerPixel);
+                        addClaimsToCanvas(canvas, claims, claimsNow, owner, blocksPerPixel);
+                        claims = claimsNow;
+                        lastUpdate = System.nanoTime();
+                    }
+                }else if(lastPlayerMoves.containsKey(p) && lastUpdate < lastPlayerMoves.get(p)){
+                    int px = 2 * (p.getLocation().getBlockX() - centerX) / blocksPerPixel;
+                    int pz = 2 * (p.getLocation().getBlockZ() - centerZ) / blocksPerPixel;
+
+                    if(px <= 127 && px >= -128 && pz <= 127 && pz >= -128) {
+                        addClaimsToCanvas(canvas, null, claims, owner, blocksPerPixel);
+                        lastUpdate = System.nanoTime();
+                    }
+                }
+            }
+        };
+    }
+
+    private static Map<String, Pair<Integer, Integer>> findClaimsOnCanvas(World.Environment env, int centerX, int centerZ, int blocksPerPixel) {
+        Map<String, Pair<Integer, Integer>> claims = new HashMap<>();
+        int x = centerX - 64 * blocksPerPixel;
+
+        for(int i = 0; i < 128; i += 16 / blocksPerPixel) {
+            int z = centerZ - 64 * blocksPerPixel;
+
+            for(int j = 0; j < 128; j += 16 / blocksPerPixel) {
+                String chunkID = getChunkID(x, z, env);
+                FileConfiguration claimData = plugin.cfg.getClaimData();
+
+                if(claimData.contains(chunkID))
+                    claims.put(chunkID, new Pair<>(i, j));
+
+                z += 16;
+            }
+
+            x += 16;
+        }
+
+        return claims;
+    }
+
+    private static void addClaimsToCanvas(MapCanvas canvas, Map<String, Pair<Integer, Integer>> claimsBefore, Map<String, Pair<Integer, Integer>> claimsNow, OfflinePlayer p, int blocksPerPixel){
+        if(claimsBefore != null) {
+            claimsBefore.values().removeAll(claimsNow.values());
+
+            for (String chunkID : claimsBefore.keySet()) {
+                Pair<Integer, Integer> ij = claimsBefore.get(chunkID);
+                int i = ij.getA();
+                int j = ij.getB();
+
+                for (int k = 0; k < 16 / blocksPerPixel; k++)
+                    for (int l = 0; l < 16 / blocksPerPixel; l++)
+                        canvas.setPixel(i + k, j + l, canvas.getBasePixel(i + k, j + l));
+            }
+        }
+
+        for(String chunkID : claimsNow.keySet()) {
+            Pair<Integer, Integer> ij = claimsNow.get(chunkID);
+            int i = ij.getA();
+            int j = ij.getB();
+
+            String[] members = getMembers(chunkID);
+            boolean isMember = members != null && isMemberOfClaim(members, p);
+            String configStr = isMember ? "my-claims" : "others-claims";
+            int r = plugin.getConfig().getInt("claim-map-colors."+configStr+".r");
+            int g = plugin.getConfig().getInt("claim-map-colors."+configStr+".g");
+            int b = plugin.getConfig().getInt("claim-map-colors."+configStr+".b");
+            byte color = MapPalette.matchColor(r, g, b);
+
+            for (int k = 0; k < 16 / blocksPerPixel; k++)
+                for (int l = 0; l < 16 / blocksPerPixel; l++)
+                    if (canvas.getBasePixel(i + k, j + l) != MapPalette.TRANSPARENT)
+                        canvas.setPixel(i + k, j + l, color);
+        }
+    }
+
+    public static MapRenderer createIntruderRenderer(OfflinePlayer creator) {
+        return new MapRenderer() {
+            final OfflinePlayer owner = creator;
+            int blocksPerPixel = 0;
+
+            public void render(MapView view, MapCanvas canvas, Player p) {
+                if(blocksPerPixel == 0)
+                    blocksPerPixel = getBlocksPerPixel(view.getScale());
+
+                if (intruders.size() > 0){
+                    int centerX = view.getCenterX();
+                    int centerZ = view.getCenterZ();
+
+                    addIntrudersToCanvas(canvas, centerX, centerZ, blocksPerPixel, owner);
+                }else{
+                    canvas.setCursors(new MapCursorCollection());
+                }
+            }
+        };
+    }
+
+    private static void addIntrudersToCanvas(MapCanvas canvas, int centerX, int centerZ, int blocksPerPixel, OfflinePlayer p) {
+        MapCursorCollection cursors = new MapCursorCollection();
+
+        for(String chunkID : intruders.keySet()) {
+            FileConfiguration claimData = plugin.cfg.getClaimData();
+
+            if (claimData.contains(chunkID)) {
+                String[] members = getMembers(chunkID);
+                boolean isMember = members != null && isMemberOfClaim(members, p);
+
+                if (isMember) {
+                    for (Player intruder : intruders.get(chunkID)) {
+                        int px = 2 * (intruder.getLocation().getBlockX() - centerX) / blocksPerPixel;
+                        int pz = 2 * (intruder.getLocation().getBlockZ() - centerZ) / blocksPerPixel;
+
+                        if (px <= 127 && px >= -128 && pz <= 127 && pz >= -128) {
+                            if(canvas.getBasePixel((px + 128) / 2, (pz + 128) / 2) != MapPalette.TRANSPARENT) {
+                                double yaw = intruder.getLocation().getYaw();
+                                byte direction = (byte) Math.min(15, Math.max(0, (((yaw + 371.25) % 360) / 22.5)));
+                                byte mx = (byte) px;
+                                byte mz = (byte) pz;
+                                MapCursor.Type type = MapCursor.Type.RED_POINTER;
+                                String caption = intruder.getName();
+
+                                MapCursor cursor = new MapCursor(mx, mz, direction, type, true, caption);
+                                cursors.addCursor(cursor);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        canvas.setCursors(cursors);
+    }
+
+    public static String getWorldName(World.Environment env){
+        return switch (env) {
+            case NORMAL -> "Overworld";
+            case NETHER -> "The Nether";
+            case THE_END -> "The End";
+            default -> "Unkown World";
+        };
     }
 }

@@ -47,6 +47,18 @@ enable-disguises: true
 disguise-duration: 5000
 # BETA FEATURE: When one player kills another, should the killed player's claims be transferred to the killer?
 enable-claim-takeovers: false
+# Should player's have to ability to create claim maps by right-clicking a lectern with a map in their main-hand?
+enable-claim-maps: true
+
+claim-map-colors:
+  my-claims:
+    r: 0
+    g: 255
+    b: 255
+  others-claims:
+    r: 255
+    g: 0
+    b: 255
 
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:

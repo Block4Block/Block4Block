@@ -5,14 +5,18 @@ import hasjamon.block4block.files.ConfigManager;
 import hasjamon.block4block.listener.*;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.map.MapView;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 public class Block4Block extends JavaPlugin{
     public PluginManager pluginManager = getServer().getPluginManager();
@@ -26,12 +30,15 @@ public class Block4Block extends JavaPlugin{
         this.getConfig().options().copyDefaults(true); // Makes config work properly
         instance = this; // Creates instance of the plugin
         cfg = new ConfigManager(); // Initializes config
+        populateKnownPlayers();
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
         setupHints(); // Prepares hints and starts broadcasting them
         if(this.getConfig().getBoolean("golems-guard-claims"))
             getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
         utils.minSecBetweenAlerts = this.getConfig().getInt("seconds-between-intruder-alerts");
+        if(this.getConfig().getBoolean("enable-claim-maps"))
+            addMapRenderers();
     }
 
     private void setupHints() {
@@ -114,6 +121,34 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new EntityExplode(this), this);
         if(this.getConfig().getBoolean("enable-disguises"))
             pluginManager.registerEvents(new EquipPlayerHead(this), this);
+        if(this.getConfig().getBoolean("enable-claim-maps"))
+            pluginManager.registerEvents(new LecternRightClick(this), this);
+    }
+
+    private void addMapRenderers() {
+        FileConfiguration claimMaps = cfg.getClaimMaps();
+        Set<String> mapIDs = claimMaps.getKeys(false);
+
+        for(String id : mapIDs){
+            MapView view = Bukkit.getMap(Integer.parseInt(id));
+            String uuid = claimMaps.getString(id);
+
+            if(view != null && uuid != null && view.getRenderers().size() == 1) {
+                OfflinePlayer mapCreator = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
+                view.addRenderer(utils.createClaimRenderer(mapCreator));
+                view.addRenderer(utils.createIntruderRenderer(mapCreator));
+            }else {
+                claimMaps.set(id, null);
+            }
+        }
+
+        cfg.saveClaimMaps();
+    }
+
+    private void populateKnownPlayers() {
+        for(OfflinePlayer p : Bukkit.getOfflinePlayers())
+            if(p != null && p.getName() != null)
+                utils.knownPlayers.add(p.getName().toLowerCase());
     }
 
     public static Block4Block getInstance(){
