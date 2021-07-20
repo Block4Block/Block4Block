@@ -149,7 +149,7 @@ public class utils {
         sendMessage.accept(chat("&eThis chunk has now been claimed!"));
         sendMessage.accept(chat("&aMembers who can access this chunk:"));
         for (String member : members) {
-            if (knownPlayers.contains(member)) {
+            if (knownPlayers.contains(member.toLowerCase())) {
                 sendMessage.accept(ChatColor.GRAY + " - " + member);
 
                 boolean isOffline = onlinePlayers.stream().noneMatch(op -> op.getName().equalsIgnoreCase(member));
