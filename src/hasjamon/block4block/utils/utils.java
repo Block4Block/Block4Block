@@ -94,6 +94,7 @@ public class utils {
                 setChunkClaim(block, members, sendMessage, null);
                 updateClaimCount();
                 plugin.cfg.saveClaimData();
+                plugin.cfg.saveOfflineClaimNotifications();
 
             }else{
                 sendMessage.accept(chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
@@ -118,6 +119,7 @@ public class utils {
                 }
                 updateClaimCount();
                 plugin.cfg.saveClaimData();
+                plugin.cfg.saveOfflineClaimNotifications();
             }
         }
     }
@@ -162,7 +164,6 @@ public class utils {
                         offlineClaimNotifications.set(name + ".masterbooks." + masterBookID, false);
                     else
                         offlineClaimNotifications.set(name + ".chunks." + chunkID, null);
-                    plugin.cfg.saveOfflineClaimNotifications();
                 }
             } else {
                 sendMessage.accept(ChatColor.GRAY + " - " + member + ChatColor.RED + " (unknown player)");
@@ -218,7 +219,6 @@ public class utils {
                         }else {
                             offlineClaimNotifications.set(name + ".chunks." + chunkID, lecternXYZ);
                         }
-                        plugin.cfg.saveOfflineClaimNotifications();
                     }
                 }
             }
@@ -289,10 +289,12 @@ public class utils {
             sendMessage.accept(ChatColor.RED + "You have removed this claim!");
 
         onChunkUnclaim(chunkID, members, blockLoc, null);
-        updateClaimCount();
+        plugin.cfg.saveOfflineClaimNotifications();
 
         plugin.cfg.getClaimTakeovers().set(chunkID, null);
         plugin.cfg.saveClaimTakeovers();
+
+        updateClaimCount();
     }
 
     public static void unclaimChunkBulk(Set<Block> blocks, String masterBookID, BookMeta meta) {
@@ -313,6 +315,7 @@ public class utils {
             onChunkUnclaim(chunkID, membersRemoved, bLoc, masterBookID);
         }
         plugin.cfg.saveClaimData();
+        plugin.cfg.saveOfflineClaimNotifications();
 
         masterBookChangeMsgSent = false;
         updateClaimCount();

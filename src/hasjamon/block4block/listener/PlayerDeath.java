@@ -69,6 +69,7 @@ public class PlayerDeath implements Listener {
 
                         utils.onChunkUnclaim(key, membersRemoved, xyz, null);
                         utils.onChunkClaim(key, Arrays.stream(membersAfter).toList(), null, null);
+                        plugin.cfg.saveOfflineClaimNotifications();
                     }
                 }
             }
