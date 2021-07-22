@@ -33,3 +33,7 @@ commands:
   welcome:
     description: Shows the welcome message.
     usage: /<command>
+  claimloc:
+    description: Shows you the location of the claim lectern in a claimed chunk.
+    usage: /<command>
+    permission: op

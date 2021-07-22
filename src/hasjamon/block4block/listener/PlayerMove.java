@@ -1,6 +1,7 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.utils.utils;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -9,8 +10,9 @@ import org.bukkit.event.player.PlayerMoveEvent;
 public class PlayerMove implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent e){
-        if(e.getTo() != null) {
-            Player p = e.getPlayer();
+        Player p = e.getPlayer();
+
+        if(p.getGameMode() == GameMode.SURVIVAL && e.getTo() != null) {
             String prevChunkID = utils.getChunkID(e.getFrom());
             String currentChunkID = utils.getChunkID(e.getTo());
 

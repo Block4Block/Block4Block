@@ -2,6 +2,7 @@ package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -23,6 +24,8 @@ public class BlockPlace implements Listener {
     public void onPlace(BlockPlaceEvent e) {
         Block b = e.getBlock();
         Player p = e.getPlayer();
+
+        if (p.getGameMode() == GameMode.CREATIVE) return;
 
         if(e.getBlockReplacedState().getType() == Material.AIR)
             utils.b4bGracePeriods.put(b, new Pair<>(System.nanoTime(), b.getType().name()));
