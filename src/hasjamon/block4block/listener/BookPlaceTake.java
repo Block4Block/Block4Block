@@ -118,32 +118,6 @@ public class BookPlaceTake implements Listener {
     public void onBookTake(PlayerTakeLecternBookEvent e){
         Block lecternBlock = e.getLectern().getBlock();
         String chunkID = utils.getChunkID(e.getLectern().getLocation());
-        ItemStack book = e.getBook();
-
-        // If it's a (copy of a) master book, remove it from the list of copies on lecterns
-        if(book != null){
-            BookMeta meta = (BookMeta) book.getItemMeta();
-
-            if(meta != null){
-                List<String> lore = meta.getLore();
-
-                if(lore != null){
-                    FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
-                    String bookID = String.join("", lore).substring(17);
-
-                    if(masterBooks.contains(bookID + ".copies-on-lecterns")) {
-                        List<String> copies = masterBooks.getStringList(bookID + ".copies-on-lecterns");
-                        Location bLoc = lecternBlock.getLocation();
-                        String xyz = bLoc.getBlockX() + "," + bLoc.getBlockY() + "," + bLoc.getBlockZ();
-
-                        copies.remove(chunkID + "!" + xyz);
-
-                        masterBooks.set(bookID + ".copies-on-lecterns", copies);
-                        plugin.cfg.saveMasterBooks();
-                    }
-                }
-            }
-        }
 
         if(plugin.cfg.getClaimData().contains(chunkID))
             if(utils.isClaimBlock(lecternBlock))

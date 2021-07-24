@@ -82,6 +82,20 @@ public class ConfigManager {
         }
     }
 
+    public boolean backupClaimData() {
+        String backupName = "claimdata-backup-" + System.nanoTime() + ".yml";
+        File backupFile = new File(this.plugin.getDataFolder(), backupName);
+
+        try {
+            this.claimDataCfg.save(backupFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Claim data has been backed up to " + backupName);
+            return true;
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to back up claim data to " + backupName);
+            return false;
+        }
+    }
+
     public FileConfiguration getHintSettings() {
         return this.hintSettingsCfg;
     }
@@ -152,6 +166,20 @@ public class ConfigManager {
         }
     }
 
+    public boolean backupMasterBooks() {
+        String backupName = "masterbooks-backup-" + System.nanoTime() + ".yml";
+        File backupFile = new File(this.plugin.getDataFolder(), backupName);
+
+        try {
+            this.masterBooksCfg.save(backupFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Master books have been backed up to " + backupName);
+            return true;
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to back up master books to " + backupName);
+            return false;
+        }
+    }
+
     public FileConfiguration getOfflineClaimNotifications() {
         return this.offlineClaimNotificationsCfg;
     }
@@ -162,6 +190,20 @@ public class ConfigManager {
             consoleSender.sendMessage(ChatColor.AQUA + "Offline claim notifications have been saved to offlineclaimnotifications.yml");
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save offline claim notifications to offlineclaimnotifications.yml");
+        }
+    }
+
+    public boolean backupOfflineClaimNotifications() {
+        String backupName = "offlineclaimnotifications-backup-" + System.nanoTime() + ".yml";
+        File backupFile = new File(this.plugin.getDataFolder(), backupName);
+
+        try {
+            this.offlineClaimNotificationsCfg.save(backupFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Offline claim notifications have been backed up to " + backupName);
+            return true;
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to back up offline claim notifications to " + backupName);
+            return false;
         }
     }
 

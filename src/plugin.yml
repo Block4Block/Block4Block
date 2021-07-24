@@ -37,3 +37,7 @@ commands:
     description: Shows you the location of the claim lectern in a claimed chunk.
     usage: /<command>
     permission: op
+  claimfix:
+    description: Checks each claim to make sure the lectern is still there; removes the claim if the lectern is missing.
+    usage: /<command> confirm
+    permission: op

@@ -86,6 +86,7 @@ public class PlayerDeath implements Listener {
             plugin.cfg.saveClaimData();
             plugin.cfg.saveMasterBooks();
             plugin.cfg.saveClaimTakeovers();
+            utils.updateClaimCount();
         }
     }
 }

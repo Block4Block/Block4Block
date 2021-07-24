@@ -6,6 +6,7 @@ import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.Lectern;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.craftbukkit.libs.org.eclipse.sisu.Nullable;
@@ -281,6 +282,35 @@ public class utils {
         Location blockLoc = block.getLocation();
         String chunkID = getChunkID(blockLoc);
         String[] members = getMembers(chunkID);
+
+        // If it's a (copy of a) master book, remove it from the list of copies on lecterns
+        if(block.getType() == Material.LECTERN){
+            Lectern lectern = (Lectern) block.getState();
+            ItemStack book = lectern.getInventory().getItem(0);
+
+            if(book != null){
+                BookMeta meta = (BookMeta) book.getItemMeta();
+
+                if(meta != null){
+                    List<String> lore = meta.getLore();
+
+                    if(lore != null){
+                        FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
+                        String bookID = String.join("", lore).substring(17);
+
+                        if(masterBooks.contains(bookID + ".copies-on-lecterns")) {
+                            List<String> copies = masterBooks.getStringList(bookID + ".copies-on-lecterns");
+                            String xyz = blockLoc.getBlockX() + "," + blockLoc.getBlockY() + "," + blockLoc.getBlockZ();
+
+                            copies.remove(chunkID + "!" + xyz);
+
+                            masterBooks.set(bookID + ".copies-on-lecterns", copies);
+                            plugin.cfg.saveMasterBooks();
+                        }
+                    }
+                }
+            }
+        }
 
         claimData.set(chunkID, null);
         plugin.cfg.saveClaimData();
