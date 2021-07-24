@@ -610,6 +610,9 @@ public class utils {
 
             refreshPlayerMethod.setAccessible(true);
             refreshPlayerMethod.invoke(disguiser);
+
+            // Fix visual bug that hides level/exp
+            disguiser.setExp(disguiser.getExp());
         } catch (InvocationTargetException | IllegalAccessException e) {
             e.printStackTrace();
         } catch (NoSuchMethodException e) {
