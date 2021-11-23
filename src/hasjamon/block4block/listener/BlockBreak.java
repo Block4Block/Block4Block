@@ -32,7 +32,7 @@ public class BlockBreak implements Listener {
     }
 
     // This Class is for the block break event (This runs every time a player breaks a block)
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onBreak(BlockBreakEvent e) {
         Player p = e.getPlayer();
         Block b = e.getBlock();
@@ -117,7 +117,7 @@ public class BlockBreak implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onBucketFill(PlayerBucketFillEvent e) {
         Player p = e.getPlayer();
         Block b = e.getBlock();

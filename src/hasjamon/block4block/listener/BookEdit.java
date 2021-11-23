@@ -28,7 +28,7 @@ public class BookEdit implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent e){
         Player p = e.getPlayer();
         Block clickedBlock = e.getClickedBlock();
