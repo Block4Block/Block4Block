@@ -5,24 +5,27 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 public class PlayerInteract implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent e){
-        Block b = e.getClickedBlock();
+        if(e.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            Block b = e.getClickedBlock();
 
-        if(isShovel(e.getMaterial()) && b != null){
-            if(b.getType() == Material.DIRT_PATH) {
-                utils.removeExpiredBlockChangeGracePeriods();
+            if (isShovel(e.getMaterial()) && b != null) {
+                if (b.getType() == Material.DIRT_PATH) {
+                    utils.removeExpiredBlockChangeGracePeriods();
 
-                // If the block is still covered by the grace period, change it back to grass_block
-                if (utils.blockChangeGracePeriods.containsKey(b.getLocation())) {
-                    b.setType(Material.GRASS_BLOCK);
-                    e.setCancelled(true);
+                    // If the block is still covered by the grace period, change it back to grass_block
+                    if (utils.blockChangeGracePeriods.containsKey(b.getLocation())) {
+                        b.setType(Material.GRASS_BLOCK);
+                        e.setCancelled(true);
+                    }
+                } else if (b.getType() == Material.GRASS_BLOCK) {
+                    utils.blockChangeGracePeriods.put(b.getLocation(), System.nanoTime());
                 }
-            }else if(b.getType() == Material.GRASS_BLOCK){
-                utils.blockChangeGracePeriods.put(b.getLocation(), System.nanoTime());
             }
         }
     }
