@@ -1,6 +1,7 @@
 package hasjamon.block4block.command;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.BedCmdSucceededEvent;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -34,6 +35,7 @@ public class BedCommand implements CommandExecutor {
                 p.sendMessage(ChatColor.GRAY + "It's been less than 24 hours since your last use of /bed!");
             }
 
+            plugin.pluginManager.callEvent(new BedCmdSucceededEvent(p));
             return true;
         }
         return false;

@@ -2,6 +2,7 @@ package hasjamon.block4block.listener;
 
 import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.ClaimLostWhileOfflineEvent;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -63,12 +64,17 @@ public class PlayerJoin implements Listener {
                 String worldName = utils.getWorldName(World.Environment.valueOf(chunkID.split("\\|")[0]));
                 p.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + xyz + " in " + worldName);
             }
+
+            plugin.pluginManager.callEvent(new ClaimLostWhileOfflineEvent(p));
         }
 
         if(masterBooksRemovedFrom != null){
-            for(String mbID : masterBooksRemovedFrom.getKeys(false))
-                if(masterBooksRemovedFrom.getBoolean(mbID))
+            for(String mbID : masterBooksRemovedFrom.getKeys(false)) {
+                if (masterBooksRemovedFrom.getBoolean(mbID)) {
                     p.sendMessage(ChatColor.RED + "Your name has been removed from Master Book #" + mbID + " and all related claims!");
+                    plugin.pluginManager.callEvent(new ClaimLostWhileOfflineEvent(p));
+                }
+            }
         }
 
         offlineClaimNotifications.set(pName, null);

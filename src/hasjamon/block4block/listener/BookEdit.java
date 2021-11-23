@@ -1,6 +1,7 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.MasterBookCreatedEvent;
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -155,11 +156,14 @@ public class BookEdit implements Listener {
             if (e.isSigning()) {
                 long nextID = getNextMasterBookID(false);
                 List<String> newLore = new ArrayList<>();
+
                 newLore.add(utils.chat("&6Master Book &7#" + nextID));
                 meta.setLore(newLore);
                 e.setNewBookMeta(meta);
                 masterBooks.set(nextID + ".pages", meta.getPages());
+
                 plugin.cfg.saveMasterBooks();
+                plugin.pluginManager.callEvent(new MasterBookCreatedEvent(p));
             }
         }else{
             String bookID = String.join("", lore).substring(17);

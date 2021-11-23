@@ -3,6 +3,7 @@ package hasjamon.block4block.command;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.HelpCmdSucceededEvent;
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -30,10 +31,13 @@ import java.util.List;
 import java.util.UUID;
 
 public class HelpCommand implements CommandExecutor, Listener {
+    private final Block4Block plugin;
     private final Inventory inv;
     private final List<ItemStack> clickableItems = new ArrayList<>();
 
     public HelpCommand(Block4Block plugin) {
+        this.plugin = plugin;
+
         plugin.pluginManager.registerEvents(this, plugin);
 
         // Create a new inventory with no owner (as this isn't a real inventory) and a size of nine
@@ -51,6 +55,8 @@ public class HelpCommand implements CommandExecutor, Listener {
             p.sendMessage(ChatColor.GOLD + "Hover over each item and read its description.");
             p.sendMessage(ChatColor.GRAY + "If you can't read the text; go to options -> video settings -> GUI scale (recommended: 2).");
             p.openInventory(inv);
+
+            plugin.pluginManager.callEvent(new HelpCmdSucceededEvent(p));
             return true;
         }
         return false;

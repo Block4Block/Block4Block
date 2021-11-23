@@ -1,6 +1,8 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.B4BlockBreakWithinGracePeriodEvent;
+import hasjamon.block4block.events.BlockBreakInClaimEvent;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -47,15 +49,19 @@ public class BlockBreak implements Listener {
 
                 // If the player is a member of the claim and the block is claim-blacklisted: Don't apply B4B rules
                 if (members != null && claimBlacklist != null) {
-                    if (claimBlacklist.contains(b.getType().toString()))
-                        if(utils.isMemberOfClaim(members, p))
+                    if (claimBlacklist.contains(b.getType().toString())) {
+                        if (utils.isMemberOfClaim(members, p)) {
+                            plugin.pluginManager.callEvent(new BlockBreakInClaimEvent(p, b, true));
                             return;
+                        }
+                    }
 
                     // If the chunk is claimed, you're not a member, and 'can-break-in-others-claims' isn't on
                     if (!cfg.getBoolean("can-break-in-others-claims")) {
                         // Cancel BlockBreakEvent, i.e., prevent block from breaking
                         e.setCancelled(true);
                         p.sendMessage(utils.chat("&cYou cannot break blocks in this claim"));
+                        plugin.pluginManager.callEvent(new BlockBreakInClaimEvent(p, b, false));
                         return;
                     }
                 }
@@ -102,8 +108,10 @@ public class BlockBreak implements Listener {
                 utils.b4bGracePeriods.remove(expired);
 
             // If the block is still covered by the grace period, do not apply B4B rules
-            if(utils.b4bGracePeriods.containsKey(b))
+            if(utils.b4bGracePeriods.containsKey(b)) {
+                plugin.pluginManager.callEvent(new B4BlockBreakWithinGracePeriodEvent(p, b, requiresBlock));
                 return;
+            }
 
             utils.b4bCheck(p, b, e, noloot, requiresBlock);
         }

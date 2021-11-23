@@ -1,5 +1,6 @@
 package hasjamon.block4block;
 
+import com.comphenix.protocol.utility.MinecraftReflection;
 import hasjamon.block4block.command.*;
 import hasjamon.block4block.files.ConfigManager;
 import hasjamon.block4block.listener.*;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class Block4Block extends JavaPlugin{
     public PluginManager pluginManager = getServer().getPluginManager();
     public ConfigManager cfg;
+    public boolean canUseReflection = true;
     private static Block4Block instance;
     private List<?> hints;
     private int nextHint = 0;
@@ -29,6 +31,7 @@ public class Block4Block extends JavaPlugin{
     public void onEnable() {
         this.getConfig().options().copyDefaults(true); // Makes config work properly
         instance = this; // Creates instance of the plugin
+        checkReflectionAvailability();
         cfg = new ConfigManager(); // Initializes config
         populateKnownPlayers();
         registerEvents(); // Registers all the listeners
@@ -39,6 +42,14 @@ public class Block4Block extends JavaPlugin{
         utils.minSecBetweenAlerts = this.getConfig().getInt("seconds-between-intruder-alerts");
         if(this.getConfig().getBoolean("enable-claim-maps"))
             addMapRenderers();
+    }
+
+    private void checkReflectionAvailability() {
+        try{
+            MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
+        } catch (NoClassDefFoundError | NoSuchMethodException e) {
+            canUseReflection = false;
+        }
     }
 
     private void setupHints() {

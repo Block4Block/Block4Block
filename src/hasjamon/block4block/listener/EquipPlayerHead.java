@@ -1,6 +1,7 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.PlayerDisguisedEvent;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -53,7 +54,7 @@ public class EquipPlayerHead implements Listener {
         if (meta != null && meta.getOwningPlayer() != null) {
             OfflinePlayer disguisee = meta.getOwningPlayer();
 
-            if(disguisee != null && disguisee.getFirstPlayed() > 0) {
+            if(disguisee.getFirstPlayed() > 0) {
                 long duration = plugin.getConfig().getLong("disguise-duration");
                 Player disguiser = (Player) whoClicked;
                 String disguiseMsg = "You're now disguised as " + disguisee.getName() + " for " + (duration / 1000) + " seconds";
@@ -61,6 +62,7 @@ public class EquipPlayerHead implements Listener {
                 utils.onLoseDisguise(disguiser);
                 utils.disguisePlayer(disguiser, disguisee);
                 utils.activeDisguises.put(disguiser, disguisee.getName());
+                plugin.pluginManager.callEvent(new PlayerDisguisedEvent(disguiser, disguisee));
 
                 BukkitTask undisguiseTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     utils.undisguiseTasks.remove(disguiser);

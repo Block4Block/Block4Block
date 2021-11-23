@@ -1,6 +1,8 @@
 package hasjamon.block4block.command;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.ClaimContestOverEvent;
+import hasjamon.block4block.events.ContestChunkClaimedEvent;
 import hasjamon.block4block.utils.utils;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
@@ -190,10 +192,19 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                             plugin.cfg.saveClaimContest();
 
                             Bukkit.broadcastMessage(ChatColor.GOLD + "THE CONTEST HAS ENDED!");
-                            if(!claimant.equals("No one"))
-                                Bukkit.broadcastMessage("And the winner is... " + ChatColor.GREEN + claimant + "!");
-                            else
+                            if(!claimant.equals("No one")) {
+                                Player player = Bukkit.getServer().getPlayerExact(claimant);
+                                String name = claimant;
+
+                                if(player != null) {
+                                    name = player.getName();
+                                    plugin.pluginManager.callEvent(new ClaimContestOverEvent(player));
+                                }
+
+                                Bukkit.broadcastMessage("And the winner is... " + ChatColor.GREEN + name + "!");
+                            }else {
                                 Bukkit.broadcastMessage("No one won this round! Better luck next time!");
+                            }
                             this.cancelContest();
                         } else {
                             String timeLeft = getTimeLeft(endTime, System.nanoTime());
@@ -223,8 +234,10 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                                 claimContest.set("data.claimant", claimant);
                                 plugin.cfg.saveClaimContest();
 
-                                if(!claimant.equals("No one"))
+                                if(!claimant.equals("No one")) {
                                     Bukkit.broadcastMessage(ChatColor.GOLD + claimant + " has claimed the Contest Chunk!");
+                                    plugin.pluginManager.callEvent(new ContestChunkClaimedEvent(claimant));
+                                }
                             }
                         }
                     }, 0, 20);

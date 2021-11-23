@@ -1,12 +1,14 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.BlockPlaceInClaimEvent;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -20,7 +22,7 @@ public class BlockPlace implements Listener {
     }
 
     // Prevent blocks from being placed in someone else's claim
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlace(BlockPlaceEvent e) {
         Block b = e.getBlock();
         Player p = e.getPlayer();
@@ -29,9 +31,6 @@ public class BlockPlace implements Listener {
 
         if(e.getBlockReplacedState().getType() == Material.AIR)
             utils.b4bGracePeriods.put(b, new Pair<>(System.nanoTime(), b.getType().name()));
-
-        if(b.getType() == Material.LECTERN)
-            return;
 
         // If the block was placed in a claimed chunk
         if (plugin.cfg.getClaimData().contains(utils.getChunkID(e.getBlockPlaced().getLocation()))) {
@@ -43,6 +42,7 @@ public class BlockPlace implements Listener {
                     if(utils.isMemberOfClaim(members, p))
                         return;
 
+                plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(p, b, false));
                 e.setCancelled(true);
                 p.sendMessage(utils.chat("&cYou cannot place blocks in this claim"));
             }
@@ -62,8 +62,9 @@ public class BlockPlace implements Listener {
                 if(utils.isMemberOfClaim(members, p))
                     return;
 
-                p.sendMessage(utils.chat("&cYou cannot empty buckets in this claim"));
+                plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(p, b, false));
                 e.setCancelled(true);
+                p.sendMessage(utils.chat("&cYou cannot empty buckets in this claim"));
             }
         }
     }

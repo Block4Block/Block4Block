@@ -4,6 +4,9 @@ import com.comphenix.protocol.utility.MinecraftReflection;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.B4BlockBreakEvent;
+import hasjamon.block4block.events.IntruderEnteredClaimEvent;
+import hasjamon.block4block.events.PlayerClaimsCountedEvent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Lectern;
@@ -24,6 +27,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
@@ -80,26 +84,22 @@ public class utils {
         return lecternX == b.getLocation().getX() && lecternY == b.getLocation().getY() && lecternZ == b.getLocation().getZ();
     }
 
-    public static boolean claimChunk(Block block, BookMeta meta, Consumer<String> sendMessage) {
-        if (meta != null) {
-            List<String> members = findMembersInBook(meta);
-
-            // If it's a valid claim book
-            if(members.size() > 0) {
-                // If the lectern is next to bedrock: Cancel
-                if(isNextToBedrock(block)){
-                    sendMessage.accept(chat("&cYou cannot place a claim next to bedrock"));
-                    return false;
-                }
-
-                setChunkClaim(block, members, sendMessage, null);
-                updateClaimCount();
-                plugin.cfg.saveClaimData();
-                plugin.cfg.saveOfflineClaimNotifications();
-
-            }else{
-                sendMessage.accept(chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
+    public static boolean claimChunk(Block block, List<String> members, Consumer<String> sendMessage) {
+        // If it's a valid claim book
+        if(members.size() > 0) {
+            // If the lectern is next to bedrock: Cancel
+            if(isNextToBedrock(block)){
+                sendMessage.accept(chat("&cYou cannot place a claim next to bedrock"));
+                return false;
             }
+
+            setChunkClaim(block, members, sendMessage, null);
+            updateClaimCount();
+            plugin.cfg.saveClaimData();
+            plugin.cfg.saveOfflineClaimNotifications();
+
+        }else{
+            sendMessage.accept(chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
         }
 
         return true;
@@ -147,28 +147,30 @@ public class utils {
         if(sendMessage == null)
             sendMessage = (msg) -> {};
         Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+        Map<Boolean, List<String>> doMembersExist =
+                members.stream().collect(
+                        Collectors.partitioningBy(m -> knownPlayers.contains(m.toLowerCase())));
 
         // Inform the player of the claim and its members
         sendMessage.accept(chat("&eThis chunk has now been claimed!"));
         sendMessage.accept(chat("&aMembers who can access this chunk:"));
-        for (String member : members) {
-            if (knownPlayers.contains(member.toLowerCase())) {
-                sendMessage.accept(ChatColor.GRAY + " - " + member);
+        for (String knownMember : doMembersExist.get(true)) {
+            sendMessage.accept(ChatColor.GRAY + " - " + knownMember);
 
-                boolean isOffline = onlinePlayers.stream().noneMatch(op -> op.getName().equalsIgnoreCase(member));
+            boolean isOffline = onlinePlayers.stream().noneMatch(op -> op.getName().equalsIgnoreCase(knownMember));
 
-                if(isOffline){
-                    String name = member.toLowerCase();
-                    FileConfiguration offlineClaimNotifications = plugin.cfg.getOfflineClaimNotifications();
+            if(isOffline){
+                String name = knownMember.toLowerCase();
+                FileConfiguration offlineClaimNotifications = plugin.cfg.getOfflineClaimNotifications();
 
-                    if(masterBookID != null)
-                        offlineClaimNotifications.set(name + ".masterbooks." + masterBookID, false);
-                    else
-                        offlineClaimNotifications.set(name + ".chunks." + chunkID, null);
-                }
-            } else {
-                sendMessage.accept(ChatColor.GRAY + " - " + member + ChatColor.RED + " (unknown player)");
+                if(masterBookID != null)
+                    offlineClaimNotifications.set(name + ".masterbooks." + masterBookID, false);
+                else
+                    offlineClaimNotifications.set(name + ".chunks." + chunkID, null);
             }
+        }
+        for (String unknownMember : doMembersExist.get(false)) {
+            sendMessage.accept(ChatColor.GRAY + " - " + unknownMember + ChatColor.RED + " (unknown player)");
         }
 
         for (Player player : onlinePlayers)
@@ -177,6 +179,8 @@ public class utils {
                     onIntruderEnterClaim(player, chunkID);
 
         lastClaimUpdate = System.nanoTime();
+
+        // plugin.pluginManager.callEvent(new ChunkClaimedEvent(doMembersExist.get(true)));
     }
 
     public static void onChunkUnclaim(String chunkID, String[] members, Location lecternLoc, String masterBookID){
@@ -358,10 +362,12 @@ public class utils {
         for(Player p : Bukkit.getOnlinePlayers()) {
             Integer pClaims = membersNumClaims.get(p.getName().toLowerCase());
 
-            if(pClaims == null)
+            if(pClaims == null) {
                 p.setPlayerListName(p.getName() + chat(" - &c0"));
-            else
+            }else {
                 p.setPlayerListName(p.getName() + chat(" - &c" + pClaims));
+                plugin.pluginManager.callEvent(new PlayerClaimsCountedEvent(p, pClaims));
+            }
         }
     }
 
@@ -410,9 +416,12 @@ public class utils {
                 if (!itemInInventory){
                     e.setCancelled(true);
                     p.sendMessage(chat("&aYou need &c" + requiredType + " &ain your quick-slots to break this!"));
+                    plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, false));
                     return;
                 }
             }
+
+            plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, true));
         }
 
         if(noloot)
@@ -499,6 +508,7 @@ public class utils {
                         String worldName = getWorldName(World.Environment.valueOf(chunkID.split("\\|")[0]));
                         p.sendMessage(ChatColor.RED + "An intruder has entered your claim at "+x+", "+y+", "+z+" in "+worldName);
                         lastIntrusionMsgReceived.put(p, now);
+                        plugin.pluginManager.callEvent(new IntruderEnteredClaimEvent(p));
                     }
                 }
             }
@@ -582,15 +592,18 @@ public class utils {
     }
 
     public static Collection<Property> getTextures(OfflinePlayer p){
-        try{
-            Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
-            GameProfile gp = (GameProfile) getProfile.invoke(p);
+        if(plugin.canUseReflection) {
+            try {
+                Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
+                GameProfile gp = (GameProfile) getProfile.invoke(p);
 
-            return gp.getProperties().get("textures");
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
-            return null;
+                return gp.getProperties().get("textures");
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                e.printStackTrace();
+            }
         }
+        
+        return null;
     }
 
     public static Collection<Property> getCachedTextures(OfflinePlayer p){
@@ -606,14 +619,16 @@ public class utils {
     }
 
     public static void setTextures(Player p, Collection<Property> textures){
-        try{
-            Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
-            GameProfile gp = (GameProfile) getProfile.invoke(p);
+        if(plugin.canUseReflection) {
+            try {
+                Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
+                GameProfile gp = (GameProfile) getProfile.invoke(p);
 
-            gp.getProperties().removeAll("textures");
-            gp.getProperties().putAll("textures", textures);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
+                gp.getProperties().removeAll("textures");
+                gp.getProperties().putAll("textures", textures);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -635,18 +650,20 @@ public class utils {
             }, 1);
         }
 
-        try {
-            Method refreshPlayerMethod = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("refreshPlayer");
+        if(plugin.canUseReflection) {
+            try {
+                Method refreshPlayerMethod = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("refreshPlayer");
 
-            refreshPlayerMethod.setAccessible(true);
-            refreshPlayerMethod.invoke(disguiser);
+                refreshPlayerMethod.setAccessible(true);
+                refreshPlayerMethod.invoke(disguiser);
 
-            // Fix visual bug that hides level/exp
-            disguiser.setExp(disguiser.getExp());
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            isPaperServer = false;
+                // Fix visual bug that hides level/exp
+                disguiser.setExp(disguiser.getExp());
+            } catch (InvocationTargetException | IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (NoSuchMethodException e) {
+                isPaperServer = false;
+            }
         }
     }
 

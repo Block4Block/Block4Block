@@ -1,6 +1,7 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.ClaimMapCreatedEvent;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -65,6 +66,7 @@ public class LecternRightClick implements Listener {
 
                             claimMaps.set(Integer.toString(newView.getId()), p.getUniqueId().toString());
                             plugin.cfg.saveClaimMaps();
+                            plugin.pluginManager.callEvent(new ClaimMapCreatedEvent(p));
                         }
                     }
                 }

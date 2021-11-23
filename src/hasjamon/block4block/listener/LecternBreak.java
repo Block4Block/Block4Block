@@ -1,6 +1,7 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.ClaimRemovedEvent;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -29,8 +30,10 @@ public class LecternBreak implements Listener {
             // If the block is in a claimed chunk
             if (plugin.cfg.getClaimData().contains(chunkID) && utils.isClaimBlock(b)) {
                 Player p = e.getPlayer();
+                boolean isMember = utils.isMemberOfClaim(utils.getMembers(chunkID), p);
 
                 utils.unclaimChunk(b, true, p::sendMessage);
+                plugin.pluginManager.callEvent(new ClaimRemovedEvent(p, b, isMember));
             }
         }
     }

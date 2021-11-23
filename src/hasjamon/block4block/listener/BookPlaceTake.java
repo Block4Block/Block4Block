@@ -1,8 +1,9 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.events.ClaimBookPlacedEvent;
+import hasjamon.block4block.events.ClaimRemovedEvent;
 import hasjamon.block4block.utils.utils;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -26,7 +27,7 @@ public class BookPlaceTake implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent e){
         Block b = e.getBlock();
         Player p = e.getPlayer();
@@ -38,7 +39,6 @@ public class BookPlaceTake implements Listener {
             boolean isBook = (type == Material.WRITTEN_BOOK || type == Material.WRITABLE_BOOK);
             boolean canPlace = true;
             Location bLoc = b.getLocation();
-
             String chunkID = utils.getChunkID(bLoc);
             FileConfiguration claimData = plugin.cfg.getClaimData();
             boolean isClaimed = claimData.contains(chunkID);
@@ -64,18 +64,8 @@ public class BookPlaceTake implements Listener {
                             canPlace = false;
                             p.sendMessage(utils.chat("&cThis chunk is already claimed! Find the claim book or remove \"claim\" from your book to place it."));
                         }else {
-                            canPlace = utils.claimChunk(b, meta, p::sendMessage);
+                            canPlace = utils.claimChunk(b, utils.findMembersInBook(meta), p::sendMessage);
                         }
-                    }
-                }
-            }else{
-                if (p.getGameMode() == GameMode.CREATIVE) return;
-                String[] members = utils.getMembers(chunkID);
-
-                if(members != null){
-                    if(!utils.isMemberOfClaim(members, p)) {
-                        canPlace = false;
-                        p.sendMessage(utils.chat("&cYou cannot place blocks in this claim"));
                     }
                 }
             }
@@ -85,11 +75,14 @@ public class BookPlaceTake implements Listener {
                 if(isBook) {
                     ItemStack book = e.getItemInHand();
                     BookMeta meta = (BookMeta) book.getItemMeta();
+                    boolean isMasterBook = false;
+                    boolean isMember = utils.isMemberOfClaim(utils.getMembers(chunkID), p);
 
                     if (meta != null) {
                         List<String> lore = meta.getLore();
 
                         if (lore != null) {
+                            isMasterBook = true;
                             FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
                             String bookID = String.join("", lore).substring(17);
                             String xyz = bLoc.getBlockX() + "," + bLoc.getBlockY() + "," + bLoc.getBlockZ();
@@ -103,6 +96,8 @@ public class BookPlaceTake implements Listener {
                             plugin.cfg.saveMasterBooks();
                         }
                     }
+
+                    plugin.pluginManager.callEvent(new ClaimBookPlacedEvent(p, isMasterBook, isMember));
                 }
             } else {
                 e.setCancelled(true);
@@ -119,8 +114,14 @@ public class BookPlaceTake implements Listener {
         Block lecternBlock = e.getLectern().getBlock();
         String chunkID = utils.getChunkID(e.getLectern().getLocation());
 
-        if(plugin.cfg.getClaimData().contains(chunkID))
-            if(utils.isClaimBlock(lecternBlock))
-                utils.unclaimChunk(lecternBlock, true, e.getPlayer()::sendMessage);
+        if(plugin.cfg.getClaimData().contains(chunkID)) {
+            if (utils.isClaimBlock(lecternBlock)) {
+                Player player = e.getPlayer();
+                boolean isMember = utils.isMemberOfClaim(utils.getMembers(chunkID), player);
+
+                utils.unclaimChunk(lecternBlock, true, player::sendMessage);
+                plugin.pluginManager.callEvent(new ClaimRemovedEvent(player, lecternBlock, isMember));
+            }
+        }
     }
 }
