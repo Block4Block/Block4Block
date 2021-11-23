@@ -3,6 +3,7 @@ package hasjamon.block4block.listener;
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.BlockPlaceInClaimEvent;
 import hasjamon.block4block.utils.utils;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -29,24 +30,24 @@ public class BlockPlace implements Listener {
 
         if (p.getGameMode() == GameMode.CREATIVE) return;
 
-        if(e.getBlockReplacedState().getType() == Material.AIR)
-            utils.b4bGracePeriods.put(b, new Pair<>(System.nanoTime(), b.getType().name()));
-
         // If the block was placed in a claimed chunk
         if (plugin.cfg.getClaimData().contains(utils.getChunkID(e.getBlockPlaced().getLocation()))) {
             String[] members = utils.getMembers(b.getLocation());
 
-            if (!utils.isClaimBlock(b)){
-                // If the player placing the block is a member: Don't prevent block placement
-                if (members != null)
-                    if(utils.isMemberOfClaim(members, p))
-                        return;
-
-                plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(p, b, false));
-                e.setCancelled(true);
-                p.sendMessage(utils.chat("&cYou cannot place blocks in this claim"));
+            // If the block isn't the lectern claiming the chunk and the player isn't placing an easily breakable crop
+            if (!utils.isClaimBlock(b) && !isEasilyBreakableCrop(b.getType())){
+                // If the player placing the block isn't a member: Prevent block placement
+                if (members == null || !utils.isMemberOfClaim(members, p)) {
+                    plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(p, b, false));
+                    e.setCancelled(true);
+                    p.sendMessage(utils.chat("&cYou cannot place blocks in this claim"));
+                    return;
+                }
             }
         }
+
+        if(e.getBlockReplacedState().getType() == Material.AIR)
+            utils.b4bGracePeriods.put(b, new Pair<>(System.nanoTime(), b.getType().name()));
     }
 
     @EventHandler
@@ -59,12 +60,22 @@ public class BlockPlace implements Listener {
             String[] members = utils.getMembers(b.getLocation());
 
             if (members != null) {
-                if(utils.isMemberOfClaim(members, p))
-                    return;
+                if(!utils.isMemberOfClaim(members, p)) {
+                    plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(p, b, false));
+                    e.setCancelled(true);
+                    p.sendMessage(utils.chat("&cYou cannot empty buckets in this claim"));
+                }
+            }
+        }
+    }
 
-                plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(p, b, false));
-                e.setCancelled(true);
-                p.sendMessage(utils.chat("&cYou cannot empty buckets in this claim"));
+    private boolean isEasilyBreakableCrop(Material blockType) {
+        switch (blockType){
+            case WHEAT, POTATOES, CARROTS, BEETROOTS, SUGAR_CANE, COCOA, NETHER_WART -> {
+                return true;
+            }
+            default -> {
+                return false;
             }
         }
     }
