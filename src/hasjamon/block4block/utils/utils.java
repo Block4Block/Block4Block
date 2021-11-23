@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
     public static final Map<Block, Pair<Long, String>> b4bGracePeriods = new LinkedHashMap<>();
+    public static final Map<Location, Long> blockChangeGracePeriods = new LinkedHashMap<>();
     public static final Map<String, Set<Player>> intruders = new HashMap<>();
     public static final Map<IronGolem, String> ironGolems = new HashMap<>();
     public static final Map<Player, Set<String>> playerClaimsIntruded = new HashMap<>();
@@ -44,6 +45,7 @@ public class utils {
     private static boolean masterBookChangeMsgSent = false;
     public static boolean isPaperServer = true;
     public static long lastClaimUpdate = 0;
+    public static int gracePeriod = 0;
 
     public static String chat(String message) {
         return ChatColor.translateAlternateColorCodes('&', message);
@@ -877,5 +879,30 @@ public class utils {
             case THE_END -> "The End";
             default -> "Unkown World";
         };
+    }
+
+    public static void removeExpiredB4BGracePeriods() {
+        Set<Block> expiredGracePeriods = new HashSet<>();
+
+        // Grace periods count as expired if x seconds have passed or the block's material has changed
+        for(Map.Entry<Block, Pair<Long, String>> entry : b4bGracePeriods.entrySet())
+            if (System.nanoTime() - entry.getValue().getA() >= gracePeriod * 1e9
+                    || !entry.getValue().getB().equals(entry.getKey().getType().name()))
+                expiredGracePeriods.add(entry.getKey());
+
+        for(Block expired : expiredGracePeriods)
+            b4bGracePeriods.remove(expired);
+    }
+
+    public static void removeExpiredBlockChangeGracePeriods() {
+        Set<Location> expiredGracePeriods = new HashSet<>();
+
+        // Grace periods count as expired if x seconds have passed or the block's material has changed
+        for(Map.Entry<Location, Long> entry : blockChangeGracePeriods.entrySet())
+            if (System.nanoTime() - entry.getValue() >= gracePeriod * 1e9)
+                expiredGracePeriods.add(entry.getKey());
+
+        for(Location expired : expiredGracePeriods)
+            blockChangeGracePeriods.remove(expired);
     }
 }

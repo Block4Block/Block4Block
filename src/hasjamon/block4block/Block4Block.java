@@ -40,6 +40,7 @@ public class Block4Block extends JavaPlugin{
         if(this.getConfig().getBoolean("golems-guard-claims"))
             getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
         utils.minSecBetweenAlerts = this.getConfig().getInt("seconds-between-intruder-alerts");
+        utils.gracePeriod = this.getConfig().getInt("b4b-grace-period");
         if(this.getConfig().getBoolean("enable-claim-maps"))
             addMapRenderers();
     }
@@ -139,6 +140,7 @@ public class Block4Block extends JavaPlugin{
         if(this.getConfig().getBoolean("enable-claim-maps"))
             pluginManager.registerEvents(new LecternRightClick(this), this);
         pluginManager.registerEvents(new MapCraft(), this);
+        pluginManager.registerEvents(new PlayerInteract(), this);
     }
 
     private void addMapRenderers() {

@@ -13,22 +13,16 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
-import oshi.util.tuples.Pair;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 
 public class BlockBreak implements Listener {
     private final Block4Block plugin;
-    private final int gracePeriod;
     private long andesiteLatestBreak = 0;
 
     public BlockBreak(Block4Block plugin){
         this.plugin = plugin;
-        this.gracePeriod = plugin.getConfig().getInt("b4b-grace-period");
     }
 
     // This Class is for the block break event (This runs every time a player breaks a block)
@@ -97,15 +91,7 @@ public class BlockBreak implements Listener {
             // Are drops disabled for this block type
             boolean noloot = lootDisabled.contains(b.getType().toString());
 
-            Set<Block> expiredGracePeriods = new HashSet<>();
-
-            // Grace periods count as expired if x seconds have passed or the block's material has changed
-            for(Map.Entry<Block, Pair<Long, String>> entry : utils.b4bGracePeriods.entrySet())
-                if (System.nanoTime() - entry.getValue().getA() >= gracePeriod * 1e9 || !entry.getValue().getB().equals(entry.getKey().getType().name()))
-                    expiredGracePeriods.add(entry.getKey());
-
-            for(Block expired : expiredGracePeriods)
-                utils.b4bGracePeriods.remove(expired);
+            utils.removeExpiredB4BGracePeriods();
 
             // If the block is still covered by the grace period, do not apply B4B rules
             if(utils.b4bGracePeriods.containsKey(b)) {
