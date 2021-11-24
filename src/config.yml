@@ -39,8 +39,6 @@ spawn-egg-chance: 0.01
 named-chicken-radius: 5
 # Enable lava immunity for itemless players
 enable-lava-immunity: true
-# When sand explodes, should it drop sand?
-sand-drops-when-exploded: false
 # Whether or not equipping a player head should activate a disguise
 enable-disguises: true
 # How many milliseconds disguises should be active
@@ -112,6 +110,30 @@ claim-explosion-immunity:
 # Blocks endermen aren't allowed to place inside claims
 enderman-place-in-claim-blacklist:
   - GRASS_BLOCK
+
+# Blocks destroyed by TNT explosions only drop if on this list
+tnt-drops-enabled:
+  - GRANITE
+  - DIORITE
+  - GLOWSTONE
+  - CRAFTING_TABLE
+  - WHITE_BED
+  - ORANGE_BED
+  - MAGENTA_BED
+  - LIGHT_BLUE_BED
+  - YELLOW_BED
+  - LIME_BED
+  - PINK_BED
+  - GRAY_BED
+  - LIGHT_GRAY_BED
+  - CYAN_BED
+  - PURPLE_BED
+  - BLUE_BED
+  - BROWN_BED
+  - GREEN_BED
+  - RED_BED
+  - BLACK_BED
+  - BED
 
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:

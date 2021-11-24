@@ -6,7 +6,9 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
@@ -19,8 +21,8 @@ public class EntityExplode implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler
-    public void onTNTExplode(EntityExplodeEvent e){
+    @EventHandler(priority = EventPriority.LOW)
+    public void onEntityExplode(EntityExplodeEvent e){
         World.Environment environment = e.getEntity().getWorld().getEnvironment();
         String dimension = switch(environment){
             case NORMAL -> "overworld";
@@ -31,16 +33,22 @@ public class EntityExplode implements Listener {
 
         List<?> claimImmunity = plugin.getConfig().getList("claim-explosion-immunity." + dimension);
 
+        // If claims in the current dimension are immune to explosions from the entity
         if(claimImmunity != null && claimImmunity.contains(e.getEntityType().toString())){
             FileConfiguration claimData = plugin.cfg.getClaimData();
 
+            // Remove blocks from the to-be-exploded list if they're inside a claim
             e.blockList().removeIf(b -> claimData.contains(utils.getChunkID(b.getLocation())));
         }
 
-        // Remove sand drops
-        if(!plugin.getConfig().getBoolean("sand-drops-when-exploded"))
-            for(Block block : e.blockList())
-                if (block.getType() == Material.SAND)
+        if(e.getEntityType() == EntityType.PRIMED_TNT || e.getEntityType() == EntityType.MINECART_TNT) {
+            List<String> tntDropsEnabled = plugin.getConfig().getStringList("tnt-drops-enabled");
+
+            for (Block block : e.blockList()) {
+                if(!tntDropsEnabled.contains(block.getType().toString())){
                     block.setType(Material.AIR);
+                }
+            }
+        }
     }
 }
