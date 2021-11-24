@@ -3,7 +3,6 @@ package hasjamon.block4block.listener;
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.BlockPlaceInClaimEvent;
 import hasjamon.block4block.utils.utils;
-import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -46,7 +45,7 @@ public class BlockPlace implements Listener {
             }
         }
 
-        if(e.getBlockReplacedState().getType() == Material.AIR)
+        if(e.getBlockReplacedState().getType() == Material.AIR || e.getBlockReplacedState().getType() == Material.WATER)
             utils.b4bGracePeriods.put(b, new Pair<>(System.nanoTime(), b.getType().name()));
     }
 
