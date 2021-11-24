@@ -21,12 +21,23 @@ public class PlayerInteract implements Listener {
 
                     // If the block is still covered by the grace period, change it back to grass_block
                     if (utils.blockChangeGracePeriods.containsKey(b.getLocation())) {
-                        b.setType(itemType == Material.GOLDEN_SHOVEL ? Material.DIRT : Material.GRASS_BLOCK);
+                        b.setType(isExpensiveShovel(itemType) ? Material.DIRT : Material.GRASS_BLOCK);
                         e.setCancelled(true);
                     }
                 } else if (b.getType() == Material.GRASS_BLOCK) {
                     utils.blockChangeGracePeriods.put(b.getLocation(), System.nanoTime());
                 }
+            }
+        }
+    }
+
+    private boolean isExpensiveShovel(Material mat){
+        switch (mat){
+            case NETHERITE_SHOVEL, DIAMOND_SHOVEL, GOLDEN_SHOVEL -> {
+                return true;
+            }
+            default -> {
+                return false;
             }
         }
     }
