@@ -109,6 +109,10 @@ claim-explosion-immunity:
     - FIREBALL
     - WITHER_SKULL
 
+# Blocks endermen aren't allowed to place inside claims
+enderman-place-in-claim-blacklist:
+  - GRASS_BLOCK
+
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
 - PISTON

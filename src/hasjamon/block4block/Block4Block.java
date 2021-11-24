@@ -141,6 +141,7 @@ public class Block4Block extends JavaPlugin{
             pluginManager.registerEvents(new LecternRightClick(this), this);
         pluginManager.registerEvents(new MapCraft(), this);
         pluginManager.registerEvents(new PlayerInteract(), this);
+        pluginManager.registerEvents(new EntityChangeBlock(this), this);
     }
 
     private void addMapRenderers() {
