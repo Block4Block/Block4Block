@@ -13,14 +13,15 @@ public class PlayerInteract implements Listener {
     public void onInteract(PlayerInteractEvent e){
         if(e.getAction() == Action.RIGHT_CLICK_BLOCK) {
             Block b = e.getClickedBlock();
+            Material itemType = e.getMaterial();
 
-            if (isShovel(e.getMaterial()) && b != null) {
+            if (isShovel(itemType) && b != null) {
                 if (b.getType() == Material.DIRT_PATH) {
                     utils.removeExpiredBlockChangeGracePeriods();
 
                     // If the block is still covered by the grace period, change it back to grass_block
                     if (utils.blockChangeGracePeriods.containsKey(b.getLocation())) {
-                        b.setType(Material.GRASS_BLOCK);
+                        b.setType(itemType == Material.GOLDEN_SHOVEL ? Material.DIRT : Material.GRASS_BLOCK);
                         e.setCancelled(true);
                     }
                 } else if (b.getType() == Material.GRASS_BLOCK) {
