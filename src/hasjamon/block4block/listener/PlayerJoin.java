@@ -28,12 +28,10 @@ public class PlayerJoin implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
-        List<String> welcomeMessages = plugin.getConfig().getStringList("welcome-messages");
 
         if(!p.hasPlayedBefore()) {
             utils.knownPlayers.add(p.getName().toLowerCase());
-            for (String msg : welcomeMessages)
-                p.sendMessage(utils.chat(msg));
+            utils.sendWelcomeMsg(p);
         }else {
             utils.populatePlayerClaimsIntruded(p);
         }

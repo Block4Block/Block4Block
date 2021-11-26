@@ -5,6 +5,7 @@ import hasjamon.block4block.utils.utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import java.util.List;
 
@@ -16,11 +17,12 @@ public class WelcomeCommand implements CommandExecutor {
     }
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
-        List<String> welcomeMessages = plugin.getConfig().getStringList("welcome-messages");
+        if(sender instanceof Player player) {
+            utils.sendWelcomeMsg(player);
 
-        for(String msg : welcomeMessages)
-            sender.sendMessage(utils.chat(msg));
+            return true;
+        }
 
-        return true;
+        return false;
     }
 }

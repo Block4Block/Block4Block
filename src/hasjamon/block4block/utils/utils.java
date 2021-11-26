@@ -7,6 +7,7 @@ import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.B4BlockBreakEvent;
 import hasjamon.block4block.events.IntruderEnteredClaimEvent;
 import hasjamon.block4block.events.PlayerClaimsCountedEvent;
+import hasjamon.block4block.events.WelcomeMsgSentEvent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Lectern;
@@ -904,5 +905,15 @@ public class utils {
 
         for(Location expired : expiredGracePeriods)
             blockChangeGracePeriods.remove(expired);
+    }
+
+    public static void sendWelcomeMsg(Player player) {
+        List<String> welcomeMessages = plugin.getConfig().getStringList("welcome-messages");
+
+        for (String msg : welcomeMessages) {
+            player.sendMessage(utils.chat(msg));
+        }
+
+        plugin.pluginManager.callEvent(new WelcomeMsgSentEvent(player));
     }
 }
