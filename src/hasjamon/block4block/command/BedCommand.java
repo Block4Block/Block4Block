@@ -27,9 +27,9 @@ public class BedCommand implements CommandExecutor {
             FileConfiguration bedCommandUsage = plugin.cfg.getBedCommandUsage();
             long now = System.nanoTime();
             long nextAvailable = bedCommandUsage.getLong(pID, 0);
-            long diff = now - nextAvailable;
+            long diff = nextAvailable - now;
 
-            if(now > nextAvailable){
+            if(diff <= 0){
                 player.getInventory().addItem(new ItemStack(Material.WHITE_BED, 1));
                 player.sendMessage(ChatColor.GRAY + "A bed has been added to your inventory!");
 
