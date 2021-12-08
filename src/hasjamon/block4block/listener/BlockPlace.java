@@ -45,8 +45,10 @@ public class BlockPlace implements Listener {
             }
         }
 
-        if(e.getBlockReplacedState().getType() == Material.AIR || e.getBlockReplacedState().getType() == Material.WATER)
-            utils.b4bGracePeriods.put(b, new Pair<>(System.nanoTime(), b.getType().name()));
+        switch(e.getBlockReplacedState().getType()){
+            case AIR, CAVE_AIR, WATER, LAVA, GRASS, TALL_GRASS:
+                utils.b4bGracePeriods.put(b, new Pair<>(System.nanoTime(), b.getType().name()));
+        }
     }
 
     @EventHandler
