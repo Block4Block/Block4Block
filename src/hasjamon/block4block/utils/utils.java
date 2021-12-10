@@ -15,6 +15,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.craftbukkit.libs.org.eclipse.sisu.Nullable;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -429,6 +430,38 @@ public class utils {
 
         if(noloot)
             e.setDropItems(false);
+    }
+
+    // Returns log2(n + 2)
+    public static double calcGeneralChickenBonus(double numNamedChickens){
+        // log2(x) = log(x) / log(2)
+        return Math.log(numNamedChickens + 2) / Math.log(2);
+    }
+
+    public static Pair<Map<Character, Integer>, Integer> calcChickenBonuses(Entity center) {
+        int radius = plugin.getConfig().getInt("named-chicken-radius");
+        List<Entity> nearbyEntities = center.getNearbyEntities(radius, radius, radius);
+        Set<String> namedChickensPos = new HashSet<>();
+        Map<Character, Integer> letterBonuses = new HashMap<>();
+
+        for(Entity ne : nearbyEntities){
+            if(ne.getType() == EntityType.CHICKEN){
+                String chickenName = ne.getCustomName();
+
+                if(chickenName != null) {
+                    Location loc = ne.getLocation();
+                    String pos = loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
+
+                    // If no other named chicken has been found at that location
+                    if (!namedChickensPos.contains(pos)) {
+                        namedChickensPos.add(pos);
+                        letterBonuses.merge(chickenName.toLowerCase().charAt(0), 1, Integer::sum);
+                    }
+                }
+            }
+        }
+
+        return new Pair<>(letterBonuses, namedChickensPos.size());
     }
 
     public static Material getRandomSpawnEgg(Map<Character, Integer> letterBonuses){

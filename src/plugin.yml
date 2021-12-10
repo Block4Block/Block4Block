@@ -41,3 +41,6 @@ commands:
     description: Checks each claim to make sure the lectern is still there; removes the claim if the lectern is missing.
     usage: /<command> confirm
     permission: op
+  chickenbonus:
+    description: Shows you the number of named chickens whose aura radius you're inside as well as the total bonus.
+    usage: /<command>
