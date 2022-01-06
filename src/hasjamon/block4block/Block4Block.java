@@ -105,7 +105,7 @@ public class Block4Block extends JavaPlugin{
         }
         if(claimContestCmd != null) claimContestCmd.setExecutor(new ClaimContestCommand(this));
         if(bedCmd != null) bedCmd.setExecutor(new BedCommand(this));
-        if(welcomeCmd != null) welcomeCmd.setExecutor(new WelcomeCommand(this));
+        if(welcomeCmd != null) welcomeCmd.setExecutor(new WelcomeCommand());
         if(claimLocCmd != null) claimLocCmd.setExecutor(new ClaimLocCommand(this));
         if(claimFixCmd != null) claimFixCmd.setExecutor(new ClaimFixCommand(this));
         if(chickenBonusCmd != null) chickenBonusCmd.setExecutor(new ChickenBonusCommand(this));

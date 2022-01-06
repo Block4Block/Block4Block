@@ -911,7 +911,7 @@ public class utils {
             case NORMAL -> "Overworld";
             case NETHER -> "The Nether";
             case THE_END -> "The End";
-            default -> "Unkown World";
+            default -> "Unknown World";
         };
     }
 
