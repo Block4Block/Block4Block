@@ -13,7 +13,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Lectern;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.craftbukkit.libs.org.eclipse.sisu.Nullable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.IronGolem;
@@ -23,8 +22,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.map.*;
 import org.bukkit.scheduler.BukkitTask;
-import oshi.util.tuples.Pair;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
 
 public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
-    public static final Map<Block, Pair<Long, String>> b4bGracePeriods = new LinkedHashMap<>();
+    public static final Map<Block, GracePeriod> b4bGracePeriods = new LinkedHashMap<>();
     public static final Map<Location, Long> blockChangeGracePeriods = new LinkedHashMap<>();
     public static final Map<String, Set<Player>> intruders = new HashMap<>();
     public static final Map<IronGolem, String> ironGolems = new HashMap<>();
@@ -438,7 +437,7 @@ public class utils {
         return Math.log(numNamedChickens + 2) / Math.log(2);
     }
 
-    public static Pair<Map<Character, Integer>, Integer> calcChickenBonuses(Entity center) {
+    public static ChickenBonuses calcChickenBonuses(Entity center) {
         int radius = plugin.getConfig().getInt("named-chicken-radius");
         List<Entity> nearbyEntities = center.getNearbyEntities(radius, radius, radius);
         Set<String> namedChickensPos = new HashSet<>();
@@ -461,7 +460,7 @@ public class utils {
             }
         }
 
-        return new Pair<>(letterBonuses, namedChickensPos.size());
+        return new ChickenBonuses(letterBonuses, namedChickensPos.size());
     }
 
     public static Material getRandomSpawnEgg(Map<Character, Integer> letterBonuses){
@@ -758,7 +757,7 @@ public class utils {
         return new MapRenderer() {
             final OfflinePlayer owner = creator;
             long lastUpdate = 0;
-            Map<String, Pair<Integer, Integer>> claims = null;
+            Map<String, Coords2D> claims = null;
             int blocksPerPixel = 0;
 
             public void render(MapView view, MapCanvas canvas, Player p) {
@@ -773,7 +772,7 @@ public class utils {
 
                     if (world != null) {
                         World.Environment env = world.getEnvironment();
-                        Map<String, Pair<Integer, Integer>> claimsNow = findClaimsOnCanvas(env, centerX, centerZ, blocksPerPixel);
+                        Map<String, Coords2D> claimsNow = findClaimsOnCanvas(env, centerX, centerZ, blocksPerPixel);
                         addClaimsToCanvas(canvas, claims, claimsNow, owner, blocksPerPixel);
                         claims = claimsNow;
                         lastUpdate = System.nanoTime();
@@ -791,8 +790,8 @@ public class utils {
         };
     }
 
-    private static Map<String, Pair<Integer, Integer>> findClaimsOnCanvas(World.Environment env, int centerX, int centerZ, int blocksPerPixel) {
-        Map<String, Pair<Integer, Integer>> claims = new HashMap<>();
+    private static Map<String, Coords2D> findClaimsOnCanvas(World.Environment env, int centerX, int centerZ, int blocksPerPixel) {
+        Map<String, Coords2D> claims = new HashMap<>();
         int x = centerX - 64 * blocksPerPixel;
 
         for(int i = 0; i < 128; i += 16 / blocksPerPixel) {
@@ -803,7 +802,7 @@ public class utils {
                 FileConfiguration claimData = plugin.cfg.getClaimData();
 
                 if(claimData.contains(chunkID))
-                    claims.put(chunkID, new Pair<>(i, j));
+                    claims.put(chunkID, new Coords2D(i, j));
 
                 z += 16;
             }
@@ -814,14 +813,14 @@ public class utils {
         return claims;
     }
 
-    private static void addClaimsToCanvas(MapCanvas canvas, Map<String, Pair<Integer, Integer>> claimsBefore, Map<String, Pair<Integer, Integer>> claimsNow, OfflinePlayer p, int blocksPerPixel){
+    private static void addClaimsToCanvas(MapCanvas canvas, Map<String, Coords2D> claimsBefore, Map<String, Coords2D> claimsNow, OfflinePlayer p, int blocksPerPixel){
         if(claimsBefore != null) {
             claimsBefore.values().removeAll(claimsNow.values());
 
             for (String chunkID : claimsBefore.keySet()) {
-                Pair<Integer, Integer> ij = claimsBefore.get(chunkID);
-                int i = ij.getA();
-                int j = ij.getB();
+                Coords2D ij = claimsBefore.get(chunkID);
+                int i = ij.x;
+                int j = ij.z;
 
                 for (int k = 0; k < 16 / blocksPerPixel; k++)
                     for (int l = 0; l < 16 / blocksPerPixel; l++)
@@ -830,9 +829,9 @@ public class utils {
         }
 
         for(String chunkID : claimsNow.keySet()) {
-            Pair<Integer, Integer> ij = claimsNow.get(chunkID);
-            int i = ij.getA();
-            int j = ij.getB();
+            Coords2D ij = claimsNow.get(chunkID);
+            int i = ij.x;
+            int j = ij.z;
 
             String[] members = getMembers(chunkID);
             boolean isMember = members != null && isMemberOfClaim(members, p);
@@ -919,9 +918,9 @@ public class utils {
         Set<Block> expiredGracePeriods = new HashSet<>();
 
         // Grace periods count as expired if x seconds have passed or the block's material has changed
-        for(Map.Entry<Block, Pair<Long, String>> entry : b4bGracePeriods.entrySet())
-            if (System.nanoTime() - entry.getValue().getA() >= gracePeriod * 1e9
-                    || !entry.getValue().getB().equals(entry.getKey().getType().name()))
+        for(Map.Entry<Block, GracePeriod> entry : b4bGracePeriods.entrySet())
+            if (System.nanoTime() - entry.getValue().timestamp >= gracePeriod * 1e9
+                    || !entry.getValue().type.equals(entry.getKey().getType()))
                 expiredGracePeriods.add(entry.getKey());
 
         for(Block expired : expiredGracePeriods)

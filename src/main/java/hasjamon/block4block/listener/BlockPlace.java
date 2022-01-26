@@ -2,6 +2,7 @@ package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.BlockPlaceInClaimEvent;
+import hasjamon.block4block.utils.GracePeriod;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -12,7 +13,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
-import oshi.util.tuples.Pair;
 
 public class BlockPlace implements Listener {
     private final Block4Block plugin;
@@ -47,7 +47,7 @@ public class BlockPlace implements Listener {
 
         switch(e.getBlockReplacedState().getType()){
             case AIR, CAVE_AIR, WATER, LAVA, GRASS, TALL_GRASS:
-                utils.b4bGracePeriods.put(b, new Pair<>(System.nanoTime(), b.getType().name()));
+                utils.b4bGracePeriods.put(b, new GracePeriod(System.nanoTime(), b.getType()));
         }
     }
 

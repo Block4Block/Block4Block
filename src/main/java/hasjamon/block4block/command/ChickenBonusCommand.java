@@ -1,12 +1,12 @@
 package hasjamon.block4block.command;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.utils.ChickenBonuses;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import oshi.util.tuples.Pair;
 
 import java.util.Map;
 
@@ -19,9 +19,9 @@ public class ChickenBonusCommand implements CommandExecutor {
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
         if(sender instanceof Player player){
-            Pair<Map<Character, Integer>, Integer> bonuses = utils.calcChickenBonuses(player);
-            Map<Character, Integer> letterBonuses = bonuses.getA();
-            Integer numNamedChickens = bonuses.getB();
+            ChickenBonuses bonuses = utils.calcChickenBonuses(player);
+            Map<Character, Integer> letterBonuses = bonuses.letterBonuses;
+            int numNamedChickens = bonuses.numNamedChickens;
 
             double spawnChance = plugin.getConfig().getDouble("spawn-egg-chance");
             double withBonus = spawnChance * utils.calcGeneralChickenBonus(numNamedChickens);
