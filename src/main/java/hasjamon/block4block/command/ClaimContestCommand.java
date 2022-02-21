@@ -105,7 +105,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                             return false;
                         }
 
-                        claimContest.set("data.duration", minutes * (long) 6e10);
+                        claimContest.set("data.duration", minutes * (long) 6e4);
                         plugin.cfg.saveClaimContest();
                         break;
 
@@ -144,11 +144,11 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
 
     private void sendContestData(Player p){
         FileConfiguration claimContest = plugin.cfg.getClaimContest();
-        long durationNs = claimContest.getLong("data.duration", 0);
-        long endTime = System.nanoTime() + durationNs;
+        long durationMs = claimContest.getLong("data.duration", 0);
+        long endTime = System.currentTimeMillis() + durationMs;
 
         String chunkLoc = claimContest.getString("data.chunkLoc", "none");
-        String duration = getTimeLeft(endTime, System.nanoTime());
+        String duration = getTimeLeft(endTime, System.currentTimeMillis());
         String prize = claimContest.getString("data.prize", "none");
 
         p.sendMessage("Location: " + chunkLoc);
@@ -169,7 +169,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
             if(claimContest.contains("data.start-timestamp")) {
                 endTime = claimContest.getLong("data.start-timestamp") + duration;
             } else {
-                long now = System.nanoTime();
+                long now = System.currentTimeMillis();
                 endTime = now + duration;
                 claimContest.set("data.start-timestamp", now);
                 plugin.cfg.saveClaimContest();
@@ -177,7 +177,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
 
             return Bukkit.getScheduler().runTaskTimer(plugin,
                     () -> {
-                        if (System.nanoTime() >= endTime) {
+                        if (System.currentTimeMillis() >= endTime) {
                             String chunkLoc = claimContest.getString("data.chunkLoc", "none");
                             String claimant = claimData.getString(chunkID + ".members", "No one");
                             String prize = claimContest.getString("data.prize", "none");
@@ -207,7 +207,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                             }
                             this.cancelContest();
                         } else {
-                            String timeLeft = getTimeLeft(endTime, System.nanoTime());
+                            String timeLeft = getTimeLeft(endTime, System.currentTimeMillis());
 
                             String claimant = claimData.getString(chunkID + ".members", "No one");
                             claimant = claimant.split("\\n")[0];
@@ -246,7 +246,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
     }
 
     private String getTimeLeft(long endTime, long now) {
-        long secondsTotal = (endTime - now) / (long) 1e9;
+        long secondsTotal = (endTime - now) / (long) 1e3;
         long daysLeft = secondsTotal / SECONDS_PER_DAY;
         long hoursLeft = (secondsTotal % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
         long minutesLeft = (secondsTotal % SECONDS_PER_HOUR) / 60;

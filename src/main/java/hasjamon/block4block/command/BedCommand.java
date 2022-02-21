@@ -25,7 +25,7 @@ public class BedCommand implements CommandExecutor {
         if(sender instanceof Player player){
             String pID = player.getUniqueId().toString();
             FileConfiguration bedCommandUsage = plugin.cfg.getBedCommandUsage();
-            long now = System.nanoTime();
+            long now = System.currentTimeMillis();
             long nextAvailable = bedCommandUsage.getLong(pID, 0);
             long diff = nextAvailable - now;
 
@@ -33,11 +33,11 @@ public class BedCommand implements CommandExecutor {
                 player.getInventory().addItem(new ItemStack(Material.WHITE_BED, 1));
                 player.sendMessage(ChatColor.GRAY + "A bed has been added to your inventory!");
 
-                bedCommandUsage.set(pID, now + 24 * 60 * 60 * 1e9);
+                bedCommandUsage.set(pID, now + 24 * 60 * 60 * 1000);
                 plugin.cfg.saveBedCommandUsage();
             }else{
                 DecimalFormat decimals = new DecimalFormat("#.#");
-                String hours = decimals.format(diff / (60 * 60 * 1e9));
+                String hours = decimals.format(diff / (60 * 60 * 1000));
                 String msg = utils.chat("&7It's been less than 24 hours since your last use of /bed! Try again in " + hours + " hours.");
 
                 player.sendMessage(msg);

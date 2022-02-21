@@ -34,13 +34,13 @@ public class IgnoreCommand implements CommandExecutor, TabCompleter {
                 return false;
 
             String field = ignoree.getUniqueId() + "." + ignorer.getUniqueId();
-            long until = System.nanoTime();
+            long until = System.currentTimeMillis();
 
             switch (label.toLowerCase()) {
                 case "ignore":
                     if(args.length == 2)
                         if(args[1].matches("[0-9]+"))
-                            until += Long.parseLong(args[1]) * 6e10;
+                            until += Long.parseLong(args[1]) * 6e4;
                         else
                             return false;
                     else
@@ -55,7 +55,7 @@ public class IgnoreCommand implements CommandExecutor, TabCompleter {
                     return false;
             }
 
-            sendIgnoreMessage(ignorer, ignoreeName, System.nanoTime() < until);
+            sendIgnoreMessage(ignorer, ignoreeName, System.currentTimeMillis() < until);
             ignoreLists.set(field, until);
             plugin.cfg.saveIgnoreLists();
 

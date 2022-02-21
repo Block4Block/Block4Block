@@ -83,7 +83,7 @@ public class ConfigManager {
     }
 
     public boolean backupClaimData() {
-        String backupName = "claimdata-backup-" + System.nanoTime() + ".yml";
+        String backupName = "claimdata-backup-" + System.currentTimeMillis() + ".yml";
         File backupFile = new File(this.plugin.getDataFolder(), backupName);
 
         try {
@@ -167,7 +167,7 @@ public class ConfigManager {
     }
 
     public boolean backupMasterBooks() {
-        String backupName = "masterbooks-backup-" + System.nanoTime() + ".yml";
+        String backupName = "masterbooks-backup-" + System.currentTimeMillis() + ".yml";
         File backupFile = new File(this.plugin.getDataFolder(), backupName);
 
         try {
@@ -194,7 +194,7 @@ public class ConfigManager {
     }
 
     public boolean backupOfflineClaimNotifications() {
-        String backupName = "offlineclaimnotifications-backup-" + System.nanoTime() + ".yml";
+        String backupName = "offlineclaimnotifications-backup-" + System.currentTimeMillis() + ".yml";
         File backupFile = new File(this.plugin.getDataFolder(), backupName);
 
         try {
