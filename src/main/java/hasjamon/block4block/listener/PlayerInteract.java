@@ -1,5 +1,6 @@
 package hasjamon.block4block.listener;
 
+import hasjamon.block4block.utils.GracePeriod;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -21,11 +22,15 @@ public class PlayerInteract implements Listener {
 
                     // If the block is still covered by the grace period, change it back to grass_block
                     if (utils.blockChangeGracePeriods.containsKey(b.getLocation())) {
-                        b.setType(isExpensiveShovel(itemType) ? Material.DIRT : Material.GRASS_BLOCK);
+                        Material oldType = utils.blockChangeGracePeriods.get(b.getLocation()).type;
+
+                        b.setType(isExpensiveShovel(itemType) ? Material.DIRT : oldType);
                         e.setCancelled(true);
                     }
-                } else if (b.getType() == Material.GRASS_BLOCK) {
-                    utils.blockChangeGracePeriods.put(b.getLocation(), System.nanoTime());
+                } else if (b.getType() == Material.GRASS_BLOCK || b.getType() == Material.PODZOL) {
+                    GracePeriod gracePeriod = new GracePeriod(System.nanoTime(), b.getType());
+
+                    utils.blockChangeGracePeriods.put(b.getLocation(), gracePeriod);
                 }
             }
         }

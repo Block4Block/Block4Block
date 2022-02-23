@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
     public static final Map<Block, GracePeriod> b4bGracePeriods = new LinkedHashMap<>();
-    public static final Map<Location, Long> blockChangeGracePeriods = new LinkedHashMap<>();
+    public static final Map<Location, GracePeriod> blockChangeGracePeriods = new LinkedHashMap<>();
     public static final Map<String, Set<Player>> intruders = new HashMap<>();
     public static final Map<IronGolem, String> ironGolems = new HashMap<>();
     public static final Map<Player, Set<String>> playerClaimsIntruded = new HashMap<>();
@@ -931,8 +931,8 @@ public class utils {
         Set<Location> expiredGracePeriods = new HashSet<>();
 
         // Grace periods count as expired if x seconds have passed or the block's material has changed
-        for(Map.Entry<Location, Long> entry : blockChangeGracePeriods.entrySet())
-            if (System.nanoTime() - entry.getValue() >= gracePeriod * 1e9)
+        for(Map.Entry<Location, GracePeriod> entry : blockChangeGracePeriods.entrySet())
+            if (System.nanoTime() - entry.getValue().timestamp >= gracePeriod * 1e9)
                 expiredGracePeriods.add(entry.getKey());
 
         for(Location expired : expiredGracePeriods)
