@@ -113,6 +113,7 @@ enderman-place-in-claim-blacklist:
 
 # Blocks destroyed by TNT explosions only drop if on this list
 tnt-drops-enabled:
+  - TUFF
   - GRANITE
   - DIORITE
   - GLOWSTONE
