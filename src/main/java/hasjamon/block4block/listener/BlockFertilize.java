@@ -9,7 +9,7 @@ import org.bukkit.event.block.BlockFertilizeEvent;
 
 public class BlockFertilize implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onBlockFertize(BlockFertilizeEvent e) {
+    public void onBlockFertilize(BlockFertilizeEvent e) {
         Player p = e.getPlayer();
         String chunkID = utils.getChunkID(e.getBlock().getLocation());
         String[] members = utils.getMembers(chunkID);
