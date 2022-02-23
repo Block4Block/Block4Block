@@ -418,7 +418,7 @@ public class utils {
 
                 if (!itemInInventory){
                     e.setCancelled(true);
-                    p.sendMessage(chat("&aYou need &c" + requiredType + " &ain your quick-slots to break this!"));
+                    p.sendMessage(chat("&aYou need &c" + requiredType + " &ain your hotbar to break this!"));
                     plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, false));
                     return;
                 }
