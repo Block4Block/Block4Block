@@ -65,7 +65,7 @@ welcome-messages:
   - "2) GET STARTED &7with free-to-break blocks such as logs, ores, crafting tables, ladders, and torches."
   - "3) GET CREATIVE &7by luring creepers into giving you stone, killing pigs for dirt, and placing torches under falling gravel and sand."
   - "4) GET THROUGH THE NIGHT &7by typing /bed for a free bed. 24 hour cooldown."
-  - "5) LEARN MORE &7with the /b4bhelp command. Learn everything about Block4Block."
+  - "5) LEARN MORE &7by reading advancement descriptions. Press L now and take a look!"
   - "§aWe hope you enjoy the challenge!"
 
 # Hints that are shuffled at server start and shown one by one
@@ -85,6 +85,7 @@ hints:
   - "&6Hint #12: &eFishing can no longer give enchanted items, but may give some cool vanity items."
   - "&6Hint #13: &eYou can type /bed once a day to get a bed!"
   - "&6Hint #14: &eWhen placing blocks, there is a 5 second grace period where all players can remove them normally."
+  - "&6Hint #15: &ePress L to open advancements - they're a great way to learn about Block4Block as you play!"
   - "&6Hint #?: &eSheep are colourful and so are blocks!"
 
 # Entities that cannot blow up blocks in claims
