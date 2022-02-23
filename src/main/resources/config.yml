@@ -138,6 +138,7 @@ tnt-drops-enabled:
 
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
+- SPONGE
 - PISTON
 - OBSERVER
 - DISPENSER
@@ -273,6 +274,7 @@ blacklisted-claim-blocks:
 
 # Blocks that are exempt from Block4Block
 blacklisted-blocks:
+- WET_SPONGE
 - CRIMSON_NYLIUM
 - WARPED_NYLIUM
 - ANDESITE
@@ -1096,7 +1098,6 @@ no-loot-on-break:
 - WEATHERED_CUT_COPPER_SLAB
 - WEATHERED_CUT_COPPER_STAIRS
 - WEEPING_VINES
-- WET_SPONGE
 - WHITE_BANNER
 - WHITE_CANDLE
 - WHITE_CARPET
