@@ -26,9 +26,9 @@ public class EntityChangeBlock implements Listener {
 
             if (endermanBlacklist.contains(e.getTo().toString())) {
                 FileConfiguration claimData = plugin.cfg.getClaimData();
-                String chunkID = utils.getChunkID(b.getLocation());
+                String claimID = utils.getClaimID(b.getLocation());
 
-                if(claimData.contains(chunkID)) {
+                if(claimData.contains(claimID)) {
                     e.setCancelled(true);
                 }
             }

@@ -25,12 +25,12 @@ public class LecternBreak implements Listener {
         Block b = e.getBlock();
 
         if (b.getType() == Material.LECTERN) {
-            String chunkID = utils.getChunkID(b.getLocation());
+            String claimID = utils.getClaimID(b.getLocation());
 
             // If the block is in a claimed chunk
-            if (plugin.cfg.getClaimData().contains(chunkID) && utils.isClaimBlock(b)) {
+            if (plugin.cfg.getClaimData().contains(claimID) && utils.isClaimBlock(b)) {
                 Player p = e.getPlayer();
-                boolean isMember = utils.isMemberOfClaim(utils.getMembers(chunkID), p);
+                boolean isMember = utils.isMemberOfClaim(utils.getMembers(claimID), p);
 
                 utils.unclaimChunk(b, true, p::sendMessage);
                 plugin.pluginManager.callEvent(new ClaimRemovedEvent(p, b, isMember));

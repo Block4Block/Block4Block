@@ -40,6 +40,7 @@ public class Block4Block extends JavaPlugin{
         if(this.getConfig().getBoolean("golems-guard-claims"))
             getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
         utils.minSecBetweenAlerts = this.getConfig().getInt("seconds-between-intruder-alerts");
+        utils.claimWidth = this.getConfig().getInt("claim-width");
         utils.gracePeriod = this.getConfig().getInt("b4b-grace-period");
         if(this.getConfig().getBoolean("enable-claim-maps"))
             addMapRenderers();
@@ -126,7 +127,7 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new EntityDropItem(), this);
         pluginManager.registerEvents(new CreatureSpawn(), this);
         pluginManager.registerEvents(new PlayerChat(this), this);
-        pluginManager.registerEvents(new PlayerMove(), this);
+        pluginManager.registerEvents(new PlayerMove(this), this);
         pluginManager.registerEvents(new PlayerQuit(), this);
         pluginManager.registerEvents(new PlayerJoin(this), this);
         pluginManager.registerEvents(new PlayerDeath(this), this);

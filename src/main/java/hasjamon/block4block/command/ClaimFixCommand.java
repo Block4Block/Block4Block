@@ -12,7 +12,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class ClaimFixCommand implements CommandExecutor {
     private final Block4Block plugin;
@@ -27,39 +29,54 @@ public class ClaimFixCommand implements CommandExecutor {
             FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
 
             if(plugin.cfg.backupClaimData() && plugin.cfg.backupOfflineClaimNotifications() && plugin.cfg.backupMasterBooks()) {
-                for (String key : claimData.getKeys(false)) {
-                    double x = claimData.getDouble(key + ".location.X");
-                    double y = claimData.getDouble(key + ".location.Y");
-                    double z = claimData.getDouble(key + ".location.Z");
-                    String envName = key.split("\\|")[0];
+                Set<String> allScIDs = claimData.getKeys(false);
+
+                for (String scID : allScIDs) {
+                    double x = claimData.getDouble(scID + ".location.X");
+                    double y = claimData.getDouble(scID + ".location.Y");
+                    double z = claimData.getDouble(scID + ".location.Z");
+                    String envName = scID.split("\\|")[0];
 
                     for(World world : Bukkit.getWorlds()){
                         World.Environment env = World.Environment.valueOf(envName);
 
-                        if(world.getEnvironment() == World.Environment.valueOf(envName)){
+                        if(env == world.getEnvironment()){
                             Block block = world.getBlockAt((int) x, (int) y, (int) z);
+                            String xyz = x + ", " + y + ", " + z;
 
                             if (block.getType() != Material.LECTERN) {
-                                String xyz = x + ", " + y + ", " + z;
-                                String[] members = claimData.getString(key + ".members", "").split("\\n");
-                                claimData.set(key, null);
-                                utils.onChunkUnclaim(key, members, xyz, null);
-                                sender.sendMessage("Removed claim " + key + " at (" + xyz + ") in " + utils.getWorldName(env));
+                                removeClaim(claimData, scID, xyz);
+                                sender.sendMessage("Removed claim " + scID + " at (" + xyz + ") in " + utils.getWorldName(env));
+                            }else{
+                                String claimID = utils.getClaimID(block.getLocation());
+
+                                // This should only be true if the chunk-width has been changed
+                                if(!claimID.equals(scID)){
+                                    String[] members = claimData.getString(scID + ".members", "").split("\\n");
+
+                                    removeClaim(claimData, scID, xyz);
+                                    sender.sendMessage("Lectern outside claim: Removed claim " + scID + " at (" + xyz + ") in " + utils.getWorldName(env));
+
+                                    if(!allScIDs.contains(claimID)) {
+                                        utils.claimChunk(block, Arrays.stream(members).toList(), null);
+                                        sender.sendMessage("Lectern outside claim: Added claim " + claimID + " at (" + xyz + ") in " + utils.getWorldName(env));
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
-                for (String key : masterBooks.getKeys(false)) {
-                    if(!key.equalsIgnoreCase("next-id")) {
-                        List<String> copies = masterBooks.getStringList(key + ".copies-on-lecterns");
+                for (String mbook : masterBooks.getKeys(false)) {
+                    if(!mbook.equalsIgnoreCase("next-id")) {
+                        List<String> copies = masterBooks.getStringList(mbook + ".copies-on-lecterns");
                         List<String> copiesToRemove = new ArrayList<>();
 
                         for (String copy : copies) {
                             String[] parts = copy.split("!");
-                            String chunkID = parts[0];
+                            String claimID = parts[0];
                             String[] xyz = parts[1].split(",");
-                            String environment = chunkID.split("\\|")[0];
+                            String environment = claimID.split("\\|")[0];
                             World.Environment env = World.Environment.valueOf(environment);
                             int x = Integer.parseInt(xyz[0]);
                             int y = Integer.parseInt(xyz[1]);
@@ -71,7 +88,7 @@ public class ClaimFixCommand implements CommandExecutor {
 
                                     if (block.getType() != Material.LECTERN) {
                                         copiesToRemove.add(copy);
-                                        sender.sendMessage("Removed from Master Book #" + key + " copies-on-lecterns: (" + String.join(", ", xyz) + ") in " + utils.getWorldName(env));
+                                        sender.sendMessage("Removed from Master Book #" + mbook + " copies-on-lecterns: (" + String.join(", ", xyz) + ") in " + utils.getWorldName(env));
                                     }
                                 }
                             }
@@ -80,7 +97,7 @@ public class ClaimFixCommand implements CommandExecutor {
                         for(String copy : copiesToRemove)
                             copies.remove(copy);
 
-                        masterBooks.set(key + ".copies-on-lecterns", copies);
+                        masterBooks.set(mbook + ".copies-on-lecterns", copies);
                     }
                 }
 
@@ -93,5 +110,11 @@ public class ClaimFixCommand implements CommandExecutor {
         }
 
         return false;
+    }
+
+    private void removeClaim(FileConfiguration claimData, String scID, String xyz){
+        String[] members = claimData.getString(scID + ".members", "").split("\\n");
+        claimData.set(scID, null);
+        utils.onChunkUnclaim(scID, members, xyz, null);
     }
 }

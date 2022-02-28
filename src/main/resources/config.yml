@@ -45,8 +45,12 @@ enable-disguises: true
 disguise-duration: 5000
 # BETA FEATURE: When one player kills another, should the killed player's claims be transferred to the killer?
 enable-claim-takeovers: false
-# Should player's have to ability to create claim maps by right-clicking a lectern with a map in their main-hand?
+# Should players have to ability to create claim maps by right-clicking a lectern with a map in their main-hand?
 enable-claim-maps: true
+# How big a square of chunks should be claimed? Chunks are claimed in a grid, similar to the way Minecraft maps work.
+# NOTE: Changing this will hugely impact existing claims, which will likely invalidate many claims and move borders.
+# You should run /claimfix to check all claims.
+claim-width: 1 # 1x1 chunk
 
 claim-map-colors:
   my-claims:

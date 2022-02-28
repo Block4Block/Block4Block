@@ -10,9 +10,9 @@ public class PlayerRespawn implements Listener {
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent e){
         Player p = e.getPlayer();
-        String chunkID = utils.getChunkID(e.getRespawnLocation());
+        String claimID = utils.getClaimID(e.getRespawnLocation());
 
-        if(utils.isIntruder(p, chunkID))
-            utils.onIntruderEnterClaim(p, chunkID);
+        if(utils.isIntruder(p, claimID))
+            utils.onIntruderEnterClaim(p, claimID);
     }
 }

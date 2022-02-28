@@ -83,7 +83,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                             }
 
                             claimContest.set("data.chunkLoc", StringUtils.capitalize(dimension) + " (X: " + x + ", Z: " + z + ")");
-                            claimContest.set("data.chunkID", utils.getChunkID(x, z, environment));
+                            claimContest.set("data.claimID", utils.getClaimID(x, z, environment));
                             plugin.cfg.saveClaimContest();
                         }else{
                             return false;
@@ -160,10 +160,10 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
         FileConfiguration claimData = plugin.cfg.getClaimData();
         FileConfiguration claimContest = plugin.cfg.getClaimContest();
 
-        String chunkID = claimContest.getString("data.chunkID");
+        String claimID = claimContest.getString("data.claimID");
         long duration = claimContest.getLong("data.duration", 0);
 
-        if(duration > 0 && chunkID != null) {
+        if(duration > 0 && claimID != null) {
             final long endTime;
 
             if(claimContest.contains("data.start-timestamp")) {
@@ -179,7 +179,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                     () -> {
                         if (System.currentTimeMillis() >= endTime) {
                             String chunkLoc = claimContest.getString("data.chunkLoc", "none");
-                            String claimant = claimData.getString(chunkID + ".members", "No one");
+                            String claimant = claimData.getString(claimID + ".members", "No one");
                             String prize = claimContest.getString("data.prize", "none");
 
                             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MMM-dd_HH-mm");
@@ -209,7 +209,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                         } else {
                             String timeLeft = getTimeLeft(endTime, System.currentTimeMillis());
 
-                            String claimant = claimData.getString(chunkID + ".members", "No one");
+                            String claimant = claimData.getString(claimID + ".members", "No one");
                             claimant = claimant.split("\\n")[0];
 
                             String prize = claimContest.getString("data.prize", "none");

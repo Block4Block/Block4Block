@@ -16,15 +16,14 @@ public class ClaimLocCommand implements CommandExecutor {
     }
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
-        if(sender instanceof Player){
-            Player p = (Player) sender;
-            String chunkID = utils.getChunkID(p.getLocation());
+        if(sender instanceof Player p){
+            String claimID = utils.getClaimID(p.getLocation());
             FileConfiguration claimData = plugin.cfg.getClaimData();
 
-            if(claimData.contains(chunkID)){
-                double x = claimData.getDouble(chunkID + ".location.X");
-                double y = claimData.getDouble(chunkID + ".location.Y");
-                double z = claimData.getDouble(chunkID + ".location.Z");
+            if(claimData.contains(claimID)){
+                double x = claimData.getDouble(claimID + ".location.X");
+                double y = claimData.getDouble(claimID + ".location.Y");
+                double z = claimData.getDouble(claimID + ".location.Z");
 
                 p.sendMessage("Lectern is located at " + x + ", " + y + ", " + z);
             }else{

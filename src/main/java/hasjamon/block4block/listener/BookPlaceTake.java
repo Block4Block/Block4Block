@@ -39,9 +39,9 @@ public class BookPlaceTake implements Listener {
             boolean isBook = (type == Material.WRITTEN_BOOK || type == Material.WRITABLE_BOOK);
             boolean canPlace = true;
             Location bLoc = b.getLocation();
-            String chunkID = utils.getChunkID(bLoc);
+            String claimID = utils.getClaimID(bLoc);
             FileConfiguration claimData = plugin.cfg.getClaimData();
-            boolean isClaimed = claimData.contains(chunkID);
+            boolean isClaimed = claimData.contains(claimID);
 
             // If you're placing a book
             if(isBook){
@@ -76,7 +76,7 @@ public class BookPlaceTake implements Listener {
                     ItemStack book = e.getItemInHand();
                     BookMeta meta = (BookMeta) book.getItemMeta();
                     boolean isMasterBook = false;
-                    boolean isMember = utils.isMemberOfClaim(utils.getMembers(chunkID), p);
+                    boolean isMember = utils.isMemberOfClaim(utils.getMembers(claimID), p);
 
                     if (meta != null) {
                         List<String> lore = meta.getLore();
@@ -90,7 +90,7 @@ public class BookPlaceTake implements Listener {
 
                             if(masterBooks.contains(bookID + ".copies-on-lecterns"))
                                 copies = masterBooks.getStringList(bookID + ".copies-on-lecterns");
-                            copies.add(chunkID + "!" + xyz);
+                            copies.add(claimID + "!" + xyz);
 
                             masterBooks.set(bookID + ".copies-on-lecterns", copies);
                             plugin.cfg.saveMasterBooks();
@@ -112,12 +112,12 @@ public class BookPlaceTake implements Listener {
     @EventHandler
     public void onBookTake(PlayerTakeLecternBookEvent e){
         Block lecternBlock = e.getLectern().getBlock();
-        String chunkID = utils.getChunkID(e.getLectern().getLocation());
+        String claimID = utils.getClaimID(e.getLectern().getLocation());
 
-        if(plugin.cfg.getClaimData().contains(chunkID)) {
+        if(plugin.cfg.getClaimData().contains(claimID)) {
             if (utils.isClaimBlock(lecternBlock)) {
                 Player player = e.getPlayer();
-                boolean isMember = utils.isMemberOfClaim(utils.getMembers(chunkID), player);
+                boolean isMember = utils.isMemberOfClaim(utils.getMembers(claimID), player);
 
                 utils.unclaimChunk(lecternBlock, true, player::sendMessage);
                 plugin.pluginManager.callEvent(new ClaimRemovedEvent(player, lecternBlock, isMember));

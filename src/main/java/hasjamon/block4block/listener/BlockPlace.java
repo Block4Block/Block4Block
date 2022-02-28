@@ -30,7 +30,7 @@ public class BlockPlace implements Listener {
         if (p.getGameMode() == GameMode.CREATIVE) return;
 
         // If the block was placed in a claimed chunk
-        if (plugin.cfg.getClaimData().contains(utils.getChunkID(e.getBlockPlaced().getLocation()))) {
+        if (plugin.cfg.getClaimData().contains(utils.getClaimID(e.getBlockPlaced().getLocation()))) {
             String[] members = utils.getMembers(b.getLocation());
 
             // If the block isn't the lectern claiming the chunk and the player isn't placing an easily breakable crop
@@ -55,9 +55,9 @@ public class BlockPlace implements Listener {
     public void onBucketEmpty(PlayerBucketEmptyEvent e){
         Block b = e.getBlock();
         Player p = e.getPlayer();
-        String chunkID = utils.getChunkID(b.getLocation());
+        String claimID = utils.getClaimID(b.getLocation());
 
-        if(plugin.cfg.getClaimData().contains(chunkID)){
+        if(plugin.cfg.getClaimData().contains(claimID)){
             String[] members = utils.getMembers(b.getLocation());
 
             if (members != null) {

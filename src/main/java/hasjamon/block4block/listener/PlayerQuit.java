@@ -10,9 +10,9 @@ public class PlayerQuit implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e){
         Player p = e.getPlayer();
-        String chunkID = utils.getChunkID(p.getLocation());
+        String claimID = utils.getClaimID(p.getLocation());
 
-        utils.onIntruderLeaveClaim(p, chunkID);
+        utils.onIntruderLeaveClaim(p, claimID);
 
         // Stop keeping track of the player's intruded claims
         utils.playerClaimsIntruded.remove(p);

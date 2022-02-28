@@ -21,9 +21,9 @@ public class PlayerDeath implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent e){
         Player p = e.getEntity();
-        String chunkID = utils.getChunkID(p.getLocation());
+        String claimID = utils.getClaimID(p.getLocation());
 
-        utils.onIntruderLeaveClaim(p, chunkID);
+        utils.onIntruderLeaveClaim(p, claimID);
 
         utils.restorePlayerSkin(p);
         utils.onLoseDisguise(p);

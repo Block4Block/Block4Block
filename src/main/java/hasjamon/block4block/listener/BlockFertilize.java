@@ -11,8 +11,8 @@ public class BlockFertilize implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBlockFertilize(BlockFertilizeEvent e) {
         Player p = e.getPlayer();
-        String chunkID = utils.getChunkID(e.getBlock().getLocation());
-        String[] members = utils.getMembers(chunkID);
+        String claimID = utils.getClaimID(e.getBlock().getLocation());
+        String[] members = utils.getMembers(claimID);
 
         if (members != null && !utils.isMemberOfClaim(members, p)) {
             e.setCancelled(true);

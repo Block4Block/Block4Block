@@ -38,7 +38,7 @@ public class EntityExplode implements Listener {
             FileConfiguration claimData = plugin.cfg.getClaimData();
 
             // Remove blocks from the to-be-exploded list if they're inside a claim
-            e.blockList().removeIf(b -> claimData.contains(utils.getChunkID(b.getLocation())));
+            e.blockList().removeIf(b -> claimData.contains(utils.getClaimID(b.getLocation())));
         }
 
         if(e.getEntityType() == EntityType.PRIMED_TNT || e.getEntityType() == EntityType.MINECART_TNT) {

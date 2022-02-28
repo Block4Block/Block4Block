@@ -38,9 +38,9 @@ public class PlayerJoin implements Listener {
 
         utils.updateClaimCount();
 
-        String chunkID = utils.getChunkID(p.getLocation());
-        if(utils.isIntruder(p, chunkID))
-            utils.onIntruderEnterClaim(p, chunkID);
+        String claimID = utils.getClaimID(p.getLocation());
+        if(utils.isIntruder(p, claimID))
+            utils.onIntruderEnterClaim(p, claimID);
 
 
         String pName = p.getName().toLowerCase();
@@ -59,7 +59,7 @@ public class PlayerJoin implements Listener {
                 }
 
                 String xyz = chunksLost.getString(cID);
-                String worldName = utils.getWorldName(World.Environment.valueOf(chunkID.split("\\|")[0]));
+                String worldName = utils.getWorldName(World.Environment.valueOf(claimID.split("\\|")[0]));
                 p.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + xyz + " in " + worldName);
             }
 
