@@ -45,20 +45,20 @@ public class PlayerJoin implements Listener {
 
         String pName = p.getName().toLowerCase();
         FileConfiguration offlineClaimNotifications = plugin.cfg.getOfflineClaimNotifications();
-        ConfigurationSection chunksLost = offlineClaimNotifications.getConfigurationSection(pName + ".chunks");
+        ConfigurationSection claimsLost = offlineClaimNotifications.getConfigurationSection(pName + ".chunks");
         ConfigurationSection masterBooksRemovedFrom = offlineClaimNotifications.getConfigurationSection(pName + ".masterbooks");
 
-        if(chunksLost != null){
-            Set<String> chunkIDs = chunksLost.getKeys(false);
+        if(claimsLost != null){
+            Set<String> claimIDs = claimsLost.getKeys(false);
             int i = 0;
 
-            for(String cID : chunkIDs){
-                if(++i >= 10 && chunkIDs.size() > 10){
-                    p.sendMessage(ChatColor.RED + "... and " + (chunkIDs.size() - 9) + " other claims");
+            for(String cID : claimIDs){
+                if(++i >= 10 && claimIDs.size() > 10){
+                    p.sendMessage(ChatColor.RED + "... and " + (claimIDs.size() - 9) + " other claims");
                     break;
                 }
 
-                String xyz = chunksLost.getString(cID);
+                String xyz = claimsLost.getString(cID);
                 String worldName = utils.getWorldName(World.Environment.valueOf(claimID.split("\\|")[0]));
                 p.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + xyz + " in " + worldName);
             }

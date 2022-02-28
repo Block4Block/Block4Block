@@ -65,11 +65,11 @@ public class utils {
 
     public static String getClaimID(int blockX, int blockZ, World.Environment environment) {
         int chunkX = (blockX >> 4);
-        int superchunkX = (chunkX - ((chunkX < 0) ? claimWidth - 1 : 0)) / claimWidth;
+        int claimX = (chunkX - ((chunkX < 0) ? claimWidth - 1 : 0)) / claimWidth;
         int chunkZ = (blockZ >> 4);
-        int superchunkZ = (chunkZ - ((chunkZ < 0) ? claimWidth - 1 : 0)) / claimWidth;
+        int claimZ = (chunkZ - ((chunkZ < 0) ? claimWidth - 1 : 0)) / claimWidth;
 
-        return environment.name() + "|" + superchunkX + "," + superchunkZ;
+        return environment.name() + "|" + claimX + "," + claimZ;
     }
 
     public static String getClaimID(String chunkID) {
@@ -78,10 +78,10 @@ public class utils {
         String[] xz = parts[1].split(",");
         int chunkX = Integer.parseInt(xz[0]);
         int chunkZ = Integer.parseInt(xz[1]);
-        int superchunkZ = (chunkZ - ((chunkZ < 0) ? claimWidth - 1 : 0)) / claimWidth;
-        int superchunkX = (chunkX - ((chunkX < 0) ? claimWidth - 1 : 0)) / claimWidth;
+        int claimX = (chunkX - ((chunkX < 0) ? claimWidth - 1 : 0)) / claimWidth;
+        int claimZ = (chunkZ - ((chunkZ < 0) ? claimWidth - 1 : 0)) / claimWidth;
 
-        return envName + "|" + superchunkX + "," + superchunkZ;
+        return envName + "|" + claimX + "," + claimZ;
     }
 
     public static String getClaimID(Location loc) {
@@ -104,10 +104,10 @@ public class utils {
     // Check if a block is a lectern with a claim book
     public static boolean isClaimBlock(Block b) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
-        String scID = getClaimID(b.getLocation());
-        double lecternX = claimData.getDouble(scID + ".location.X", Double.MAX_VALUE);
-        double lecternY = claimData.getDouble(scID + ".location.Y", Double.MAX_VALUE);
-        double lecternZ = claimData.getDouble(scID + ".location.Z", Double.MAX_VALUE);
+        String cID = getClaimID(b.getLocation());
+        double lecternX = claimData.getDouble(cID + ".location.X", Double.MAX_VALUE);
+        double lecternY = claimData.getDouble(cID + ".location.Y", Double.MAX_VALUE);
+        double lecternZ = claimData.getDouble(cID + ".location.Z", Double.MAX_VALUE);
 
         if(lecternX == Double.MAX_VALUE || lecternY == Double.MAX_VALUE || lecternZ == Double.MAX_VALUE)
             return false;

@@ -29,13 +29,13 @@ public class ClaimFixCommand implements CommandExecutor {
             FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
 
             if(plugin.cfg.backupClaimData() && plugin.cfg.backupOfflineClaimNotifications() && plugin.cfg.backupMasterBooks()) {
-                Set<String> allScIDs = claimData.getKeys(false);
+                Set<String> allClaimIDs = claimData.getKeys(false);
 
-                for (String scID : allScIDs) {
-                    double x = claimData.getDouble(scID + ".location.X");
-                    double y = claimData.getDouble(scID + ".location.Y");
-                    double z = claimData.getDouble(scID + ".location.Z");
-                    String envName = scID.split("\\|")[0];
+                for (String cID : allClaimIDs) {
+                    double x = claimData.getDouble(cID + ".location.X");
+                    double y = claimData.getDouble(cID + ".location.Y");
+                    double z = claimData.getDouble(cID + ".location.Z");
+                    String envName = cID.split("\\|")[0];
 
                     for(World world : Bukkit.getWorlds()){
                         World.Environment env = World.Environment.valueOf(envName);
@@ -45,19 +45,19 @@ public class ClaimFixCommand implements CommandExecutor {
                             String xyz = x + ", " + y + ", " + z;
 
                             if (block.getType() != Material.LECTERN) {
-                                removeClaim(claimData, scID, xyz);
-                                sender.sendMessage("Removed claim " + scID + " at (" + xyz + ") in " + utils.getWorldName(env));
+                                removeClaim(claimData, cID, xyz);
+                                sender.sendMessage("Removed claim " + cID + " at (" + xyz + ") in " + utils.getWorldName(env));
                             }else{
                                 String claimID = utils.getClaimID(block.getLocation());
 
                                 // This should only be true if the chunk-width has been changed
-                                if(!claimID.equals(scID)){
-                                    String[] members = claimData.getString(scID + ".members", "").split("\\n");
+                                if(!claimID.equals(cID)){
+                                    String[] members = claimData.getString(cID + ".members", "").split("\\n");
 
-                                    removeClaim(claimData, scID, xyz);
-                                    sender.sendMessage("Lectern outside claim: Removed claim " + scID + " at (" + xyz + ") in " + utils.getWorldName(env));
+                                    removeClaim(claimData, cID, xyz);
+                                    sender.sendMessage("Lectern outside claim: Removed claim " + cID + " at (" + xyz + ") in " + utils.getWorldName(env));
 
-                                    if(!allScIDs.contains(claimID)) {
+                                    if(!allClaimIDs.contains(claimID)) {
                                         utils.claimChunk(block, Arrays.stream(members).toList(), null);
                                         sender.sendMessage("Lectern outside claim: Added claim " + claimID + " at (" + xyz + ") in " + utils.getWorldName(env));
                                     }
@@ -112,9 +112,9 @@ public class ClaimFixCommand implements CommandExecutor {
         return false;
     }
 
-    private void removeClaim(FileConfiguration claimData, String scID, String xyz){
-        String[] members = claimData.getString(scID + ".members", "").split("\\n");
-        claimData.set(scID, null);
-        utils.onChunkUnclaim(scID, members, xyz, null);
+    private void removeClaim(FileConfiguration claimData, String cID, String xyz){
+        String[] members = claimData.getString(cID + ".members", "").split("\\n");
+        claimData.set(cID, null);
+        utils.onChunkUnclaim(cID, members, xyz, null);
     }
 }

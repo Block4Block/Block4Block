@@ -26,21 +26,21 @@ public class PlayerMove implements Listener {
 
             // If p has entered a new chunk
             if (!prevChunkID.equals(currentChunkID)) {
-                String prevclaimID = utils.getClaimID(e.getFrom());
-                String currentclaimID = utils.getClaimID(e.getTo());
+                String prevClaimID = utils.getClaimID(e.getFrom());
+                String currentClaimID = utils.getClaimID(e.getTo());
 
                 // If p has entered a new claim
-                if (!prevclaimID.equals(currentclaimID)) {
+                if (!prevClaimID.equals(currentClaimID)) {
                     // Remove p from the previous chunk's intruder list
-                    utils.onIntruderLeaveClaim(p, prevChunkID);
+                    utils.onIntruderLeaveClaim(p, prevClaimID);
 
-                    if (utils.isIntruder(p, currentChunkID)) {
-                        utils.onIntruderEnterClaim(p, currentChunkID);
+                    if (utils.isIntruder(p, currentClaimID)) {
+                        utils.onIntruderEnterClaim(p, currentClaimID);
                     }
                 }
 
                 // If p is currently an intruder
-                if (utils.isIntruder(p, currentclaimID)) {
+                if (utils.isIntruder(p, currentClaimID)) {
                     // Make all iron golems in chunk hostile to the intruder
                     if(plugin.getConfig().getBoolean("golems-guard-claims"))
                         for(IronGolem golem : utils.ironGolems.keySet())
