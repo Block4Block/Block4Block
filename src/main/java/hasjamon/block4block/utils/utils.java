@@ -654,13 +654,17 @@ public class utils {
     }
 
     public static boolean isMemberOfClaim(String[] members, OfflinePlayer p) {
-        return isMemberOfClaim(members, p, true);
+        if(members != null && p != null){
+            return isMemberOfClaim(members, p, true);
+        }
+        return false;
     }
 
     public static boolean isMemberOfClaim(String[] members, OfflinePlayer p, boolean allowDisguise) {
-        for (String member : members)
-            if (member.equalsIgnoreCase(p.getName()) || (allowDisguise && member.equalsIgnoreCase(activeDisguises.get(p))))
-                return true;
+        if(members != null && p != null)
+            for (String member : members)
+                if (member.equalsIgnoreCase(p.getName()) || (allowDisguise && member.equalsIgnoreCase(activeDisguises.get(p))))
+                    return true;
 
         return false;
     }
