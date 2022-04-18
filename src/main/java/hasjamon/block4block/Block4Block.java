@@ -143,7 +143,7 @@ public class Block4Block extends JavaPlugin{
         if(this.getConfig().getBoolean("enable-disguises"))
             pluginManager.registerEvents(new EquipPlayerHead(this), this);
         if(this.getConfig().getBoolean("enable-claim-maps"))
-            pluginManager.registerEvents(new LecternRightClick(this), this);
+            pluginManager.registerEvents(new MapUseOnLectern(this), this);
         pluginManager.registerEvents(new MapCraft(), this);
         pluginManager.registerEvents(new PlayerInteract(), this);
         pluginManager.registerEvents(new EntityChangeBlock(this), this);

@@ -20,15 +20,15 @@ import org.bukkit.map.MapView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LecternRightClick implements Listener {
+public class MapUseOnLectern implements Listener {
     private final Block4Block plugin;
 
-    public LecternRightClick(Block4Block plugin){
+    public MapUseOnLectern(Block4Block plugin){
         this.plugin = plugin;
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onPlayerInteract(PlayerInteractEvent e){
+    public void onUseMapOnLectern(PlayerInteractEvent e){
         if(e.getAction() == Action.RIGHT_CLICK_BLOCK){
             Block b = e.getClickedBlock();
 
