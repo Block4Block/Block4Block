@@ -31,28 +31,33 @@ public class BlockBreak implements Listener {
         Player p = e.getPlayer();
         Block b = e.getBlock();
         FileConfiguration cfg = plugin.getConfig();
+        boolean isInsideClaim = plugin.cfg.getClaimData().contains(utils.getClaimID(b.getLocation()));
 
         // Lecterns are exempt from B4B rules. Changing this would require refactoring of LecternBreak's onBreak.
         if (b.getType() == Material.LECTERN) return;
         if (p.getGameMode() == GameMode.CREATIVE) return;
 
-        if (plugin.cfg.getClaimData().contains(utils.getClaimID(b.getLocation()))) { //if claimed
+        if (isInsideClaim) {
             if (!utils.isClaimBlock(b)) {
                 String[] members = utils.getMembers(b.getLocation());
                 List<?> claimBlacklist = cfg.getList("blacklisted-claim-blocks");
 
-                // If the player is a member of the claim and the block is claim-blacklisted: Don't apply B4B rules
-                if (members != null && claimBlacklist != null) {
-                    if (claimBlacklist.contains(b.getType().toString())) {
-                        if (utils.isMemberOfClaim(members, p)) {
+                if (members != null) {
+                    // If the player is a member of the claim
+                    if (utils.isMemberOfClaim(members, p)) {
+                        // If B4B should only apply to intruders: Don't apply B4B rules
+                        if (plugin.getConfig().getBoolean("only-apply-b4b-to-intruders")) {
                             plugin.pluginManager.callEvent(new BlockBreakInClaimEvent(p, b, true));
                             return;
                         }
-                    }
 
-                    // If the chunk is claimed, you're not a member, and 'can-break-in-others-claims' isn't on
-                    if (!cfg.getBoolean("can-break-in-others-claims")) {
-                        // Cancel BlockBreakEvent, i.e., prevent block from breaking
+                        // If the block is claim-blacklisted: Don't apply B4B rules
+                        if (claimBlacklist != null && claimBlacklist.contains(b.getType().toString())) {
+                            plugin.pluginManager.callEvent(new BlockBreakInClaimEvent(p, b, true));
+                            return;
+                        }
+                    }else if (!cfg.getBoolean("can-break-in-others-claims")) {
+                        // Prevent non-members from breaking blocks
                         e.setCancelled(true);
                         p.sendMessage(utils.chat("&cYou cannot break blocks in this claim"));
                         plugin.pluginManager.callEvent(new BlockBreakInClaimEvent(p, b, false));
@@ -79,6 +84,11 @@ public class BlockBreak implements Listener {
                 }
                 return;
             }
+        }
+
+        // If the block isn't inside a claim and B4B should only apply to intruders: Do not apply B4B
+        if (!isInsideClaim && plugin.getConfig().getBoolean("only-apply-b4b-to-intruders")) {
+            return;
         }
 
         List<?> blacklistedBlocks = cfg.getList("blacklisted-blocks");

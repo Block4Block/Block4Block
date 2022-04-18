@@ -5,6 +5,8 @@
 #   3. If a key doesn't exist in config.yml, the plugin will look for it in default.yml
 
 
+# Should B4B (spending blocks to break blocks) apply globally or only for players intruding on others' claims
+only-apply-b4b-to-intruders: false
 # Allow players to break blocks in others' claims
 can-break-in-others-claims: true
 # Show hints 
