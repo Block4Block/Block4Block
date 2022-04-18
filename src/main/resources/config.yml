@@ -64,6 +64,12 @@ claim-map-colors:
     g: 0
     b: 255
 
+# Settings for the "Claim lectern is in the chunk near x, y, z" message that's sent if claim-width > 1
+lectern-message-settings:
+  send-lectern-messages: true
+  show-y: true
+  show-exact-coords: false # Changes the message to "Claim lectern is at x, y, z"
+
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:
   - "&cWelcome! There are 5 things you should know about Block4Block to get started:"

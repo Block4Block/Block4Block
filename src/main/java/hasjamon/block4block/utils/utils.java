@@ -557,15 +557,36 @@ public class utils {
         double y = claimData.getDouble(claimID + ".location.Y");
         double z = claimData.getDouble(claimID + ".location.Z");
 
-        if(claimWidth > 1) {
-            double signX = (x == 0) ? 1 : Math.signum(x);
-            double signZ = (z == 0) ? 1 : Math.signum(z);
-            int chunkCenterX = (int) (x - x % 16 + signX * 8);
-            int chunkCenterZ = (int) (z - z % 16 + signZ * 8);
+        boolean sendLecternMsgs = plugin.getConfig().getBoolean("lectern-message-settings.send-lectern-messages");
 
-            intruder.spigot().sendMessage(
-                    ChatMessageType.ACTION_BAR,
-                    new TextComponent("Claim lectern is in the chunk near " + chunkCenterX + ", 0, " + chunkCenterZ));
+        if(sendLecternMsgs && claimWidth > 1) {
+            String msg = "Claim lectern is ";
+            boolean showY = plugin.getConfig().getBoolean("lectern-message-settings.show-y");
+            boolean showExactCoords = plugin.getConfig().getBoolean("lectern-message-settings.show-exact-coords");
+
+            if(showExactCoords) {
+                if(showY){
+                    msg += "at " + Math.floor(x) + ", " + Math.floor(y) + ", " + Math.floor(z);
+                }else {
+                    msg += "near " + Math.floor(x) + ", 0, " + Math.floor(z);
+                }
+            }else{
+                double signX = (x == 0) ? 1 : Math.signum(x);
+                double signY = (y == 0) ? 1 : Math.signum(y);
+                double signZ = (z == 0) ? 1 : Math.signum(z);
+                int chunkCenterX = (int) (x - x % 16 + signX * 8);
+                int chunkCenterY = (int) (y - y % 16 + signY * 8);
+                int chunkCenterZ = (int) (z - z % 16 + signZ * 8);
+
+                msg += "in the chunk near ";
+                if(showY){
+                    msg += chunkCenterX + ", " + chunkCenterY + ", " + chunkCenterZ;
+                }else {
+                    msg += chunkCenterX + ", 0, " + chunkCenterZ;
+                }
+            }
+
+            intruder.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(msg));
         }
 
         if(!intruders.containsKey(claimID))
