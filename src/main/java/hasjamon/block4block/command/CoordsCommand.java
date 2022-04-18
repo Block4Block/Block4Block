@@ -12,27 +12,27 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HintsCommand implements CommandExecutor, TabCompleter {
+public class CoordsCommand implements CommandExecutor, TabCompleter {
     private final Block4Block plugin;
 
-    public HintsCommand(Block4Block plugin) {
+    public CoordsCommand(Block4Block plugin) {
         this.plugin = plugin;
     }
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
         if(sender instanceof Player && args.length > 0) {
-            FileConfiguration hintSettings = plugin.cfg.getHintSettings();
+            FileConfiguration coordsSettings = plugin.cfg.getCoordsSettings();
             String pUUID = ((Player) sender).getUniqueId().toString();
 
             if(args[0].equalsIgnoreCase("off")) {
-                hintSettings.set(pUUID, "off");
-                plugin.cfg.saveHintSettings();
-                sender.sendMessage("Hints are now " + ChatColor.RED + "OFF");
+                coordsSettings.set(pUUID, "off");
+                plugin.cfg.saveCoordsSettings();
+                sender.sendMessage("Coords in system messages are now " + ChatColor.RED + "OFF");
                 return true;
             }else if(args[0].equalsIgnoreCase("on")) {
-                hintSettings.set(pUUID, "on");
-                plugin.cfg.saveHintSettings();
-                sender.sendMessage("Hints are now " + ChatColor.GREEN + "ON");
+                coordsSettings.set(pUUID, "on");
+                plugin.cfg.saveCoordsSettings();
+                sender.sendMessage("Coords in system messages are now " + ChatColor.GREEN + "ON");
                 return true;
             }
         }

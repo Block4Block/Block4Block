@@ -44,3 +44,6 @@ commands:
   chickenbonus:
     description: Shows you the number of named chickens whose aura radius you're inside as well as the total bonus.
     usage: /<command>
+  coords:
+    description: Turns coords in system messages on/off.
+    usage: /<command> [on|off]

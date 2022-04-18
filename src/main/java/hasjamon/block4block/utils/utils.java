@@ -242,7 +242,11 @@ public class utils {
                                 }
                             }else {
                                 String worldName = getWorldName(World.Environment.valueOf(claimID.split("\\|")[0]));
-                                player.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + lecternXYZ + " in " + worldName);
+                                if(utils.showCoordsInMsgs(player)) {
+                                    player.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + lecternXYZ + " in " + worldName);
+                                }else{
+                                    player.sendMessage(ChatColor.RED + "You have lost a claim! Location: [hidden] in " + worldName);
+                                }
                             }
                             break;
                         }
@@ -561,28 +565,33 @@ public class utils {
 
         if(sendLecternMsgs && claimWidth > 1) {
             String msg = "Claim lectern is ";
-            boolean showY = plugin.getConfig().getBoolean("lectern-message-settings.show-y");
-            boolean showExactCoords = plugin.getConfig().getBoolean("lectern-message-settings.show-exact-coords");
 
-            if(showExactCoords) {
-                if(showY){
-                    msg += "at " + Math.floor(x) + ", " + Math.floor(y) + ", " + Math.floor(z);
-                }else {
-                    msg += "near " + Math.floor(x) + ", 0, " + Math.floor(z);
-                }
+            if(!showCoordsInMsgs(intruder)) {
+                msg = "You've intruded on a claim";
             }else{
-                double signX = (x == 0) ? 1 : Math.signum(x);
-                double signY = (y == 0) ? 1 : Math.signum(y);
-                double signZ = (z == 0) ? 1 : Math.signum(z);
-                int chunkCenterX = (int) (x - x % 16 + signX * 8);
-                int chunkCenterY = (int) (y - y % 16 + signY * 8);
-                int chunkCenterZ = (int) (z - z % 16 + signZ * 8);
+                boolean showY = plugin.getConfig().getBoolean("lectern-message-settings.show-y");
+                boolean showExactCoords = plugin.getConfig().getBoolean("lectern-message-settings.show-exact-coords");
 
-                msg += "in the chunk near ";
-                if(showY){
-                    msg += chunkCenterX + ", " + chunkCenterY + ", " + chunkCenterZ;
-                }else {
-                    msg += chunkCenterX + ", 0, " + chunkCenterZ;
+                if (showExactCoords) {
+                    if (showY) {
+                        msg += "at " + Math.floor(x) + ", " + Math.floor(y) + ", " + Math.floor(z);
+                    } else {
+                        msg += "near " + Math.floor(x) + ", 0, " + Math.floor(z);
+                    }
+                } else {
+                    double signX = (x == 0) ? 1 : Math.signum(x);
+                    double signY = (y == 0) ? 1 : Math.signum(y);
+                    double signZ = (z == 0) ? 1 : Math.signum(z);
+                    int chunkCenterX = (int) (x - x % 16 + signX * 8);
+                    int chunkCenterY = (int) (y - y % 16 + signY * 8);
+                    int chunkCenterZ = (int) (z - z % 16 + signZ * 8);
+
+                    msg += "in the chunk near ";
+                    if (showY) {
+                        msg += chunkCenterX + ", " + chunkCenterY + ", " + chunkCenterZ;
+                    } else {
+                        msg += chunkCenterX + ", 0, " + chunkCenterZ;
+                    }
                 }
             }
 
@@ -609,13 +618,25 @@ public class utils {
 
                     if(now - lastIntrusionMsgReceived.getOrDefault(p, 0L) >= minSecBetweenAlerts * 1e9){
                         String worldName = getWorldName(World.Environment.valueOf(claimID.split("\\|")[0]));
-                        p.sendMessage(ChatColor.RED + "An intruder has entered your claim at "+x+", "+y+", "+z+" in "+worldName);
+                        if(showCoordsInMsgs(p)) {
+                            p.sendMessage(ChatColor.RED +
+                                    "An intruder has entered your claim at " + x + ", " + y + ", " + z + " in " + worldName);
+                        }else{
+                            p.sendMessage(ChatColor.RED +
+                                    "An intruder has entered your claim at [hidden] in " + worldName);
+                        }
                         lastIntrusionMsgReceived.put(p, now);
                         plugin.pluginManager.callEvent(new IntruderEnteredClaimEvent(p));
                     }
                 }
             }
         }
+    }
+
+    public static boolean showCoordsInMsgs(Player p){
+        String playerSetting = plugin.cfg.getCoordsSettings().getString(p.getUniqueId().toString());
+
+        return playerSetting == null || playerSetting.equals("on");
     }
 
     public static void onIntruderLeaveClaim(Player intruder, String claimID) {

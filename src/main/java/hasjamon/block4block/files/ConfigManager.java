@@ -36,6 +36,8 @@ public class ConfigManager {
     private final FileConfiguration claimTakeoversCfg = YamlConfiguration.loadConfiguration(claimTakeoversFile);
     private final File claimMapsFile = new File(this.plugin.getDataFolder(), "claimmaps.yml");
     private final FileConfiguration claimMapsCfg = YamlConfiguration.loadConfiguration(claimMapsFile);
+    private final File coordsSettingsFile = new File(this.plugin.getDataFolder(), "coordssettings.yml");
+    private final FileConfiguration coordsSettingsCfg = YamlConfiguration.loadConfiguration(coordsSettingsFile);
 
     public ConfigManager(){
         if (!this.plugin.getDataFolder().exists())
@@ -53,6 +55,7 @@ public class ConfigManager {
         savePlayerTextures();
         saveClaimTakeovers();
         saveClaimMaps();
+        saveCoordsSettings();
     }
 
     // Saves the default config; always overwrites. This file is purely for ease of reference; it is never loaded.
@@ -243,6 +246,19 @@ public class ConfigManager {
             consoleSender.sendMessage(ChatColor.AQUA + "Claim maps have been saved to claimmaps.yml");
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save claim maps to claimmaps.yml");
+        }
+    }
+
+    public FileConfiguration getCoordsSettings() {
+        return this.coordsSettingsCfg;
+    }
+
+    public void saveCoordsSettings() {
+        try {
+            this.coordsSettingsCfg.save(this.coordsSettingsFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Coords settings have been saved to coordssettings.yml");
+        } catch (IOException e) {
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save coords settings to coordssettings.yml");
         }
     }
 }
