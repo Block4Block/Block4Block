@@ -20,6 +20,8 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.inventory.BlockInventoryHolder;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.map.*;
@@ -455,8 +457,19 @@ public class utils {
             plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, true));
         }
 
-        if(noloot)
+        if(noloot){
+            if(b.getState() instanceof BlockInventoryHolder bInv) {
+                Inventory inv = bInv.getInventory();
+
+                for (ItemStack item : inv.getStorageContents()) {
+                    if(item != null) {
+                        b.getWorld().dropItemNaturally(b.getLocation(), item);
+                    }
+                }
+            }
+
             e.setDropItems(false);
+        }
     }
 
     // Returns log2(n + 2)
