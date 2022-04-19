@@ -30,12 +30,11 @@ public class PlayerJoin implements Listener {
         Player p = e.getPlayer();
 
         if(!p.hasPlayedBefore()) {
-            utils.knownPlayers.add(p.getName().toLowerCase());
             utils.sendWelcomeMsg(p);
-        }else {
-            utils.populatePlayerClaimsIntruded(p);
         }
-
+        
+        utils.knownPlayers.add(p.getName().toLowerCase());
+        utils.populatePlayerClaimsIntruded(p);
         utils.updateClaimCount();
 
         String claimID = utils.getClaimID(p.getLocation());
