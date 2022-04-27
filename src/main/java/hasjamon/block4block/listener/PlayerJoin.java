@@ -59,7 +59,7 @@ public class PlayerJoin implements Listener {
 
                 String xyz = claimsLost.getString(cID);
                 String worldName = utils.getWorldName(World.Environment.valueOf(claimID.split("\\|")[0]));
-                if(utils.showCoordsInMsgs(p)) {
+                if(!plugin.getConfig().getBoolean("hide-coords-globally") && utils.showCoordsInMsgs(p)) {
                     p.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + xyz + " in " + worldName);
                 }else{
                     p.sendMessage(ChatColor.RED + "You have lost a claim! Location: [hidden] in " + worldName);

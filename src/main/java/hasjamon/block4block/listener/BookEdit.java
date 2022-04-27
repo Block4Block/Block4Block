@@ -195,7 +195,7 @@ public class BookEdit implements Listener {
 
                     // If the book is turned into a claim book, but the chunk is already claimed
                     if(!wasClaimBook && (claimData.contains(claimID) || chunksToBeClaimed.contains(claimID))){
-                        if(utils.showCoordsInMsgs(p)) {
+                        if(!plugin.getConfig().getBoolean("hide-coords-globally") && utils.showCoordsInMsgs(p)) {
                             p.sendMessage(ChatColor.GRAY + "A copy of the master book at (" +
                                     String.join(", ", xyz) + ") in " +
                                     utils.getWorldName(env)  + " was in a claimed chunk and has been corrupted!");

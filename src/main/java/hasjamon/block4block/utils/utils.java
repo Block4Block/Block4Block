@@ -242,7 +242,7 @@ public class utils {
                                 }
                             }else {
                                 String worldName = getWorldName(World.Environment.valueOf(claimID.split("\\|")[0]));
-                                if(utils.showCoordsInMsgs(player)) {
+                                if(!plugin.getConfig().getBoolean("hide-coords-globally") && utils.showCoordsInMsgs(player)) {
                                     player.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + lecternXYZ + " in " + worldName);
                                 }else{
                                     player.sendMessage(ChatColor.RED + "You have lost a claim! Location: [hidden] in " + worldName);
@@ -566,7 +566,7 @@ public class utils {
         if(sendLecternMsgs && claimWidth > 1) {
             String msg = "Claim lectern is ";
 
-            if(!showCoordsInMsgs(intruder)) {
+            if(plugin.getConfig().getBoolean("hide-coords-globally") || !showCoordsInMsgs(intruder)) {
                 msg = "You've intruded on a claim";
             }else{
                 boolean showY = plugin.getConfig().getBoolean("lectern-message-settings.show-y");
@@ -618,7 +618,7 @@ public class utils {
 
                     if(now - lastIntrusionMsgReceived.getOrDefault(p, 0L) >= minSecBetweenAlerts * 1e9){
                         String worldName = getWorldName(World.Environment.valueOf(claimID.split("\\|")[0]));
-                        if(showCoordsInMsgs(p)) {
+                        if(!plugin.getConfig().getBoolean("hide-coords-globally") && showCoordsInMsgs(p)) {
                             p.sendMessage(ChatColor.RED +
                                     "An intruder has entered your claim at " + x + ", " + y + ", " + z + " in " + worldName);
                         }else{
