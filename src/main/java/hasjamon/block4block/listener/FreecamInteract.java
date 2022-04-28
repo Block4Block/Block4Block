@@ -1,5 +1,6 @@
 package hasjamon.block4block.listener;
 
+import hasjamon.block4block.Block4Block;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -18,23 +19,31 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class FreecamInteract implements Listener {
+    private final boolean applyOnlyToLecterns;
+
+    public FreecamInteract(Block4Block plugin){
+        applyOnlyToLecterns = plugin.getConfig().getBoolean("anti-freecam-interact-only-for-lecterns");
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onInteract(PlayerInteractEvent e){
         Player p = e.getPlayer();
         Block b = e.getClickedBlock();
 
         if(b != null && e.getAction() == Action.RIGHT_CLICK_BLOCK)
-            if(!placingBoatOnWater(b, e.getItem()))
-                if(!lookingAtBlock(b, p))
-                    e.setCancelled(true);
+            if(!applyOnlyToLecterns || b.getType() == Material.LECTERN)
+                if(!placingBoatOnWater(b, e.getItem()))
+                    if(!lookingAtBlock(b, p))
+                        e.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onBlockBreak(BlockBreakEvent e){
         Block b = e.getBlock();
 
-        if(b.getType() != Material.ANDESITE && !lookingAtBlock(b, e.getPlayer()))
-            e.setCancelled(true);
+        if(!applyOnlyToLecterns || b.getType() == Material.LECTERN)
+            if(b.getType() != Material.ANDESITE && !lookingAtBlock(b, e.getPlayer()))
+                e.setCancelled(true);
     }
 
     private boolean lookingAtBlock(Block b, Player p){

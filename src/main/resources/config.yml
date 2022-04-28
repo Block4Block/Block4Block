@@ -31,6 +31,9 @@ andesite-splash-on: true
 andesite-splash-reduce-durability: false
 # Prevent cheat clients from interacting with chests, lecterns, etc. through blocks
 disable-freecam-interactions: true
+# Should freecam interactions only be prevented when interacting with lecterns?
+# Note: requires disable-freecam-interactions to be true
+disable-freecam-interactions-only-for-lecterns: false
 # Make iron golems attack intruders in claimed chunks
 golems-guard-claims: true
 # Allow players to create master books that update the contents of their copies

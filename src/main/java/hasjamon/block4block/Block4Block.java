@@ -136,7 +136,7 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new PlayerRespawn(), this);
         pluginManager.registerEvents(new ChunkLoad(), this);
         if(this.getConfig().getBoolean("disable-freecam-interactions"))
-            pluginManager.registerEvents(new FreecamInteract(), this);
+            pluginManager.registerEvents(new FreecamInteract(this), this);
         if(this.getConfig().getBoolean("enable-lava-immunity"))
             pluginManager.registerEvents(new PlayerLavaDamage(this), this);
         pluginManager.registerEvents(new EntityExplode(this), this);
