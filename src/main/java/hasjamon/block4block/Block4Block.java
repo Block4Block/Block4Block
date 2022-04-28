@@ -145,7 +145,8 @@ public class Block4Block extends JavaPlugin{
         if(this.getConfig().getBoolean("enable-claim-maps"))
             pluginManager.registerEvents(new MapUseOnLectern(this), this);
         pluginManager.registerEvents(new MapCraft(), this);
-        pluginManager.registerEvents(new PlayerInteract(), this);
+        if(this.getConfig().getBoolean("enable-path-grace-period"))
+            pluginManager.registerEvents(new ShovelUse(), this);
         pluginManager.registerEvents(new EntityChangeBlock(this), this);
         pluginManager.registerEvents(new CraftItem(), this);
         pluginManager.registerEvents(new PlayerHarvestBlock(), this);
