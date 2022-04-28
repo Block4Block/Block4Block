@@ -22,7 +22,7 @@ public class FreecamInteract implements Listener {
     private final boolean applyOnlyToLecterns;
 
     public FreecamInteract(Block4Block plugin){
-        applyOnlyToLecterns = plugin.getConfig().getBoolean("anti-freecam-interact-only-for-lecterns");
+        applyOnlyToLecterns = plugin.getConfig().getBoolean("disable-freecam-interactions-only-for-lecterns");
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
