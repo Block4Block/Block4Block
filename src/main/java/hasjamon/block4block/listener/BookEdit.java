@@ -32,38 +32,41 @@ public class BookEdit implements Listener {
     public void onOpenBook(PlayerInteractEvent e) {
         Player p = e.getPlayer();
         ItemStack item = e.getItem();
+        Block clickedBlock = e.getClickedBlock();
 
         if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            if (item != null) {
-                // If player is holding a book and quill
-                if (item.getType() == Material.WRITABLE_BOOK) {
-                    // If the player isn't a member of any claims
-                    if (!utils.countMemberClaims().containsKey(p.getName().toLowerCase())) {
-                        // Send the player instruction on what to do with the book
-                        p.sendMessage(utils.chat("&cNOTE: &7To make a claim book, type &a\"claim\" &7at the top of the book!"));
-                        p.sendMessage(utils.chat("&aThen write a player's ign on each line to add a member!"));
-                        p.spigot().sendMessage(new ComponentBuilder(utils.chat("&aCLICK HERE to see an example"))
-                                .event(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://hasjamon.github.io/b4block/lists.html"))
-                                .create());
-                    }
-                } else if (item.getType() == Material.WRITTEN_BOOK) {
-                    BookMeta meta = (BookMeta) item.getItemMeta();
+            if(clickedBlock == null || clickedBlock.getType() != Material.LECTERN) {
+                if (item != null) {
+                    // If player is holding a book and quill
+                    if (item.getType() == Material.WRITABLE_BOOK) {
+                        // If the player isn't a member of any claims
+                        if (!utils.countMemberClaims().containsKey(p.getName().toLowerCase())) {
+                            // Send the player instruction on what to do with the book
+                            p.sendMessage(utils.chat("&cNOTE: &7To make a claim book, type &a\"claim\" &7at the top of the book!"));
+                            p.sendMessage(utils.chat("&aThen write a player's ign on each line to add a member!"));
+                            p.spigot().sendMessage(new ComponentBuilder(utils.chat("&aCLICK HERE to see an example"))
+                                    .event(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://hasjamon.github.io/b4block/lists.html"))
+                                    .create());
+                        }
+                    } else if (item.getType() == Material.WRITTEN_BOOK) {
+                        BookMeta meta = (BookMeta) item.getItemMeta();
 
-                    if (meta != null && meta.getLore() != null) {
-                        // If the book is not a copy
-                        if (!meta.hasGeneration() || meta.getGeneration() == BookMeta.Generation.ORIGINAL) {
-                            item.setType(Material.WRITABLE_BOOK);
-                            item.setItemMeta(meta);
-                            item.addUnsafeEnchantment(Enchantment.LUCK, 1);
-                        } else {
-                            FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
-                            String bookID = String.join("", meta.getLore()).substring(17);
-
-                            if (masterBooks.contains(bookID + ".pages")) {
-                                if (plugin.getConfig().getBoolean("enable-master-books"))
-                                    meta.setPages(masterBooks.getStringList(bookID + ".pages"));
+                        if (meta != null && meta.getLore() != null) {
+                            // If the book is not a copy
+                            if (!meta.hasGeneration() || meta.getGeneration() == BookMeta.Generation.ORIGINAL) {
+                                item.setType(Material.WRITABLE_BOOK);
                                 item.setItemMeta(meta);
-                                p.openBook(item);
+                                item.addUnsafeEnchantment(Enchantment.LUCK, 1);
+                            } else {
+                                FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
+                                String bookID = String.join("", meta.getLore()).substring(17);
+
+                                if (masterBooks.contains(bookID + ".pages")) {
+                                    if (plugin.getConfig().getBoolean("enable-master-books"))
+                                        meta.setPages(masterBooks.getStringList(bookID + ".pages"));
+                                    item.setItemMeta(meta);
+                                    p.openBook(item);
+                                }
                             }
                         }
                     }
