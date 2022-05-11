@@ -151,6 +151,7 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new CraftItem(), this);
         pluginManager.registerEvents(new PlayerHarvestBlock(), this);
         pluginManager.registerEvents(new BlockFertilize(), this);
+        pluginManager.registerEvents(new PlayerToggleGlide(this), this);
     }
 
     private void addMapRenderers() {
