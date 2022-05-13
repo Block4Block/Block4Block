@@ -931,7 +931,7 @@ public class utils {
             int j = ij.z;
 
             String[] members = getMembers(getClaimID(chunkID));
-            boolean isMember = members != null && isMemberOfClaim(members, p);
+            boolean isMember = isMemberOfClaim(members, p);
             String configStr = isMember ? "my-claims" : "others-claims";
             int r = plugin.getConfig().getInt("claim-map-colors."+configStr+".r");
             int g = plugin.getConfig().getInt("claim-map-colors."+configStr+".g");
@@ -974,7 +974,7 @@ public class utils {
 
             if (claimData.contains(claimID)) {
                 String[] members = getMembers(claimID);
-                boolean isMember = members != null && isMemberOfClaim(members, p);
+                boolean isMember = isMemberOfClaim(members, p);
 
                 if (isMember) {
                     for (Player intruder : intruders.get(claimID)) {
