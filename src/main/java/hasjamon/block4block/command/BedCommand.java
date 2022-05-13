@@ -37,7 +37,7 @@ public class BedCommand implements CommandExecutor {
                 plugin.cfg.saveBedCommandUsage();
             }else{
                 DecimalFormat decimals = new DecimalFormat("#.#");
-                String hours = decimals.format(diff / (60 * 60 * 1000));
+                String hours = decimals.format(diff / (60.0 * 60 * 1000));
                 String msg = utils.chat("&7It's been less than 24 hours since your last use of /bed! Try again in " + hours + " hours.");
 
                 player.sendMessage(msg);
