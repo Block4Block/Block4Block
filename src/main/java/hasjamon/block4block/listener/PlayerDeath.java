@@ -33,42 +33,43 @@ public class PlayerDeath implements Listener {
             FileConfiguration claimData = plugin.cfg.getClaimData();
             FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
             FileConfiguration claimTakeovers = plugin.cfg.getClaimTakeovers();
-            String pName = p.getName().toLowerCase();
+            String victimName = p.getName().toLowerCase();
             String killerName = killer.getName().toLowerCase();
 
-            for(String key : claimData.getKeys(false)){
-                String members = claimData.getString(key + ".members");
+            for(String claim : claimData.getKeys(false)){
+                String members = claimData.getString(claim + ".members");
 
                 if(members != null){
                     String[] membersBefore = members.split("\\n");
                     String[] membersAfter = members.split("\\n");
+                    String replacementName = utils.isMemberOfClaim(membersBefore, killer) ? "" : killerName;
 
                     for (int i = 0; i < membersAfter.length; i++) {
-                        if (membersAfter[i].equalsIgnoreCase(pName)) {
-                            membersAfter[i] = killerName;
+                        if (membersAfter[i].equalsIgnoreCase(victimName)) {
+                            membersAfter[i] = replacementName;
 
-                            // Add name and replacement name for next time the book is opened
-                            String searchReplace = pName + "|" + killerName;
-                            List<String> replacements = claimTakeovers.getStringList(key);
+                            // Save name and replacement name for next time the claim book in the claim is opened
+                            String searchReplace = victimName + "|" + replacementName;
+                            List<String> replacements = claimTakeovers.getStringList(claim);
 
                             replacements.add(searchReplace);
-                            claimTakeovers.set(key, replacements);
+                            claimTakeovers.set(claim, replacements);
                         }
                     }
 
-                    claimData.set(key + ".members", String.join("\n", membersAfter));
+                    claimData.set(claim + ".members", String.join("\n", membersAfter));
 
                     if(!Arrays.equals(membersAfter, membersBefore)){
-                        double x = claimData.getDouble(key + ".location.X");
-                        double y = claimData.getDouble(key + ".location.Y");
-                        double z = claimData.getDouble(key + ".location.Z");
+                        double x = claimData.getDouble(claim + ".location.X");
+                        double y = claimData.getDouble(claim + ".location.Y");
+                        double z = claimData.getDouble(claim + ".location.Z");
                         String xyz = x + ", " + y + ", " + z;
                         String[] membersRemoved = Arrays.stream(membersBefore)
                                                         .filter(mb -> Arrays.stream(membersAfter).anyMatch(mb::equalsIgnoreCase))
                                                         .toArray(String[]::new);
 
-                        utils.onChunkUnclaim(key, membersRemoved, xyz, null);
-                        utils.onChunkClaim(key, Arrays.stream(membersAfter).toList(), null, null);
+                        utils.onChunkUnclaim(claim, membersRemoved, xyz, null);
+                        utils.onChunkClaim(claim, Arrays.stream(membersAfter).toList(), null, null);
                         plugin.cfg.saveOfflineClaimNotifications();
                     }
                 }
@@ -77,8 +78,14 @@ public class PlayerDeath implements Listener {
             for(String key : masterBooks.getKeys(false)){
                 if(masterBooks.contains(key + ".pages")) {
                     List<String> pages = masterBooks.getStringList(key + ".pages");
+                    String[] members = utils.findMembersInBook(pages).toArray(String[]::new);
 
-                    utils.replaceInClaimPages(pages, pName, killerName);
+                    if(utils.isMemberOfClaim(members, killer)){
+                        utils.replaceInClaimPages(pages, victimName, "");
+                    }else{
+                        utils.replaceInClaimPages(pages, victimName, killerName);
+                    }
+
                     masterBooks.set(key + ".pages", pages);
                 }
             }

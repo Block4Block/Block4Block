@@ -284,7 +284,7 @@ public class utils {
     }
 
     public static List<String> findMembersInBook(List<String> pages){
-        List<String> members = new ArrayList<>();
+        HashMap<String, String> members = new LinkedHashMap<>();
 
         for (String page : pages) {
             // If it isn't a claim page, stop looking for members
@@ -297,12 +297,12 @@ public class utils {
                 String member = lines[i].trim();
 
                 // If the member name is valid
-                if(!member.contains(" ") && !member.isEmpty() && !members.contains(member))
-                    members.add(member);
+                if(!member.contains(" ") && !member.isEmpty() && !members.containsKey(member.toLowerCase()))
+                    members.put(member.toLowerCase(), member);
             }
         }
 
-        return members;
+        return members.values().stream().toList();
     }
 
     private static boolean isNextToBedrock(Block block) {
