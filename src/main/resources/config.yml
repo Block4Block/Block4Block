@@ -161,6 +161,8 @@ tnt-drops-enabled:
 blacklisted-claim-blocks:
 - SPONGE
 - PISTON
+- STICKY_PISTON
+- PISTON_HEAD
 - OBSERVER
 - DISPENSER
 - HOPPER
@@ -889,6 +891,7 @@ no-loot-on-break:
 - PINK_WALL_BANNER
 - PINK_WOOL
 - PISTON
+- PISTON_HEAD
 - PLAYER_HEAD
 - PLAYER_WALL_HEAD
 - PODZOL
@@ -1211,6 +1214,7 @@ b4b-substitutions:
   INFESTED_CRACKED_STONE_BRICKS: CRACKED_STONE_BRICKS
   INFESTED_MOSSY_STONE_BRICKS: MOSSY_STONE_BRICKS
   INFESTED_CHISELED_STONE_BRICKS: CHISELED_STONE_BRICKS
+  PISTON_HEAD: PISTON
 
 # Weights for adjusting the rarity of each spawn egg; higher = more common
 spawn-egg-weights:
