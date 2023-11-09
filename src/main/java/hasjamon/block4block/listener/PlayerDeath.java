@@ -25,8 +25,10 @@ public class PlayerDeath implements Listener {
 
         utils.onIntruderLeaveClaim(p, claimID);
 
-        utils.restorePlayerSkin(p);
-        utils.onLoseDisguise(p);
+        if(plugin.canUseReflection) {
+            utils.restorePlayerSkin(p);
+            utils.onLoseDisguise(p);
+        }
 
         Player killer = p.getKiller();
         if(plugin.getConfig().getBoolean("enable-claim-takeovers") && killer != null && p != killer) {

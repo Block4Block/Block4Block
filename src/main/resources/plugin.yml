@@ -1,9 +1,9 @@
 name: Block4Block
 main: hasjamon.block4block.Block4Block
-api-version: 1.18
+api-version: 1.19
 authors: [ HasJamOn, Bahm, gtg_cya ]
 softdepend: [ProtocolLib]
-version: 2.2
+version: 2.3
 description: Block4Block plugin
 commands:
   die:

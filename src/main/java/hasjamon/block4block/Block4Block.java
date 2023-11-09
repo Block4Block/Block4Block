@@ -6,6 +6,7 @@ import hasjamon.block4block.files.ConfigManager;
 import hasjamon.block4block.listener.*;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -51,6 +52,8 @@ public class Block4Block extends JavaPlugin{
             MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
         } catch (NoClassDefFoundError | NoSuchMethodException e) {
             canUseReflection = false;
+            getServer().getConsoleSender().sendMessage(
+                    ChatColor.YELLOW + "Reflection is unavailable; some features have been disabled.");
         }
     }
 
@@ -151,6 +154,7 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new CraftItem(), this);
         pluginManager.registerEvents(new PlayerHarvestBlock(), this);
         pluginManager.registerEvents(new BlockFertilize(), this);
+        pluginManager.registerEvents(new BlockSpread(), this);
         pluginManager.registerEvents(new PlayerToggleGlide(this), this);
     }
 
