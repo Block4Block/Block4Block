@@ -1,5 +1,6 @@
 package hasjamon.block4block.listener;
 
+import com.google.common.collect.Sets;
 import hasjamon.block4block.Block4Block;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,10 +17,29 @@ import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 import java.util.HashSet;
-import java.util.Set;
 
 public class FreecamInteract implements Listener {
     private final boolean applyOnlyToLecterns;
+    private final HashSet<Material> boatTypes = Sets.newHashSet(
+        Material.BIRCH_BOAT,
+        Material.ACACIA_BOAT,
+        Material.OAK_BOAT,
+        Material.JUNGLE_BOAT,
+        Material.SPRUCE_BOAT,
+        Material.DARK_OAK_BOAT,
+        Material.MANGROVE_BOAT,
+        Material.CHERRY_BOAT,
+        Material.BAMBOO_RAFT,
+        Material.BIRCH_CHEST_BOAT,
+        Material.ACACIA_CHEST_BOAT,
+        Material.OAK_CHEST_BOAT,
+        Material.JUNGLE_CHEST_BOAT,
+        Material.SPRUCE_CHEST_BOAT,
+        Material.DARK_OAK_CHEST_BOAT,
+        Material.MANGROVE_CHEST_BOAT,
+        Material.CHERRY_CHEST_BOAT,
+        Material.BAMBOO_CHEST_RAFT
+    );
 
     public FreecamInteract(Block4Block plugin){
         applyOnlyToLecterns = plugin.getConfig().getBoolean("disable-freecam-interactions-only-for-lecterns");
@@ -32,8 +52,8 @@ public class FreecamInteract implements Listener {
 
         if(b != null && e.getAction() == Action.RIGHT_CLICK_BLOCK)
             if(!applyOnlyToLecterns || b.getType() == Material.LECTERN)
-                if(!placingBoatOnWater(b, e.getItem()))
-                    if(!lookingAtBlock(b, p))
+                if(!isPlacingBoatOnWater(b, e.getItem()))
+                    if(!isLookingAtBlock(b, p))
                         e.setCancelled(true);
     }
 
@@ -42,11 +62,11 @@ public class FreecamInteract implements Listener {
         Block b = e.getBlock();
 
         if(!applyOnlyToLecterns || b.getType() == Material.LECTERN)
-            if(b.getType() != Material.ANDESITE && !lookingAtBlock(b, e.getPlayer()))
+            if(b.getType() != Material.ANDESITE && !isLookingAtBlock(b, e.getPlayer()))
                 e.setCancelled(true);
     }
 
-    private boolean lookingAtBlock(Block b, Player p){
+    private boolean isLookingAtBlock(Block b, Player p){
         Location pEyeLoc = p.getEyeLocation();
         Vector direction = pEyeLoc.getDirection();
 
@@ -55,15 +75,7 @@ public class FreecamInteract implements Listener {
         return result != null && result.getHitBlock() != null && result.getHitBlock().equals(b);
     }
 
-    private boolean placingBoatOnWater(Block b, ItemStack i){
-        Set<Material> boatTypes = new HashSet<>();
-        boatTypes.add(Material.BIRCH_BOAT);
-        boatTypes.add(Material.ACACIA_BOAT);
-        boatTypes.add(Material.OAK_BOAT);
-        boatTypes.add(Material.JUNGLE_BOAT);
-        boatTypes.add(Material.SPRUCE_BOAT);
-        boatTypes.add(Material.DARK_OAK_BOAT);
-
+    private boolean isPlacingBoatOnWater(Block b, ItemStack i){
         return b.getType() == Material.WATER && boatTypes.contains(i.getType());
     }
 }
