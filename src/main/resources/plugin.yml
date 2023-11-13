@@ -3,7 +3,7 @@ main: hasjamon.block4block.Block4Block
 api-version: 1.20
 authors: [ HasJamOn, Bahm, gtg_cya ]
 softdepend: [ProtocolLib]
-version: 2.4
+version: 2.5
 description: Block4Block plugin
 commands:
   die:

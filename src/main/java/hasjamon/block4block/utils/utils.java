@@ -13,6 +13,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Lectern;
+import org.bukkit.block.data.type.PistonHead;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
@@ -427,7 +428,10 @@ public class utils {
         return count;
     }
 
-    public static void b4bCheck(Player p, Block b, BlockBreakEvent e, Boolean noloot, boolean requiresBlock) {
+    public static void b4bCheck(Player p, Block b, BlockBreakEvent e, List<?> lootDisabledTypes, boolean requiresBlock) {
+        // Are drops disabled for this block type
+        boolean noloot = lootDisabledTypes.contains(b.getType().toString());
+
         if(requiresBlock) {
             Material requiredType = b.getType();
 
@@ -462,17 +466,28 @@ public class utils {
         }
 
         if(noloot){
-            if(b.getState() instanceof BlockInventoryHolder bInv) {
-                Inventory inv = bInv.getInventory();
+            dropInventory(b);
 
-                for (ItemStack item : inv.getStorageContents()) {
-                    if(item != null) {
-                        b.getWorld().dropItemNaturally(b.getLocation(), item);
-                    }
-                }
+            if (b.getType() == Material.PISTON_HEAD) {
+                PistonHead pistonHead = (PistonHead) b.getBlockData();
+                Block piston = b.getRelative(pistonHead.getFacing().getOppositeFace());
+                piston.setType(Material.AIR);
             }
 
-            e.setDropItems(false);
+            b.setType(Material.AIR);
+            e.setCancelled(true);
+        }
+    }
+
+    private static void dropInventory(Block b) {
+        if(b.getState() instanceof BlockInventoryHolder bInv) {
+            Inventory inv = bInv.getInventory();
+
+            for (ItemStack item : inv.getStorageContents()) {
+                if(item != null) {
+                    b.getWorld().dropItemNaturally(b.getLocation(), item);
+                }
+            }
         }
     }
 

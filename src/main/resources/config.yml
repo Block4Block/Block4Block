@@ -60,6 +60,8 @@ enable-claim-maps: true
 # NOTE: Changing this will hugely impact existing claims, which will likely invalidate many claims and move borders.
 # You should run /claimfix to check all claims.
 claim-width: 1 # 1x1 chunk
+# At what height should lava sources stop flowing/spreading
+lava-flow-max-y: 72
 
 claim-map-colors:
   my-claims:

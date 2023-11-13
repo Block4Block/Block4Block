@@ -92,14 +92,11 @@ public class BlockBreak implements Listener {
         }
 
         List<?> blacklistedBlocks = cfg.getList("blacklisted-blocks");
-        List<?> lootDisabled = cfg.getList("no-loot-on-break");
+        List<?> lootDisabledTypes = cfg.getList("no-loot-on-break");
 
-        if(blacklistedBlocks != null && lootDisabled != null) {
+        if(blacklistedBlocks != null && lootDisabledTypes != null) {
             // Does Block4Block apply, i.e., has the block type not been exempted from Block4Block through the blacklist
             boolean requiresBlock = !blacklistedBlocks.contains(b.getType().toString());
-
-            // Are drops disabled for this block type
-            boolean noloot = lootDisabled.contains(b.getType().toString());
 
             utils.removeExpiredB4BGracePeriods();
 
@@ -109,7 +106,7 @@ public class BlockBreak implements Listener {
                 return;
             }
 
-            utils.b4bCheck(p, b, e, noloot, requiresBlock);
+            utils.b4bCheck(p, b, e, lootDisabledTypes, requiresBlock);
         }
     }
 
