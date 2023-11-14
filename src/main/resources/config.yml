@@ -1371,6 +1371,7 @@ b4b-substitutions:
   INFESTED_MOSSY_STONE_BRICKS: MOSSY_STONE_BRICKS
   INFESTED_CHISELED_STONE_BRICKS: CHISELED_STONE_BRICKS
   PISTON_HEAD: PISTON
+  POWDER_SNOW: POWDER_SNOW_BUCKET
 
 # Weights for adjusting the rarity of each spawn egg; higher = more common
 spawn-egg-weights:
