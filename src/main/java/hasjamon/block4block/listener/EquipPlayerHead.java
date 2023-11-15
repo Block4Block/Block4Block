@@ -61,7 +61,6 @@ public class EquipPlayerHead implements Listener {
 
                 utils.onLoseDisguise(disguiser);
                 utils.disguisePlayer(disguiser, disguisee);
-                utils.activeDisguises.put(disguiser, disguisee.getName());
                 plugin.pluginManager.callEvent(new PlayerDisguisedEvent(disguiser, disguisee));
 
                 BukkitTask undisguiseTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {

@@ -40,7 +40,7 @@ public class BookEdit implements Listener {
                     // If player is holding a book and quill
                     if (item.getType() == Material.WRITABLE_BOOK) {
                         // If the player isn't a member of any claims
-                        if (!utils.countMemberClaims().containsKey(p.getName().toLowerCase())) {
+                        if (!utils.hasClaims(p)) {
                             // Send the player instruction on what to do with the book
                             p.sendMessage(utils.chat("&cNOTE: &7To make a claim book, type &a\"claim\" &7at the top of the book!"));
                             p.sendMessage(utils.chat("&aThen write a player's ign on each line to add a member!"));

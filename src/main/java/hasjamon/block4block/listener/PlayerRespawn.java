@@ -12,6 +12,7 @@ public class PlayerRespawn implements Listener {
         Player p = e.getPlayer();
         String claimID = utils.getClaimID(e.getRespawnLocation());
 
+        utils.updateBossBar(p, claimID);
         if(utils.isIntruder(p, claimID))
             utils.onIntruderEnterClaim(p, claimID);
     }

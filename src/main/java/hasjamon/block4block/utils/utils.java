@@ -14,6 +14,9 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Lectern;
 import org.bukkit.block.data.type.PistonHead;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
@@ -46,6 +49,7 @@ public class utils {
     public static final Map<Player, BukkitTask> undisguiseTasks = new HashMap<>();
     public static final Map<Player, String> activeDisguises = new HashMap<>();
     public static final Map<Player, Long> lastPlayerMoves = new HashMap<>();
+    public static final Map<Player, BossBar> bossBars = new HashMap<>();
     public static final Set<String> knownPlayers = new HashSet<>();
     public static int minSecBetweenAlerts;
     public static int claimWidth;
@@ -120,7 +124,7 @@ public class utils {
 
     public static boolean claimChunk(Block block, List<String> members, Consumer<String> sendMessage) {
         // If it's a valid claim book
-        if(members.size() > 0) {
+        if(!members.isEmpty()) {
             // If the lectern is next to bedrock: Cancel
             if(isNextToBedrock(block)){
                 sendMessage.accept(chat("&cYou cannot place a claim next to bedrock"));
@@ -144,7 +148,7 @@ public class utils {
             List<String> members = findMembersInBook(meta);
 
             // If it's a valid claim book
-            if(members.size() > 0) {
+            if(!members.isEmpty()) {
                 for (Block block : blocks) {
                     // If the lectern is next to bedrock: Cancel
                     if (isNextToBedrock(block))
@@ -207,10 +211,13 @@ public class utils {
             sendMessage.accept(ChatColor.GRAY + " - " + unknownMember + ChatColor.RED + " (unknown player)");
         }
 
-        for (Player player : onlinePlayers)
-            if (claimID.equals(getClaimID(player.getLocation())))
+        for (Player player : onlinePlayers) {
+            if (claimID.equals(getClaimID(player.getLocation()))) {
+                updateBossBar(player, claimID);
                 if (isIntruder(player, claimID))
                     onIntruderEnterClaim(player, claimID);
+            }
+        }
 
         lastClaimUpdate = System.nanoTime();
 
@@ -243,7 +250,7 @@ public class utils {
                                 }
                             }else {
                                 String worldName = getWorldName(World.Environment.valueOf(claimID.split("\\|")[0]));
-                                if(!plugin.getConfig().getBoolean("hide-coords-globally") && utils.showCoordsInMsgs(player)) {
+                                if(!plugin.getConfig().getBoolean("hide-coords-globally") && showCoordsInMsgs(player)) {
                                     player.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + lecternXYZ + " in " + worldName);
                                 }else{
                                     player.sendMessage(ChatColor.RED + "You have lost a claim! Location: [hidden] in " + worldName);
@@ -266,6 +273,10 @@ public class utils {
                 }
             }
         }
+
+        for (Player player : onlinePlayers)
+            if (claimID.equals(getClaimID(player.getLocation())))
+                updateBossBar(player, claimID);
 
         Map<Player, String> intrudersThatLeft = new HashMap<>();
         if(intruders.containsKey(claimID))
@@ -428,6 +439,25 @@ public class utils {
         return count;
     }
 
+    public static boolean hasClaims(Player p) {
+        FileConfiguration claimData = plugin.cfg.getClaimData();
+        String playerName = p.getName().toLowerCase();
+
+        for(String key : claimData.getKeys(false)){
+            ConfigurationSection chunk = claimData.getConfigurationSection(key);
+
+            if(chunk != null){
+                String currentMembers = chunk.getString("members");
+                if(currentMembers != null)
+                    for (String member : currentMembers.toLowerCase().split("\\n"))
+                        if (member.equals(playerName))
+                            return true;
+            }
+        }
+
+        return false;
+    }
+
     public static void b4bCheck(Player p, Block b, BlockBreakEvent e, List<?> lootDisabledTypes, boolean requiresBlock) {
         // Are drops disabled for this block type
         boolean noloot = lootDisabledTypes.contains(b.getType().toString());
@@ -577,43 +607,6 @@ public class utils {
         double y = claimData.getDouble(claimID + ".location.Y");
         double z = claimData.getDouble(claimID + ".location.Z");
 
-        boolean sendLecternMsgs = plugin.getConfig().getBoolean("lectern-message-settings.send-lectern-messages");
-
-        if(sendLecternMsgs && claimWidth > 1) {
-            String msg = "Claim lectern is ";
-
-            if(plugin.getConfig().getBoolean("hide-coords-globally") || !showCoordsInMsgs(intruder)) {
-                msg = "You've intruded on a claim";
-            }else{
-                boolean showY = plugin.getConfig().getBoolean("lectern-message-settings.show-y");
-                boolean showExactCoords = plugin.getConfig().getBoolean("lectern-message-settings.show-exact-coords");
-
-                if (showExactCoords) {
-                    if (showY) {
-                        msg += "at " + Math.floor(x) + ", " + Math.floor(y) + ", " + Math.floor(z);
-                    } else {
-                        msg += "near " + Math.floor(x) + ", 0, " + Math.floor(z);
-                    }
-                } else {
-                    double signX = (x == 0) ? 1 : Math.signum(x);
-                    double signY = (y == 0) ? 1 : Math.signum(y);
-                    double signZ = (z == 0) ? 1 : Math.signum(z);
-                    int chunkCenterX = (int) (x - x % 16 + signX * 8);
-                    int chunkCenterY = (int) (y - y % 16 + signY * 8);
-                    int chunkCenterZ = (int) (z - z % 16 + signZ * 8);
-
-                    msg += "in the chunk near ";
-                    if (showY) {
-                        msg += chunkCenterX + ", " + chunkCenterY + ", " + chunkCenterZ;
-                    } else {
-                        msg += chunkCenterX + ", 0, " + chunkCenterZ;
-                    }
-                }
-            }
-
-            intruder.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(msg));
-        }
-
         if(!intruders.containsKey(claimID))
             intruders.put(claimID, new HashSet<>());
 
@@ -659,7 +652,7 @@ public class utils {
         if(intruders.containsKey(claimID)) {
             intruders.get(claimID).remove(intruder);
 
-            if (intruders.get(claimID).size() == 0)
+            if (intruders.get(claimID).isEmpty())
                 intruders.remove(claimID);
         }
     }
@@ -715,23 +708,30 @@ public class utils {
     }
 
     public static boolean isMemberOfClaim(String[] members, OfflinePlayer p, boolean allowDisguise) {
-        if(members != null && p != null)
-            for (String member : members)
-                if (member.equalsIgnoreCase(p.getName()) || (allowDisguise && member.equalsIgnoreCase(activeDisguises.get(p))))
+        if(members != null && p != null) {
+            for (String member : members) {
+                boolean disguisedAsMember = member.equalsIgnoreCase(activeDisguises.getOrDefault((Player) p, ""));
+                if (member.equalsIgnoreCase(p.getName()) || allowDisguise && disguisedAsMember)
                     return true;
+            }
+        }
 
         return false;
     }
 
     public static void disguisePlayer(Player disguiser, OfflinePlayer disguisee) {
         Collection<Property> textures = getCachedTextures(disguisee);
-        disguisePlayer(disguiser, textures);
+        activeDisguises.put(disguiser, disguisee.getName());
+        applyDisguise(disguiser, textures);
     }
 
-    public static void disguisePlayer(Player disguiser, Collection<Property> textures) {
+    private static void applyDisguise(Player disguiser, Collection<Property> textures) {
+        String claimID = getClaimID(disguiser.getLocation());
+
         setTextures(disguiser, textures);
         updateTexturesForOthers(disguiser);
         updateTexturesForSelf(disguiser);
+        updateBossBar(disguiser, claimID);
     }
 
     public static Collection<Property> getTextures(OfflinePlayer p){
@@ -745,7 +745,7 @@ public class utils {
                 e.printStackTrace();
             }
         }
-        
+
         return null;
     }
 
@@ -788,9 +788,7 @@ public class utils {
         if (vehicle != null) {
             vehicle.removePassenger(disguiser);
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                vehicle.addPassenger(disguiser);
-            }, 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> vehicle.addPassenger(disguiser), 1);
         }
 
         if(plugin.canUseReflection) {
@@ -811,22 +809,25 @@ public class utils {
     }
 
     public static void restorePlayerSkin(Player p) {
-        disguisePlayer(p, getCachedTextures(p));
+        applyDisguise(p, getCachedTextures(p));
     }
 
     public static void onLoseDisguise(Player disguiser) {
         if (activeDisguises.containsKey(disguiser)) {
+            String claimID = getClaimID(disguiser.getLocation());
+
             activeDisguises.remove(disguiser);
             disguiser.sendMessage("Your disguise has expired!");
+
+            updateBossBar(disguiser, claimID);
+            if (isIntruder(disguiser, claimID))
+                onIntruderEnterClaim(disguiser, claimID);
 
             if (undisguiseTasks.containsKey(disguiser)) {
                 undisguiseTasks.get(disguiser).cancel();
                 undisguiseTasks.remove(disguiser);
-            }else {
-                String claimID = getClaimID(disguiser.getLocation());
-                if (isIntruder(disguiser, claimID))
-                    onIntruderEnterClaim(disguiser, claimID);
             }
+
         }
     }
 
@@ -966,7 +967,7 @@ public class utils {
                 if(blocksPerPixel == 0)
                     blocksPerPixel = getBlocksPerPixel(view.getScale());
 
-                if (intruders.size() > 0){
+                if (!intruders.isEmpty()){
                     int centerX = view.getCenterX();
                     int centerZ = view.getCenterZ();
 
@@ -995,14 +996,7 @@ public class utils {
 
                         if (px <= 127 && px >= -128 && pz <= 127 && pz >= -128) {
                             if(canvas.getBasePixel((px + 128) / 2, (pz + 128) / 2) != MapPalette.TRANSPARENT) {
-                                double yaw = intruder.getLocation().getYaw();
-                                byte direction = (byte) Math.min(15, Math.max(0, (((yaw + 371.25) % 360) / 22.5)));
-                                byte mx = (byte) px;
-                                byte mz = (byte) pz;
-                                MapCursor.Type type = MapCursor.Type.RED_POINTER;
-                                String caption = intruder.getName();
-
-                                MapCursor cursor = new MapCursor(mx, mz, direction, type, true, caption);
+                                MapCursor cursor = getMapCursor(intruder, (byte) px, (byte) pz);
                                 cursors.addCursor(cursor);
                             }
                         }
@@ -1012,6 +1006,15 @@ public class utils {
         }
 
         canvas.setCursors(cursors);
+    }
+
+    private static MapCursor getMapCursor(Player intruder, byte px, byte pz) {
+        double yaw = intruder.getLocation().getYaw();
+        byte direction = (byte) Math.min(15, Math.max(0, (((yaw + 371.25) % 360) / 22.5)));
+        MapCursor.Type type = MapCursor.Type.RED_POINTER;
+        String caption = intruder.getName();
+
+        return new MapCursor(px, pz, direction, type, true, caption);
     }
 
     public static String getWorldName(World.Environment env){
@@ -1052,9 +1055,69 @@ public class utils {
         List<String> welcomeMessages = plugin.getConfig().getStringList("welcome-messages");
 
         for (String msg : welcomeMessages) {
-            player.sendMessage(utils.chat(msg));
+            player.sendMessage(chat(msg));
         }
 
         plugin.pluginManager.callEvent(new WelcomeMsgSentEvent(player));
     }
+
+    public static void updateBossBar(Player p, String currentClaimID) {
+        if (!bossBars.containsKey(p))
+            addBossBar(p);
+        BossBar bossBar = bossBars.get(p);
+        FileConfiguration claimData = plugin.cfg.getClaimData();
+        boolean isClaimed = claimData.contains(currentClaimID);
+
+        if (isClaimed) {
+            String coordsStr = getCoordsString(p, currentClaimID);
+
+            if (isIntruder(p, currentClaimID)) {
+                bossBar.setColor(BarColor.RED);
+                bossBar.setTitle("Claimed at " + coordsStr);
+            } else {
+                bossBar.setColor(BarColor.GREEN);
+                bossBar.setTitle("Claimed at " + coordsStr);
+            }
+        } else {
+            bossBar.setColor(BarColor.WHITE);
+                bossBar.setTitle(hasClaims(p) ? "Unclaimed" : "Unclaimed (place book on lectern to claim)");
+        }
+    }
+
+    private static void addBossBar(Player p) {
+        boolean sendLecternMsgs = plugin.getConfig().getBoolean("lectern-message-settings.send-lectern-messages");
+        BossBar bossBar = Bukkit.createBossBar("", BarColor.BLUE, BarStyle.SOLID);
+        if (sendLecternMsgs)
+            bossBar.addPlayer(p);
+        bossBars.put(p, bossBar);
+    }
+
+    private static String getCoordsString(Player p, String claimID) {
+        FileConfiguration claimData = plugin.cfg.getClaimData();
+        double x = claimData.getDouble(claimID + ".location.X");
+        double y = claimData.getDouble(claimID + ".location.Y");
+        double z = claimData.getDouble(claimID + ".location.Z");
+        boolean hideCoords = plugin.getConfig().getBoolean("hide-coords-globally") || !showCoordsInMsgs(p) || claimWidth == 1;
+        boolean showExactCoords = plugin.getConfig().getBoolean("lectern-message-settings.show-exact-coords");
+        boolean showY = plugin.getConfig().getBoolean("lectern-message-settings.show-y");
+        String result;
+
+        if (hideCoords) {
+            result = "[hidden]";
+        } else if (showExactCoords) {
+            result = "(" + (int)x + ", " + (showY ? (int)y : "??") + ", " + (int)z + ")";
+        } else {
+            double signX = (x == 0) ? 1 : Math.signum(x);
+            double signY = (y == 0) ? 1 : Math.signum(y);
+            double signZ = (z == 0) ? 1 : Math.signum(z);
+            int chunkCenterX = (int) (x - x % 16 + signX * 8);
+            int chunkCenterY = (int) (y - y % 16 + signY * 8);
+            int chunkCenterZ = (int) (z - z % 16 + signZ * 8);
+
+            result = "(" + chunkCenterX + ", " + (showY ? chunkCenterY : "??") + ", " + chunkCenterZ + ")";
+        }
+
+        return result;
+    }
+
 }

@@ -12,6 +12,7 @@ public class PlayerQuit implements Listener {
         Player p = e.getPlayer();
         String claimID = utils.getClaimID(p.getLocation());
 
+        utils.bossBars.remove(p);
         utils.onIntruderLeaveClaim(p, claimID);
 
         // Stop keeping track of the player's intruded claims

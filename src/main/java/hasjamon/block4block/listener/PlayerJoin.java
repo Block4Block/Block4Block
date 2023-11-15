@@ -4,8 +4,12 @@ import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.ClaimLostWhileOfflineEvent;
 import hasjamon.block4block.utils.utils;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -38,6 +42,7 @@ public class PlayerJoin implements Listener {
         utils.updateClaimCount();
 
         String claimID = utils.getClaimID(p.getLocation());
+        utils.updateBossBar(p, claimID);
         if(utils.isIntruder(p, claimID))
             utils.onIntruderEnterClaim(p, claimID);
 
