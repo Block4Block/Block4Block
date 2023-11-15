@@ -162,6 +162,7 @@ tnt-drops-enabled:
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
 - SPONGE
+- TARGET
 - PISTON
 - STICKY_PISTON
 - PISTON_HEAD
