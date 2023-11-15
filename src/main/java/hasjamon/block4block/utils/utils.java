@@ -667,11 +667,7 @@ public class utils {
     public static boolean isIntruder(Player p, String claimID){
         String[] members = getMembers(claimID);
 
-        // If the chunk isn't claimed or p is a member
-        if (members == null || isMemberOfClaim(members, p))
-            return false;
-
-        return true;
+        return members != null && !isMemberOfClaim(members, p);
     }
 
     public static void updateGolemHostility(){
