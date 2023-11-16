@@ -1,6 +1,7 @@
 package hasjamon.block4block.utils;
 
 import com.comphenix.protocol.utility.MinecraftReflection;
+import com.google.common.collect.Sets;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
@@ -57,6 +58,7 @@ public class utils {
     public static boolean isPaperServer = true;
     public static long lastClaimUpdate = 0;
     public static int gracePeriod = 0;
+    private static final Set<Material> airTypes = Sets.newHashSet(Material.AIR, Material.VOID_AIR, Material.CAVE_AIR);
 
     public static String chat(String message) {
         return ChatColor.translateAlternateColorCodes('&', message);
@@ -1120,4 +1122,7 @@ public class utils {
         return result;
     }
 
+    public static boolean isAir(Material type) {
+        return airTypes.contains(type);
+    }
 }

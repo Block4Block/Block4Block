@@ -117,7 +117,7 @@ public class BlockBreak implements Listener {
         String claimID = utils.getClaimID(b.getLocation());
 
         // Allow milking
-        if(b.getType() == Material.AIR)
+        if(utils.isAir(b.getType()))
             return;
 
         // Disallow filling buckets with anything other than milk
