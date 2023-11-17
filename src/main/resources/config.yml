@@ -1325,6 +1325,7 @@ no-loot-on-break:
 
 # Blocks that require different blocks to break (BlockToBreak: BlockToSpend)
 b4b-substitutions:
+  CAVE_VINES: GLOW_BERRIES
   STRIPPED_ACACIA_WOOD: ACACIA_WOOD
   STRIPPED_BIRCH_WOOD: BIRCH_WOOD
   STRIPPED_JUNGLE_WOOD: JUNGLE_WOOD
