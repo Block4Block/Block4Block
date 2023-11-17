@@ -1161,7 +1161,6 @@ no-loot-on-break:
 - REPEATER
 - REPEATING_COMMAND_BLOCK
 - RESPAWN_ANCHOR
-- ROOTED_DIRT
 - ROSE_BUSH
 - SAND
 - SANDSTONE
@@ -1327,6 +1326,7 @@ no-loot-on-break:
 
 # Blocks that require different blocks to break (BlockToBreak: BlockToSpend)
 b4b-substitutions:
+  ROOTED_DIRT: DIRT
   CAVE_VINES: GLOW_BERRIES
   STRIPPED_ACACIA_WOOD: ACACIA_WOOD
   STRIPPED_BIRCH_WOOD: BIRCH_WOOD
