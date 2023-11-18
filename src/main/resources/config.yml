@@ -107,6 +107,11 @@ hints:
   - "&6Hint #13: &eYou can type /bed once a day to get a bed!"
   - "&6Hint #14: &eWhen placing blocks, there is a 5 second grace period where all players can remove them normally."
   - "&6Hint #15: &ePress L to open advancements - they're a great way to learn about Block4Block as you play!"
+  - "&6Hint #16: &eThe lectern is protected as long as at least one of its 6 adjacent sides isn't open."
+  - "&6Hint #17: &e4 sides of the lectern can in addition be protected by blocks affected by gravity, therefore it can be protected by thousands of blocks."
+  - "&6Hint #18: &eSand, Gravel and Concrete Powder are all blocks affected by gravity. The concrete can be in 16 different colors. That's 18 different blocks to protect with!"
+  - "&6Hint #19: &eMake sure to not have any water near your Concrete Powder that is protecting your claim, else they may stop being powder and be stuck solid in the air!"
+  - "&6Hint #20: &eTo gain netherrack, you must break Nylium. You can bonemeal Netherrack near crimson and warped Nylium to spread the Nylium."
   - "&6Hint #?: &eSheep are colourful and so are blocks!"
 
 # Entities that cannot blow up blocks in claims

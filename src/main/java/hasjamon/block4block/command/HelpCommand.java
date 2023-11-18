@@ -184,14 +184,17 @@ public class HelpCommand implements CommandExecutor, Listener {
                 "§7Claims prevent non-members from placing blocks.",
                 "§7Players can still break blocks inside your claim.",
                 "§7By holding TAB you can see how many claims you and others have.",
-                "§7You can steal a claim by taking the book or breaking the lectern."
+                "§7You can steal a claim by taking the book or breaking the lectern.",
+                "§7To break a lectern, remove any blocks in direct contact with it first."
         ));
         inv.setItem(21,createItem(Material.IRON_BLOCK,
                 "§cClaim: §eProtecting a claim.",
                 "§7Protect your claim by surrounding your lectern with blocks.",
                 "§7Choose blocks you believe infiltrators won't expect.",
                 "§7Use redstone traps and doors to stop them from reaching your lectern.",
-                "§7Nametag strong mobs and have them guard the lectern for you."
+                "§7Nametag strong mobs and have them guard the lectern for you.",
+                "§7Blocks affected by gravity can be pillared on each side of the lectern.",
+                "§7Be aware the lectern breaks gravity blocks landing on it."
         ));
         inv.setItem(22,writableBook);
         inv.setItem(23,createItem(Material.BOOK,
