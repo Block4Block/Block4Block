@@ -13,6 +13,7 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Lectern;
 import org.bukkit.block.data.type.PistonHead;
 import org.bukkit.boss.BarColor;
@@ -31,6 +32,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.map.*;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.BoundingBox;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
@@ -51,14 +53,34 @@ public class utils {
     public static final Map<Player, String> activeDisguises = new HashMap<>();
     public static final Map<Player, Long> lastPlayerMoves = new HashMap<>();
     public static final Map<Player, BossBar> bossBars = new HashMap<>();
+    public static final Map<Location, Long> claimInvulnerabilityStartTick = new HashMap<>();
     public static final Set<String> knownPlayers = new HashSet<>();
+    private static final Set<Material> airTypes = Sets.newHashSet(
+            Material.AIR,
+            Material.VOID_AIR,
+            Material.CAVE_AIR);
+    private static final Set<Material> nonProtectiveBlockTypes = Sets.union(
+            airTypes,
+            Sets.newHashSet(
+                    Material.WATER,
+                    Material.LAVA
+            )
+    );
+    private static final Set<BlockFace> adjacentBlockFaces = Sets.newHashSet(
+            BlockFace.UP,
+//            BlockFace.DOWN,
+            BlockFace.NORTH,
+            BlockFace.SOUTH,
+            BlockFace.EAST,
+            BlockFace.WEST
+    );
     public static int minSecBetweenAlerts;
     public static int claimWidth;
     private static boolean masterBookChangeMsgSent = false;
     public static boolean isPaperServer = true;
     public static long lastClaimUpdate = 0;
     public static int gracePeriod = 0;
-    private static final Set<Material> airTypes = Sets.newHashSet(Material.AIR, Material.VOID_AIR, Material.CAVE_AIR);
+    public static long currentTick = 0;
 
     public static String chat(String message) {
         return ChatColor.translateAlternateColorCodes('&', message);
@@ -108,6 +130,34 @@ public class utils {
             return members.split("\\n");
         else
             return null;
+    }
+
+    public static boolean isProtectedClaimLectern(Block block) {
+        return block.getType() == Material.LECTERN && utils.isClaimBlock(block) && (utils.countProtectedSides(block) > 0 || isClaimInvulnerable(block));
+    }
+
+    public static boolean isUnprotectedClaimLectern(Block block) {
+        return block.getType() == Material.LECTERN && utils.isClaimBlock(block) && utils.countProtectedSides(block) == 0 && !isClaimInvulnerable(block);
+    }
+
+    public static long countProtectedSides(Block block) {
+        return adjacentBlockFaces.stream().filter(direction -> {
+            Block adjacent = block.getRelative(direction);
+            boolean isProtectiveNonClaimBlock = !nonProtectiveBlockTypes.contains(adjacent.getType()) && !isClaimBlock(adjacent);
+            long numFallingBlocksAbove = adjacent.getWorld()
+                    .getNearbyEntities(BoundingBox.of(adjacent).resize(0, 0, 0, 0, 320, 0),
+                            entity -> entity.getType() == EntityType.FALLING_BLOCK)
+                    .size();
+            boolean hasGravityAffectedBlockAbove = adjacent.getRelative(BlockFace.UP).getType().hasGravity();
+
+            return isProtectiveNonClaimBlock ||
+                    numFallingBlocksAbove > 0 ||
+                    hasGravityAffectedBlockAbove;
+        }).count();
+    }
+
+    public static boolean isClaimInvulnerable(Block block) {
+        return currentTick - claimInvulnerabilityStartTick.getOrDefault(block.getLocation(), 0L) <= 10;
     }
 
     // Check if a block is a lectern with a claim book
@@ -496,6 +546,12 @@ public class utils {
             }
 
             plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, true));
+            for(BlockFace face : adjacentBlockFaces) {
+                Block adjacent = b.getRelative(face.getOppositeFace());
+                if(isClaimBlock(adjacent)){
+                    claimInvulnerabilityStartTick.put(adjacent.getLocation(), currentTick);
+                }
+            }
         }
 
         if(noloot){
@@ -1124,5 +1180,9 @@ public class utils {
 
     public static boolean isAir(Material type) {
         return airTypes.contains(type);
+    }
+
+    public static void updateCurrentTick() {
+        currentTick++;
     }
 }
