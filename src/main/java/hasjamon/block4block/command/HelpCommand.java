@@ -185,7 +185,7 @@ public class HelpCommand implements CommandExecutor, Listener {
                 "§7Players can still break blocks inside your claim.",
                 "§7By holding TAB you can see how many claims you and others have.",
                 "§7You can steal a claim by taking the book or breaking the lectern.",
-                "§7To break a lectern, remove any blocks in direct contact with it first."
+                "§7To break a lectern, remove any blocks in direct contact with it first. Bottom is excluded."
         ));
         inv.setItem(21,createItem(Material.IRON_BLOCK,
                 "§cClaim: §eProtecting a claim.",
