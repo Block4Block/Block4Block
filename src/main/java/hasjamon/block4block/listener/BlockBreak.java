@@ -120,22 +120,18 @@ public class BlockBreak implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onSpawnerBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
-        event.getPlayer().sendMessage("block: " + block);
 
         if (block.getType() == Material.SPAWNER) {
             CreatureSpawner spawner = (CreatureSpawner) block.getState();
             EntityType spawnType = spawner.getSpawnedType();
             ItemStack spawnerItem = new ItemStack(Material.SPAWNER);
             ItemMeta itemMeta = spawnerItem.getItemMeta();
-            event.getPlayer().sendMessage("itemMeta: " + itemMeta);
-            event.getPlayer().sendMessage("spawnType: " + spawnType);
 
             if (itemMeta != null && spawnType != null) {
                 itemMeta.setDisplayName(utils.prettifyEnumName(spawnType) + " Spawner");
                 itemMeta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS); // Hides the "Interact with spawn egg..." text
                 itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING, spawnType.name());
                 spawnerItem.setItemMeta(itemMeta);
-                event.getPlayer().sendMessage("spawnerItem: " + spawnerItem);
                 block.getWorld().dropItemNaturally(block.getLocation(), spawnerItem);
             }
         }
