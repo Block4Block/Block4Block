@@ -6,13 +6,21 @@ import hasjamon.block4block.events.BlockBreakInClaimEvent;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.block.CreatureSpawner;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 
@@ -107,6 +115,29 @@ public class BlockBreak implements Listener {
             }
 
             utils.b4bCheck(p, b, e, lootDisabledTypes, requiresBlock);
+        }
+    }
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onSpawnerBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        event.getPlayer().sendMessage("block: " + block);
+
+        if (block.getType() == Material.SPAWNER) {
+            CreatureSpawner spawner = (CreatureSpawner) block.getState();
+            EntityType spawnType = spawner.getSpawnedType();
+            ItemStack spawnerItem = new ItemStack(Material.SPAWNER);
+            ItemMeta itemMeta = spawnerItem.getItemMeta();
+            event.getPlayer().sendMessage("itemMeta: " + itemMeta);
+            event.getPlayer().sendMessage("spawnType: " + spawnType);
+
+            if (itemMeta != null && spawnType != null) {
+                itemMeta.setDisplayName(utils.prettifyEnumName(spawnType) + " Spawner");
+                itemMeta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS); // Hides the "Interact with spawn egg..." text
+                itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING, spawnType.name());
+                spawnerItem.setItemMeta(itemMeta);
+                event.getPlayer().sendMessage("spawnerItem: " + spawnerItem);
+                block.getWorld().dropItemNaturally(block.getLocation(), spawnerItem);
+            }
         }
     }
 

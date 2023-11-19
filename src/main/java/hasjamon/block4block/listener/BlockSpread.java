@@ -2,6 +2,7 @@ package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -48,7 +49,8 @@ public class BlockSpread implements Listener {
                 break;
 
             case LAVA:
-                result = source.getLocation().getBlockY() > lavaFlowMaxY;
+                World.Environment dimension = source.getWorld().getEnvironment();
+                result = source.getLocation().getBlockY() > lavaFlowMaxY && dimension != World.Environment.NETHER;
                 break;
         }
 

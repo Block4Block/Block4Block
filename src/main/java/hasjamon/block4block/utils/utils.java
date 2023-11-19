@@ -11,6 +11,7 @@ import hasjamon.block4block.events.PlayerClaimsCountedEvent;
 import hasjamon.block4block.events.WelcomeMsgSentEvent;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.apache.commons.lang.WordUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -1184,5 +1185,9 @@ public class utils {
 
     public static void updateCurrentTick() {
         currentTick++;
+    }
+
+    public static <E extends Enum<E>> String prettifyEnumName(E theEnum) {
+        return WordUtils.capitalizeFully(theEnum.name().replaceAll("_", " "));
     }
 }
