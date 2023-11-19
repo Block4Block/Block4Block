@@ -4,6 +4,8 @@ import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.ClaimBookPlacedEvent;
 import hasjamon.block4block.events.ClaimRemovedEvent;
 import hasjamon.block4block.utils.utils;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -11,6 +13,7 @@ import org.bukkit.block.Lectern;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerTakeLecternBookEvent;
@@ -109,7 +112,7 @@ public class BookPlaceTake implements Listener {
     }
 
     // Runs if a player takes a book from a lectern, then unclaims the chunk if it's a claim book
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBookTake(PlayerTakeLecternBookEvent e){
         Block lecternBlock = e.getLectern().getBlock();
         String claimID = utils.getClaimID(e.getLectern().getLocation());
@@ -118,9 +121,19 @@ public class BookPlaceTake implements Listener {
             if (utils.isClaimBlock(lecternBlock)) {
                 Player player = e.getPlayer();
                 boolean isMember = utils.isMemberOfClaim(utils.getMembers(claimID), player);
+                long numProtectedSides = utils.countProtectedSides(lecternBlock);
+                boolean isInvulnerable = utils.isClaimInvulnerable(lecternBlock);
 
-                utils.unclaimChunk(lecternBlock, true, player::sendMessage);
-                plugin.pluginManager.callEvent(new ClaimRemovedEvent(player, lecternBlock, isMember));
+                if (isMember || numProtectedSides == 0 && !isInvulnerable) {
+                    utils.unclaimChunk(lecternBlock, true, player::sendMessage);
+                    plugin.pluginManager.callEvent(new ClaimRemovedEvent(player, lecternBlock, isMember));
+                }else{
+                    if(!isInvulnerable) {
+                        String msg = utils.chat("&aLectern is still protected from &c" + numProtectedSides + " &asides");
+                        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(msg));
+                    }
+                    e.setCancelled(true);
+                }
             }
         }
     }

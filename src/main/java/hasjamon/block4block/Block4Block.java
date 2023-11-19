@@ -8,9 +8,6 @@ import hasjamon.block4block.utils.utils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -43,6 +40,7 @@ public class Block4Block extends JavaPlugin{
         setupHints(); // Prepares hints and starts broadcasting them
         if(this.getConfig().getBoolean("golems-guard-claims"))
             getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
+        getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateCurrentTick, 0, 1);
         utils.minSecBetweenAlerts = this.getConfig().getInt("seconds-between-intruder-alerts");
         utils.claimWidth = this.getConfig().getInt("claim-width");
         utils.gracePeriod = this.getConfig().getInt("b4b-grace-period");
