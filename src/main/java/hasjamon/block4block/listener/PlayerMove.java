@@ -23,7 +23,7 @@ public class PlayerMove implements Listener {
     public void onPlayerMove(PlayerMoveEvent e){
         Player p = e.getPlayer();
 
-        if(p.getGameMode() == GameMode.SURVIVAL && e.getTo() != null) {
+        if(e.getTo() != null) {
             String prevChunkID = utils.getChunkID(e.getFrom());
             String currentChunkID = utils.getChunkID(e.getTo());
 
@@ -31,7 +31,7 @@ public class PlayerMove implements Listener {
             if (!prevChunkID.equals(currentChunkID)) {
                 String prevClaimID = utils.getClaimID(e.getFrom());
                 String currentClaimID = utils.getClaimID(e.getTo());
-                boolean isIntruder = utils.isIntruder(p, currentClaimID);
+                boolean isIntruder = utils.isIntruder(p, currentClaimID) && p.getGameMode() == GameMode.SURVIVAL;
 
                 // If p has entered a new claim
                 if (!prevClaimID.equals(currentClaimID)) {
@@ -46,9 +46,9 @@ public class PlayerMove implements Listener {
                 // If p is currently an intruder
                 if (isIntruder) {
                     // Make all iron golems in chunk hostile to the intruder
-                    if(plugin.getConfig().getBoolean("golems-guard-claims"))
-                        for(IronGolem golem : utils.ironGolems.keySet())
-                            if(currentChunkID.equals(utils.getChunkID(golem.getLocation())))
+                    if (plugin.getConfig().getBoolean("golems-guard-claims"))
+                        for (IronGolem golem : utils.ironGolems.keySet())
+                            if (currentChunkID.equals(utils.getChunkID(golem.getLocation())))
                                 golem.damage(0, p);
                 }
 

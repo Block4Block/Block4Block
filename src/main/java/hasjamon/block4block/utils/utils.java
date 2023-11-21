@@ -547,12 +547,9 @@ public class utils {
             }
 
             plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, true));
-            for(BlockFace face : adjacentBlockFaces) {
-                Block adjacent = b.getRelative(face.getOppositeFace());
-                if(isClaimBlock(adjacent)){
-                    claimInvulnerabilityStartTick.put(adjacent.getLocation(), currentTick);
-                }
-            }
+            getClaimBlocksProtectedBy(b).forEach(claimBlock ->
+                    claimInvulnerabilityStartTick.put(claimBlock.getLocation(), currentTick)
+            );
         }
 
         if(noloot){
@@ -567,6 +564,19 @@ public class utils {
             b.setType(Material.AIR);
             e.setCancelled(true);
         }
+    }
+
+    public static List<Block> getClaimBlocksProtectedBy(Block protectingBlock) {
+        List<Block> result = new LinkedList<>();
+
+        for(BlockFace face : adjacentBlockFaces) {
+            Block adjacent = protectingBlock.getRelative(face.getOppositeFace());
+            if(isClaimBlock(adjacent)){
+                result.add(adjacent);
+            }
+        }
+
+        return result;
     }
 
     private static void dropInventory(Block b) {
@@ -945,7 +955,7 @@ public class utils {
                         claims = claimsNow;
                         lastUpdate = System.nanoTime();
                     }
-                }else if(lastPlayerMoves.containsKey(p) && lastUpdate < lastPlayerMoves.get(p)){
+                }else if(lastUpdate < lastPlayerMoves.getOrDefault(p, 0L)){
                     int px = 2 * (p.getLocation().getBlockX() - centerX) / blocksPerPixel;
                     int pz = 2 * (p.getLocation().getBlockZ() - centerZ) / blocksPerPixel;
 

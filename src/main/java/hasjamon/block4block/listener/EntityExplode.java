@@ -45,6 +45,8 @@ public class EntityExplode implements Listener {
             e.blockList().removeIf(b -> claimData.contains(utils.getClaimID(b.getLocation())));
         }
 
+        e.blockList().removeIf(b -> !utils.getClaimBlocksProtectedBy(b).isEmpty());
+
         if(entityType == EntityType.PRIMED_TNT || entityType == EntityType.MINECART_TNT) {
             List<String> tntDropsEnabled = plugin.getConfig().getStringList("tnt-drops-enabled");
 
