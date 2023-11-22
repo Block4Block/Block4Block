@@ -68,7 +68,7 @@ public class utils {
             )
     );
     private static final Set<BlockFace> adjacentBlockFaces = Sets.newHashSet(
-            BlockFace.UP,
+//            BlockFace.UP,
 //            BlockFace.DOWN,
             BlockFace.NORTH,
             BlockFace.SOUTH,
