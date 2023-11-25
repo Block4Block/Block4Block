@@ -25,7 +25,7 @@ public class PlayerDeath implements Listener {
 
         utils.onIntruderLeaveClaim(p, claimID);
 
-        if(plugin.canUseReflection) {
+        if(utils.canUseReflection) {
             utils.restorePlayerSkin(p);
             utils.onLoseDisguise(p);
         }

@@ -34,11 +34,11 @@ public class EntityExplode implements Listener {
             case CUSTOM -> "custom";
         };
 
-        List<?> claimImmunity = plugin.getConfig().getList("claim-explosion-immunity." + dimension);
+        List<String> claimImmunity = plugin.getConfig().getStringList("claim-explosion-immunity." + dimension);
         EntityType entityType = e.getEntityType();
 
         // If claims in the current dimension are immune to explosions from the entity
-        if(claimImmunity != null && claimImmunity.contains(entityType.toString())){
+        if(claimImmunity.contains(entityType.toString())){
             FileConfiguration claimData = plugin.cfg.getClaimData();
 
             // Remove blocks from the to-be-exploded list if they're inside a claim

@@ -56,29 +56,18 @@ public class utils {
     public static final Map<Player, BossBar> bossBars = new HashMap<>();
     public static final Map<Location, Long> claimInvulnerabilityStartTick = new HashMap<>();
     public static final Set<String> knownPlayers = new HashSet<>();
+    public static final Set<Material> nonProtectiveBlockTypes = new HashSet<>();
+    public static final Set<BlockFace> protectiveBlockFaces = new HashSet<>();
     private static final Set<Material> airTypes = Sets.newHashSet(
             Material.AIR,
             Material.VOID_AIR,
-            Material.CAVE_AIR);
-    private static final Set<Material> nonProtectiveBlockTypes = Sets.union(
-            airTypes,
-            Sets.newHashSet(
-                    Material.WATER,
-                    Material.LAVA
-            )
-    );
-    private static final Set<BlockFace> adjacentBlockFaces = Sets.newHashSet(
-//            BlockFace.UP,
-//            BlockFace.DOWN,
-            BlockFace.NORTH,
-            BlockFace.SOUTH,
-            BlockFace.EAST,
-            BlockFace.WEST
+            Material.CAVE_AIR
     );
     public static int minSecBetweenAlerts;
     public static int claimWidth;
     private static boolean masterBookChangeMsgSent = false;
     public static boolean isPaperServer = true;
+    public static boolean canUseReflection = true;
     public static long lastClaimUpdate = 0;
     public static int gracePeriod = 0;
     public static long currentTick = 0;
@@ -142,7 +131,7 @@ public class utils {
     }
 
     public static long countProtectedSides(Block block) {
-        return adjacentBlockFaces.stream().filter(direction -> {
+        return protectiveBlockFaces.stream().filter(direction -> {
             Block adjacent = block.getRelative(direction);
             boolean isProtectiveNonClaimBlock = !nonProtectiveBlockTypes.contains(adjacent.getType()) && !isClaimBlock(adjacent);
             long numFallingBlocksAbove = adjacent.getWorld()
@@ -169,7 +158,7 @@ public class utils {
         double lecternY = claimData.getDouble(cID + ".location.Y", Double.MAX_VALUE);
         double lecternZ = claimData.getDouble(cID + ".location.Z", Double.MAX_VALUE);
 
-        if(lecternX == Double.MAX_VALUE || lecternY == Double.MAX_VALUE || lecternZ == Double.MAX_VALUE)
+        if (lecternX == Double.MAX_VALUE || lecternY == Double.MAX_VALUE || lecternZ == Double.MAX_VALUE)
             return false;
 
         return lecternX == b.getLocation().getX() && lecternY == b.getLocation().getY() && lecternZ == b.getLocation().getZ();
@@ -177,19 +166,19 @@ public class utils {
 
     public static boolean claimChunk(Block block, List<String> members, Consumer<String> sendMessage) {
         // If it's a valid claim book
-        if(!members.isEmpty()) {
+        if (!members.isEmpty()) {
             // If the lectern is next to bedrock: Cancel
-            if(isNextToBedrock(block)){
+            if (isTooCloseToBedrock(block)) {
                 sendMessage.accept(chat("&cYou cannot place a claim next to bedrock"));
                 return false;
             }
-
+            
             setChunkClaim(block, members, sendMessage, null);
             updateClaimCount();
             plugin.cfg.saveClaimData();
             plugin.cfg.saveOfflineClaimNotifications();
 
-        }else{
+        } else {
             sendMessage.accept(chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
         }
 
@@ -201,10 +190,10 @@ public class utils {
             List<String> members = findMembersInBook(meta);
 
             // If it's a valid claim book
-            if(!members.isEmpty()) {
+            if (!members.isEmpty()) {
                 for (Block block : blocks) {
                     // If the lectern is next to bedrock: Cancel
-                    if (isNextToBedrock(block))
+                    if (isTooCloseToBedrock(block))
                         continue;
 
                     setChunkClaim(block, members, masterBookID);
@@ -216,7 +205,7 @@ public class utils {
         }
     }
 
-    private static void setChunkClaim(Block block, List<String> members, String masterBookID){
+    private static void setChunkClaim(Block block, List<String> members, String masterBookID) {
         setChunkClaim(block, members, null, masterBookID);
     }
 
@@ -234,9 +223,10 @@ public class utils {
         onChunkClaim(claimID, members, sendMessage, masterBookID);
     }
 
-    public static void onChunkClaim(String claimID, List<String> members, @Nullable Consumer<String> sendMessage, String masterBookID){
-        if(sendMessage == null)
-            sendMessage = (msg) -> {};
+    public static void onChunkClaim(String claimID, List<String> members, @Nullable Consumer<String> sendMessage, String masterBookID) {
+        if (sendMessage == null)
+            sendMessage = (msg) -> {
+            };
         Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
         Map<Boolean, List<String>> doMembersExist =
                 members.stream().collect(
@@ -250,11 +240,11 @@ public class utils {
 
             boolean isOffline = onlinePlayers.stream().noneMatch(op -> op.getName().equalsIgnoreCase(knownMember));
 
-            if(isOffline){
+            if (isOffline) {
                 String name = knownMember.toLowerCase();
                 FileConfiguration offlineClaimNotifications = plugin.cfg.getOfflineClaimNotifications();
 
-                if(masterBookID != null)
+                if (masterBookID != null)
                     offlineClaimNotifications.set(name + ".masterbooks." + masterBookID, false);
                 else
                     offlineClaimNotifications.set(name + ".chunks." + claimID, null);
@@ -277,16 +267,16 @@ public class utils {
         // plugin.pluginManager.callEvent(new ChunkClaimedEvent(doMembersExist.get(true)));
     }
 
-    public static void onChunkUnclaim(String claimID, String[] members, Location lecternLoc, String masterBookID){
-        String xyz = lecternLoc.getBlockX() +", "+ lecternLoc.getBlockY() +", "+ lecternLoc.getBlockZ();
+    public static void onChunkUnclaim(String claimID, String[] members, Location lecternLoc, String masterBookID) {
+        String xyz = lecternLoc.getBlockX() + ", " + lecternLoc.getBlockY() + ", " + lecternLoc.getBlockZ();
 
         onChunkUnclaim(claimID, members, xyz, masterBookID);
     }
 
-    public static void onChunkUnclaim(String claimID, String[] members, String lecternXYZ, String masterBookID){
+    public static void onChunkUnclaim(String claimID, String[] members, String lecternXYZ, String masterBookID) {
         Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
 
-        if(members != null) {
+        if (members != null) {
             for (String member : members) {
                 if (knownPlayers.contains(member.toLowerCase())) {
                     boolean isOffline = true;
@@ -295,17 +285,17 @@ public class utils {
                     for (Player player : onlinePlayers) {
                         if (player.getName().equalsIgnoreCase(member)) {
                             isOffline = false;
-                            if(masterBookID != null) {
-                                if(!masterBookChangeMsgSent) {
+                            if (masterBookID != null) {
+                                if (!masterBookChangeMsgSent) {
                                     String msg = "Your name has been removed from Master Book #" + masterBookID + " and all related claims!";
                                     player.sendMessage(ChatColor.RED + msg);
                                     masterBookChangeMsgSent = true;
                                 }
-                            }else {
+                            } else {
                                 String worldName = getWorldName(World.Environment.valueOf(claimID.split("\\|")[0]));
-                                if(!plugin.getConfig().getBoolean("hide-coords-globally") && showCoordsInMsgs(player)) {
+                                if (!plugin.getConfig().getBoolean("hide-coords-globally") && showCoordsInMsgs(player)) {
                                     player.sendMessage(ChatColor.RED + "You have lost a claim! Location: " + lecternXYZ + " in " + worldName);
-                                }else{
+                                } else {
                                     player.sendMessage(ChatColor.RED + "You have lost a claim! Location: [hidden] in " + worldName);
                                 }
                             }
@@ -317,9 +307,9 @@ public class utils {
                         String name = member.toLowerCase();
                         FileConfiguration offlineClaimNotifications = plugin.cfg.getOfflineClaimNotifications();
 
-                        if(masterBookID != null) {
+                        if (masterBookID != null) {
                             offlineClaimNotifications.set(name + ".masterbooks." + masterBookID, true);
-                        }else {
+                        } else {
                             offlineClaimNotifications.set(name + ".chunks." + claimID, lecternXYZ);
                         }
                     }
@@ -332,11 +322,11 @@ public class utils {
                 updateBossBar(player, claimID);
 
         Map<Player, String> intrudersThatLeft = new HashMap<>();
-        if(intruders.containsKey(claimID))
-            for(Player intruder : intruders.get(claimID))
+        if (intruders.containsKey(claimID))
+            for (Player intruder : intruders.get(claimID))
                 intrudersThatLeft.put(intruder, claimID);
 
-        for(Player intruder : intrudersThatLeft.keySet())
+        for (Player intruder : intrudersThatLeft.keySet())
             onIntruderLeaveClaim(intruder, intrudersThatLeft.get(intruder));
 
         lastClaimUpdate = System.nanoTime();
@@ -348,7 +338,7 @@ public class utils {
         return findMembersInBook(pages);
     }
 
-    public static List<String> findMembersInBook(List<String> pages){
+    public static List<String> findMembersInBook(List<String> pages) {
         HashMap<String, String> members = new LinkedHashMap<>();
 
         for (String page : pages) {
@@ -362,7 +352,7 @@ public class utils {
                 String member = lines[i].trim();
 
                 // If the member name is valid
-                if(!member.contains(" ") && !member.isEmpty() && !members.containsKey(member.toLowerCase()))
+                if (!member.contains(" ") && !member.isEmpty() && !members.containsKey(member.toLowerCase()))
                     members.put(member.toLowerCase(), member);
             }
         }
@@ -370,7 +360,7 @@ public class utils {
         return members.values().stream().toList();
     }
 
-    private static boolean isNextToBedrock(Block block) {
+    private static boolean isTooCloseToBedrock(Block block) {
         for (int x = -1; x <= 1; x++)
             for (int y = -1; y <= 1; y++)
                 for (int z = -1; z <= 1; z++)
@@ -390,21 +380,21 @@ public class utils {
         String[] members = getMembers(claimID);
 
         // If it's a (copy of a) master book, remove it from the list of copies on lecterns
-        if(block.getType() == Material.LECTERN){
+        if (block.getType() == Material.LECTERN) {
             Lectern lectern = (Lectern) block.getState();
             ItemStack book = lectern.getInventory().getItem(0);
 
-            if(book != null){
+            if (book != null) {
                 BookMeta meta = (BookMeta) book.getItemMeta();
 
-                if(meta != null){
+                if (meta != null) {
                     List<String> lore = meta.getLore();
 
-                    if(lore != null){
+                    if (lore != null) {
                         FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
                         String bookID = String.join("", lore).substring(17);
 
-                        if(masterBooks.contains(bookID + ".copies-on-lecterns")) {
+                        if (masterBooks.contains(bookID + ".copies-on-lecterns")) {
                             List<String> copies = masterBooks.getStringList(bookID + ".copies-on-lecterns");
                             String xyz = blockLoc.getBlockX() + "," + blockLoc.getBlockY() + "," + blockLoc.getBlockZ();
 
@@ -436,14 +426,14 @@ public class utils {
     public static void unclaimChunkBulk(Set<Block> blocks, String masterBookID, BookMeta meta) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
 
-        for(Block b : blocks) {
+        for (Block b : blocks) {
             Location bLoc = b.getLocation();
             String claimID = getClaimID(bLoc);
             String[] membersBefore = getMembers(claimID);
             List<String> membersAfter = findMembersInBook(meta);
             String[] membersRemoved = null;
 
-            if(membersBefore != null)
+            if (membersBefore != null)
                 membersRemoved = Arrays.stream(membersBefore).filter(mb -> !membersAfter.contains(mb)).toArray(String[]::new);
 
             claimData.set(claimID, null);
@@ -461,12 +451,12 @@ public class utils {
     public static void updateClaimCount() {
         HashMap<String, Integer> membersNumClaims = countMemberClaims();
 
-        for(Player p : Bukkit.getOnlinePlayers()) {
+        for (Player p : Bukkit.getOnlinePlayers()) {
             Integer pClaims = membersNumClaims.get(p.getName().toLowerCase());
 
-            if(pClaims == null) {
+            if (pClaims == null) {
                 p.setPlayerListName(p.getName() + chat(" - &c0"));
-            }else {
+            } else {
                 p.setPlayerListName(p.getName() + chat(" - &c" + pClaims));
                 plugin.pluginManager.callEvent(new PlayerClaimsCountedEvent(p, pClaims));
             }
@@ -478,12 +468,12 @@ public class utils {
         FileConfiguration claimData = plugin.cfg.getClaimData();
         HashMap<String, Integer> count = new HashMap<>();
 
-        for(String key : claimData.getKeys(false)){
+        for (String key : claimData.getKeys(false)) {
             ConfigurationSection chunk = claimData.getConfigurationSection(key);
 
-            if(chunk != null){
+            if (chunk != null) {
                 String currentMembers = chunk.getString("members");
-                if(currentMembers != null)
+                if (currentMembers != null)
                     for (String cm : currentMembers.toLowerCase().split("\\n"))
                         count.merge(cm, 1, Integer::sum);
             }
@@ -496,12 +486,12 @@ public class utils {
         FileConfiguration claimData = plugin.cfg.getClaimData();
         String playerName = p.getName().toLowerCase();
 
-        for(String key : claimData.getKeys(false)){
+        for (String key : claimData.getKeys(false)) {
             ConfigurationSection chunk = claimData.getConfigurationSection(key);
 
-            if(chunk != null){
+            if (chunk != null) {
                 String currentMembers = chunk.getString("members");
-                if(currentMembers != null)
+                if (currentMembers != null)
                     for (String member : currentMembers.toLowerCase().split("\\n"))
                         if (member.equals(playerName))
                             return true;
@@ -515,7 +505,7 @@ public class utils {
         // Are drops disabled for this block type
         boolean noloot = lootDisabledTypes.contains(b.getType().toString());
 
-        if(requiresBlock) {
+        if (requiresBlock) {
             Material requiredType = b.getType();
 
             ConfigurationSection substitutions = plugin.getConfig().getConfigurationSection("b4b-substitutions");
@@ -537,7 +527,7 @@ public class utils {
                     }
                 }
 
-                if (!itemInInventory){
+                if (!itemInInventory) {
                     e.setCancelled(true);
                     p.spigot().sendMessage(ChatMessageType.ACTION_BAR,
                             new TextComponent(chat("&aYou need &c" + requiredType + " &ain your hotbar to break this!")));
@@ -552,7 +542,7 @@ public class utils {
             );
         }
 
-        if(noloot){
+        if (noloot) {
             dropInventory(b);
 
             if (b.getType() == Material.PISTON_HEAD) {
@@ -569,9 +559,9 @@ public class utils {
     public static List<Block> getClaimBlocksProtectedBy(Block protectingBlock) {
         List<Block> result = new LinkedList<>();
 
-        for(BlockFace face : adjacentBlockFaces) {
+        for (BlockFace face : protectiveBlockFaces) {
             Block adjacent = protectingBlock.getRelative(face.getOppositeFace());
-            if(isClaimBlock(adjacent)){
+            if (isClaimBlock(adjacent)) {
                 result.add(adjacent);
             }
         }
@@ -580,11 +570,11 @@ public class utils {
     }
 
     private static void dropInventory(Block b) {
-        if(b.getState() instanceof BlockInventoryHolder bInv) {
+        if (b.getState() instanceof BlockInventoryHolder bInv) {
             Inventory inv = bInv.getInventory();
 
             for (ItemStack item : inv.getStorageContents()) {
-                if(item != null) {
+                if (item != null) {
                     b.getWorld().dropItemNaturally(b.getLocation(), item);
                 }
             }
@@ -592,7 +582,7 @@ public class utils {
     }
 
     // Returns log2(n + 2)
-    public static double calcGeneralChickenBonus(double numNamedChickens){
+    public static double calcGeneralChickenBonus(double numNamedChickens) {
         // log2(x) = log(x) / log(2)
         return Math.log(numNamedChickens + 2) / Math.log(2);
     }
@@ -603,11 +593,11 @@ public class utils {
         Set<String> namedChickensPos = new HashSet<>();
         Map<Character, Integer> letterBonuses = new HashMap<>();
 
-        for(Entity ne : nearbyEntities){
-            if(ne.getType() == EntityType.CHICKEN){
+        for (Entity ne : nearbyEntities) {
+            if (ne.getType() == EntityType.CHICKEN) {
                 String chickenName = ne.getCustomName();
 
-                if(chickenName != null) {
+                if (chickenName != null) {
                     Location loc = ne.getLocation();
                     String pos = loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
 
@@ -623,13 +613,13 @@ public class utils {
         return new ChickenBonuses(letterBonuses, namedChickensPos.size());
     }
 
-    public static Material getRandomSpawnEgg(Map<Character, Integer> letterBonuses){
+    public static Material getRandomSpawnEgg(Map<Character, Integer> letterBonuses) {
         ConfigurationSection weightConfig = plugin.getConfig().getConfigurationSection("spawn-egg-weights");
         Random rand = new Random();
         int totalWeight = calcTotalWeight(letterBonuses);
         int i = rand.nextInt(totalWeight);
 
-        if(weightConfig != null) {
+        if (weightConfig != null) {
             for (String eggName : weightConfig.getKeys(false)) {
                 Character firstLetter = eggName.toLowerCase().charAt(0);
                 Integer bonus = letterBonuses.get(firstLetter);
@@ -648,11 +638,11 @@ public class utils {
         return Material.TROPICAL_FISH_SPAWN_EGG;
     }
 
-    private static int calcTotalWeight(Map<Character, Integer> letterBonuses){
+    private static int calcTotalWeight(Map<Character, Integer> letterBonuses) {
         ConfigurationSection weightConfig = plugin.getConfig().getConfigurationSection("spawn-egg-weights");
         int totalWeight = 0;
 
-        if(weightConfig != null) {
+        if (weightConfig != null) {
             for (String eggName : weightConfig.getKeys(false)) {
                 Character firstLetter = eggName.toLowerCase().charAt(0);
                 Integer bonus = letterBonuses.get(firstLetter);
@@ -668,7 +658,7 @@ public class utils {
     }
 
     public static void onIntruderEnterClaim(Player intruder, String claimID) {
-        if(intruder.getGameMode() != GameMode.SURVIVAL)
+        if (intruder.getGameMode() != GameMode.SURVIVAL)
             return;
 
         FileConfiguration claimData = plugin.cfg.getClaimData();
@@ -676,14 +666,14 @@ public class utils {
         double y = claimData.getDouble(claimID + ".location.Y");
         double z = claimData.getDouble(claimID + ".location.Z");
 
-        if(!intruders.containsKey(claimID))
+        if (!intruders.containsKey(claimID))
             intruders.put(claimID, new HashSet<>());
 
         intruders.get(claimID).add(intruder);
 
         String[] members = getMembers(claimID);
 
-        if(members != null) {
+        if (members != null) {
             for (String m : members) {
                 Player p = Bukkit.getPlayerExact(m);
 
@@ -694,12 +684,12 @@ public class utils {
                         playerClaimsIntruded.put(p, new HashSet<>());
                     playerClaimsIntruded.get(p).add(claimID);
 
-                    if(now - lastIntrusionMsgReceived.getOrDefault(p, 0L) >= minSecBetweenAlerts * 1e9){
+                    if (now - lastIntrusionMsgReceived.getOrDefault(p, 0L) >= minSecBetweenAlerts * 1e9) {
                         String worldName = getWorldName(World.Environment.valueOf(claimID.split("\\|")[0]));
-                        if(!plugin.getConfig().getBoolean("hide-coords-globally") && showCoordsInMsgs(p)) {
+                        if (!plugin.getConfig().getBoolean("hide-coords-globally") && showCoordsInMsgs(p)) {
                             p.sendMessage(ChatColor.RED +
                                     "An intruder has entered your claim at " + x + ", " + y + ", " + z + " in " + worldName);
-                        }else{
+                        } else {
                             p.sendMessage(ChatColor.RED +
                                     "An intruder has entered your claim at [hidden] in " + worldName);
                         }
@@ -711,14 +701,14 @@ public class utils {
         }
     }
 
-    public static boolean showCoordsInMsgs(Player p){
+    public static boolean showCoordsInMsgs(Player p) {
         String playerSetting = plugin.cfg.getCoordsSettings().getString(p.getUniqueId().toString());
 
         return playerSetting == null || playerSetting.equals("on");
     }
 
     public static void onIntruderLeaveClaim(Player intruder, String claimID) {
-        if(intruders.containsKey(claimID)) {
+        if (intruders.containsKey(claimID)) {
             intruders.get(claimID).remove(intruder);
 
             if (intruders.get(claimID).isEmpty())
@@ -726,39 +716,39 @@ public class utils {
         }
     }
 
-    public static boolean isIntruder(Player p, String claimID){
+    public static boolean isIntruder(Player p, String claimID) {
         String[] members = getMembers(claimID);
 
         return members != null && !isMemberOfClaim(members, p);
     }
 
-    public static void updateGolemHostility(){
-        for(Map.Entry<IronGolem, String> entry : ironGolems.entrySet()){
+    public static void updateGolemHostility() {
+        for (Map.Entry<IronGolem, String> entry : ironGolems.entrySet()) {
             IronGolem golem = entry.getKey();
             String currentChunkID = getChunkID(golem.getLocation());
             String prevChunkID = entry.getValue();
 
             // If the golem has entered a new chunk
-            if(!currentChunkID.equals(prevChunkID)){
+            if (!currentChunkID.equals(prevChunkID)) {
                 entry.setValue(currentChunkID);
                 String claimID = getClaimID(golem.getLocation());
 
                 // Make it hostile to all intruders in the chunk it just entered
-                if(intruders.containsKey(claimID))
-                    for(Player intruder : intruders.get(claimID))
-                        if(currentChunkID.equals(getChunkID(intruder.getLocation())))
+                if (intruders.containsKey(claimID))
+                    for (Player intruder : intruders.get(claimID))
+                        if (currentChunkID.equals(getChunkID(intruder.getLocation())))
                             golem.damage(0, intruder);
             }
         }
     }
 
-    public static void populatePlayerClaimsIntruded(Player p){
+    public static void populatePlayerClaimsIntruded(Player p) {
         // Go through all intruded claims
-        for(String claimID : intruders.keySet()){
+        for (String claimID : intruders.keySet()) {
             String[] members = getMembers(claimID);
 
-            if(members != null) {
-                if(isMemberOfClaim(members, p, false)) {
+            if (members != null) {
+                if (isMemberOfClaim(members, p, false)) {
                     if (!playerClaimsIntruded.containsKey(p))
                         playerClaimsIntruded.put(p, new HashSet<>());
 
@@ -770,14 +760,14 @@ public class utils {
     }
 
     public static boolean isMemberOfClaim(String[] members, OfflinePlayer p) {
-        if(members != null && p != null){
+        if (members != null && p != null) {
             return isMemberOfClaim(members, p, true);
         }
         return false;
     }
 
     public static boolean isMemberOfClaim(String[] members, OfflinePlayer p, boolean allowDisguise) {
-        if(members != null && p != null) {
+        if (members != null && p != null) {
             for (String member : members) {
                 boolean disguisedAsMember = member.equalsIgnoreCase(activeDisguises.getOrDefault((Player) p, ""));
                 if (member.equalsIgnoreCase(p.getName()) || allowDisguise && disguisedAsMember)
@@ -803,8 +793,8 @@ public class utils {
         updateBossBar(disguiser, claimID);
     }
 
-    public static Collection<Property> getTextures(OfflinePlayer p){
-        if(plugin.canUseReflection) {
+    public static Collection<Property> getTextures(OfflinePlayer p) {
+        if (canUseReflection) {
             try {
                 Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
                 GameProfile gp = (GameProfile) getProfile.invoke(p);
@@ -818,11 +808,11 @@ public class utils {
         return null;
     }
 
-    public static Collection<Property> getCachedTextures(OfflinePlayer p){
+    public static Collection<Property> getCachedTextures(OfflinePlayer p) {
         List<String> strs = plugin.cfg.getPlayerTextures().getStringList(p.getUniqueId().toString());
         Collection<Property> textures = new ArrayList<>();
 
-        if(strs.size() == 3)
+        if (strs.size() == 3)
             textures.add(new Property(strs.get(0), strs.get(1), strs.get(2)));
         else
             textures.add(new Property(strs.get(0), strs.get(1)));
@@ -830,8 +820,8 @@ public class utils {
         return textures;
     }
 
-    public static void setTextures(Player p, Collection<Property> textures){
-        if(plugin.canUseReflection) {
+    public static void setTextures(Player p, Collection<Property> textures) {
+        if (canUseReflection) {
             try {
                 Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
                 GameProfile gp = (GameProfile) getProfile.invoke(p);
@@ -860,7 +850,7 @@ public class utils {
             Bukkit.getScheduler().runTaskLater(plugin, () -> vehicle.addPassenger(disguiser), 1);
         }
 
-        if(plugin.canUseReflection) {
+        if (canUseReflection) {
             try {
                 Method refreshPlayerMethod = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("refreshPlayer");
 
@@ -901,7 +891,7 @@ public class utils {
     }
 
     public static void replaceInClaimPages(List<String> pages, String search, String replace) {
-        for(int i = 0; i < pages.size(); i++){
+        for (int i = 0; i < pages.size(); i++) {
             String page = pages.get(i);
 
             if (!isClaimPage(page))
@@ -942,7 +932,7 @@ public class utils {
                 int centerX = view.getCenterX();
                 int centerZ = view.getCenterZ();
 
-                if(blocksPerPixel == 0)
+                if (blocksPerPixel == 0)
                     blocksPerPixel = getBlocksPerPixel(view.getScale());
 
                 if (lastUpdate <= lastClaimUpdate || claims == null) {
@@ -955,11 +945,11 @@ public class utils {
                         claims = claimsNow;
                         lastUpdate = System.nanoTime();
                     }
-                }else if(lastUpdate < lastPlayerMoves.getOrDefault(p, 0L)){
+                } else if (lastUpdate < lastPlayerMoves.getOrDefault(p, 0L)) {
                     int px = 2 * (p.getLocation().getBlockX() - centerX) / blocksPerPixel;
                     int pz = 2 * (p.getLocation().getBlockZ() - centerZ) / blocksPerPixel;
 
-                    if(px <= 127 && px >= -128 && pz <= 127 && pz >= -128) {
+                    if (px <= 127 && px >= -128 && pz <= 127 && pz >= -128) {
                         addClaimsToCanvas(canvas, null, claims, owner, blocksPerPixel);
                         lastUpdate = System.nanoTime();
                     }
@@ -972,15 +962,15 @@ public class utils {
         Map<String, Coords2D> claims = new HashMap<>();
         int x = centerX - 64 * blocksPerPixel;
 
-        for(int i = 0; i < 128; i += 16 / blocksPerPixel) {
+        for (int i = 0; i < 128; i += 16 / blocksPerPixel) {
             int z = centerZ - 64 * blocksPerPixel;
 
-            for(int j = 0; j < 128; j += 16 / blocksPerPixel) {
+            for (int j = 0; j < 128; j += 16 / blocksPerPixel) {
                 String chunkID = getChunkID(x, z, env);
                 String claimID = getClaimID(x, z, env);
                 FileConfiguration claimData = plugin.cfg.getClaimData();
 
-                if(claimData.contains(claimID))
+                if (claimData.contains(claimID))
                     claims.put(chunkID, new Coords2D(i, j));
 
                 z += 16;
@@ -992,8 +982,8 @@ public class utils {
         return claims;
     }
 
-    private static void addClaimsToCanvas(MapCanvas canvas, Map<String, Coords2D> claimsBefore, Map<String, Coords2D> claimsNow, OfflinePlayer p, int blocksPerPixel){
-        if(claimsBefore != null) {
+    private static void addClaimsToCanvas(MapCanvas canvas, Map<String, Coords2D> claimsBefore, Map<String, Coords2D> claimsNow, OfflinePlayer p, int blocksPerPixel) {
+        if (claimsBefore != null) {
             claimsBefore.values().removeAll(claimsNow.values());
 
             for (String chunkID : claimsBefore.keySet()) {
@@ -1007,7 +997,7 @@ public class utils {
             }
         }
 
-        for(String chunkID : claimsNow.keySet()) {
+        for (String chunkID : claimsNow.keySet()) {
             Coords2D ij = claimsNow.get(chunkID);
             int i = ij.x;
             int j = ij.z;
@@ -1015,9 +1005,9 @@ public class utils {
             String[] members = getMembers(getClaimID(chunkID));
             boolean isMember = isMemberOfClaim(members, p);
             String configStr = isMember ? "my-claims" : "others-claims";
-            int r = plugin.getConfig().getInt("claim-map-colors."+configStr+".r");
-            int g = plugin.getConfig().getInt("claim-map-colors."+configStr+".g");
-            int b = plugin.getConfig().getInt("claim-map-colors."+configStr+".b");
+            int r = plugin.getConfig().getInt("claim-map-colors." + configStr + ".r");
+            int g = plugin.getConfig().getInt("claim-map-colors." + configStr + ".g");
+            int b = plugin.getConfig().getInt("claim-map-colors." + configStr + ".b");
             byte color = MapPalette.matchColor(r, g, b);
 
             for (int k = 0; k < 16 / blocksPerPixel; k++)
@@ -1033,15 +1023,15 @@ public class utils {
             int blocksPerPixel = 0;
 
             public void render(MapView view, MapCanvas canvas, Player p) {
-                if(blocksPerPixel == 0)
+                if (blocksPerPixel == 0)
                     blocksPerPixel = getBlocksPerPixel(view.getScale());
 
-                if (!intruders.isEmpty()){
+                if (!intruders.isEmpty()) {
                     int centerX = view.getCenterX();
                     int centerZ = view.getCenterZ();
 
                     addIntrudersToCanvas(canvas, centerX, centerZ, blocksPerPixel, owner);
-                }else{
+                } else {
                     canvas.setCursors(new MapCursorCollection());
                 }
             }
@@ -1051,7 +1041,7 @@ public class utils {
     private static void addIntrudersToCanvas(MapCanvas canvas, int centerX, int centerZ, int blocksPerPixel, OfflinePlayer p) {
         MapCursorCollection cursors = new MapCursorCollection();
 
-        for(String claimID : intruders.keySet()) {
+        for (String claimID : intruders.keySet()) {
             FileConfiguration claimData = plugin.cfg.getClaimData();
 
             if (claimData.contains(claimID)) {
@@ -1064,7 +1054,7 @@ public class utils {
                         int pz = 2 * (intruder.getLocation().getBlockZ() - centerZ) / blocksPerPixel;
 
                         if (px <= 127 && px >= -128 && pz <= 127 && pz >= -128) {
-                            if(canvas.getBasePixel((px + 128) / 2, (pz + 128) / 2) != MapPalette.TRANSPARENT) {
+                            if (canvas.getBasePixel((px + 128) / 2, (pz + 128) / 2) != MapPalette.TRANSPARENT) {
                                 MapCursor cursor = getMapCursor(intruder, (byte) px, (byte) pz);
                                 cursors.addCursor(cursor);
                             }
@@ -1086,7 +1076,7 @@ public class utils {
         return new MapCursor(px, pz, direction, type, true, caption);
     }
 
-    public static String getWorldName(World.Environment env){
+    public static String getWorldName(World.Environment env) {
         return switch (env) {
             case NORMAL -> "Overworld";
             case NETHER -> "The Nether";
@@ -1099,12 +1089,12 @@ public class utils {
         Set<Block> expiredGracePeriods = new HashSet<>();
 
         // Grace periods count as expired if x seconds have passed or the block's material has changed
-        for(Map.Entry<Block, GracePeriod> entry : b4bGracePeriods.entrySet())
+        for (Map.Entry<Block, GracePeriod> entry : b4bGracePeriods.entrySet())
             if (System.nanoTime() - entry.getValue().timestamp >= gracePeriod * 1e9
                     || !entry.getValue().type.equals(entry.getKey().getType()))
                 expiredGracePeriods.add(entry.getKey());
 
-        for(Block expired : expiredGracePeriods)
+        for (Block expired : expiredGracePeriods)
             b4bGracePeriods.remove(expired);
     }
 
@@ -1112,11 +1102,11 @@ public class utils {
         Set<Location> expiredGracePeriods = new HashSet<>();
 
         // Grace periods count as expired if x seconds have passed or the block's material has changed
-        for(Map.Entry<Location, GracePeriod> entry : blockChangeGracePeriods.entrySet())
+        for (Map.Entry<Location, GracePeriod> entry : blockChangeGracePeriods.entrySet())
             if (System.nanoTime() - entry.getValue().timestamp >= gracePeriod * 1e9)
                 expiredGracePeriods.add(entry.getKey());
 
-        for(Location expired : expiredGracePeriods)
+        for (Location expired : expiredGracePeriods)
             blockChangeGracePeriods.remove(expired);
     }
 
@@ -1149,7 +1139,7 @@ public class utils {
             }
         } else {
             bossBar.setColor(BarColor.WHITE);
-                bossBar.setTitle(hasClaims(p) ? "Unclaimed" : "Unclaimed (place book on lectern to claim)");
+            bossBar.setTitle(hasClaims(p) ? "Unclaimed" : "Unclaimed (place book on lectern to claim)");
         }
     }
 
@@ -1174,7 +1164,7 @@ public class utils {
         if (hideCoords) {
             result = "[hidden]";
         } else if (showExactCoords) {
-            result = "(" + (int)x + ", " + (showY ? (int)y : "??") + ", " + (int)z + ")";
+            result = "(" + (int) x + ", " + (showY ? (int) y : "??") + ", " + (int) z + ")";
         } else {
             double signX = (x == 0) ? 1 : Math.signum(x);
             double signY = (y == 0) ? 1 : Math.signum(y);

@@ -7,7 +7,9 @@ import hasjamon.block4block.listener.*;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -23,10 +25,13 @@ import java.util.UUID;
 public class Block4Block extends JavaPlugin{
     public PluginManager pluginManager = getServer().getPluginManager();
     public ConfigManager cfg;
-    public boolean canUseReflection = true;
     private static Block4Block instance;
     private List<?> hints;
     private int nextHint = 0;
+
+    public static Block4Block getInstance(){
+        return instance;
+    }
 
     @Override
     public void onEnable() {
@@ -35,6 +40,7 @@ public class Block4Block extends JavaPlugin{
         checkReflectionAvailability();
         cfg = new ConfigManager(); // Initializes config
         populateKnownPlayers();
+        populateConfigConstants();
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
         setupHints(); // Prepares hints and starts broadcasting them
@@ -52,7 +58,7 @@ public class Block4Block extends JavaPlugin{
         try{
             MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
         } catch (NoClassDefFoundError | NoSuchMethodException e) {
-            canUseReflection = false;
+            utils.canUseReflection = false;
             getServer().getConsoleSender().sendMessage(
                     ChatColor.YELLOW + "Reflection is unavailable; some features have been disabled.");
         }
@@ -179,13 +185,33 @@ public class Block4Block extends JavaPlugin{
         cfg.saveClaimMaps();
     }
 
+    // TODO: @bahm cache more config constants
+    private void populateConfigConstants() {
+        populateNonProtectiveBlockTypes();
+        populateProtectiveBlockFaces();
+    }
+
     private void populateKnownPlayers() {
         for(OfflinePlayer p : Bukkit.getOfflinePlayers())
             if(p != null && p.getName() != null)
                 utils.knownPlayers.add(p.getName().toLowerCase());
     }
 
-    public static Block4Block getInstance(){
-        return instance;
+    private void populateNonProtectiveBlockTypes() {
+        List<Material> blockTypes = this.getConfig()
+                .getStringList("claim-protection.nonprotective-blocks")
+                .stream()
+                .map(Material::valueOf)
+                .toList();
+        utils.nonProtectiveBlockTypes.addAll(blockTypes);
+    }
+
+    private void populateProtectiveBlockFaces() {
+        List<BlockFace> blockFaces = this.getConfig()
+                .getStringList("claim-protection.protective-block-faces")
+                .stream()
+                .map(BlockFace::valueOf)
+                .toList();
+        utils.protectiveBlockFaces.addAll(blockFaces);
     }
 }

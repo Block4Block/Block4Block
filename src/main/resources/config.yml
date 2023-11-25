@@ -114,6 +114,32 @@ hints:
   - "&6Hint #20: &eTo gain Netherrack, you must break Nylium. You can Bonemeal Netherrack near crimson and warped Nylium to spread the Nylium."
   - "&6Hint #?: &eSheep are colourful and so are blocks!"
 
+claim-protection:
+  # Directions from which a claim lectern can be protected. Enum: NORTH, SOUTH, EAST, WEST, UP, DOWN
+  protective-block-faces:
+    - NORTH
+    - SOUTH
+    - EAST
+    - WEST
+  # Blocks that cannot be used to protect a claim, i.e., the side they're on counts as unprotected
+  # See also https://minecraft.fandom.com/wiki/Content_inaccessible_in_Survival#Items
+  nonprotective-blocks:
+    - AIR
+    - CAVE_AIR
+    - VOID_AIR
+    - WATER
+    - LAVA
+    - BEDROCK
+    - END_PORTAL_FRAME
+    - END_PORTAL
+    - END_GATEWAY
+    - NETHER_PORTAL
+    - BUDDING_AMETHYST
+    - REINFORCED_DEEPSLATE
+  # When enabled, any mob head protecting a claim must be broken with an identical one
+  # E.g., a "Warden's Head" has to be broken with a "Warden's Head" rather than, say, a "Cow's Head"
+  enable-unique-mob-head-protection: true # Not implemented yet.
+
 # Entities that cannot blow up blocks in claims
 # Add from here: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/entity/EntityType.html
 claim-explosion-immunity:
@@ -1433,6 +1459,7 @@ b4b-substitutions:
   INFESTED_CRACKED_STONE_BRICKS: CRACKED_STONE_BRICKS
   INFESTED_MOSSY_STONE_BRICKS: MOSSY_STONE_BRICKS
   INFESTED_CHISELED_STONE_BRICKS: CHISELED_STONE_BRICKS
+  INFESTED_DEEPSLATE: DEEPSLATE
   PISTON_HEAD: PISTON
   POWDER_SNOW: POWDER_SNOW_BUCKET
 
