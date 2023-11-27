@@ -51,7 +51,7 @@ public class utils {
     public static final Map<Player, Set<String>> playerClaimsIntruded = new HashMap<>();
     public static final Map<Player, Long> lastIntrusionMsgReceived = new HashMap<>();
     public static final Map<Player, BukkitTask> undisguiseTasks = new HashMap<>();
-    public static final Map<Player, String> activeDisguises = new HashMap<>();
+    public static final Map<OfflinePlayer, String> activeDisguises = new HashMap<>();
     public static final Map<Player, Long> lastPlayerMoves = new HashMap<>();
     public static final Map<Player, BossBar> bossBars = new HashMap<>();
     public static final Map<Location, Long> claimInvulnerabilityStartTick = new HashMap<>();
@@ -172,7 +172,7 @@ public class utils {
                 sendMessage.accept(chat("&cYou cannot place a claim next to bedrock"));
                 return false;
             }
-            
+
             setChunkClaim(block, members, sendMessage, null);
             updateClaimCount();
             plugin.cfg.saveClaimData();
@@ -501,7 +501,7 @@ public class utils {
         return false;
     }
 
-    public static void b4bCheck(Player p, Block b, BlockBreakEvent e, List<?> lootDisabledTypes, boolean requiresBlock) {
+    public static void b4bCheck(Player p, Block b, BlockBreakEvent e, List<?> lootDisabledTypes, boolean requiresBlock, boolean isFreeToBreakInClaim) {
         // Are drops disabled for this block type
         boolean noloot = lootDisabledTypes.contains(b.getType().toString());
 
@@ -528,9 +528,11 @@ public class utils {
                 }
 
                 if (!itemInInventory) {
+                    String message = chat(isFreeToBreakInClaim ?
+                            "&cClaim &athe area or spend &c" + requiredType + " &afrom your hotbar to break this!" :
+                            "&aSpend &c" + requiredType + " &afrom your hotbar to break this!");
                     e.setCancelled(true);
-                    p.spigot().sendMessage(ChatMessageType.ACTION_BAR,
-                            new TextComponent(chat("&aYou need &c" + requiredType + " &ain your hotbar to break this!")));
+                    p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                     plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, false));
                     return;
                 }
@@ -769,7 +771,7 @@ public class utils {
     public static boolean isMemberOfClaim(String[] members, OfflinePlayer p, boolean allowDisguise) {
         if (members != null && p != null) {
             for (String member : members) {
-                boolean disguisedAsMember = member.equalsIgnoreCase(activeDisguises.getOrDefault((Player) p, ""));
+                boolean disguisedAsMember = member.equalsIgnoreCase(activeDisguises.getOrDefault(p, ""));
                 if (member.equalsIgnoreCase(p.getName()) || allowDisguise && disguisedAsMember)
                     return true;
             }

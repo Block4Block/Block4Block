@@ -29,7 +29,7 @@ public class BlockBreak implements Listener {
     private final Block4Block plugin;
     private long andesiteLatestBreak = 0;
 
-    public BlockBreak(Block4Block plugin){
+    public BlockBreak(Block4Block plugin) {
         this.plugin = plugin;
     }
 
@@ -45,10 +45,11 @@ public class BlockBreak implements Listener {
         if (b.getType() == Material.LECTERN) return;
         if (p.getGameMode() == GameMode.CREATIVE) return;
 
+        List<?> claimBlacklist = cfg.getList("blacklisted-claim-blocks");
+
         if (isInsideClaim) {
             if (!utils.isClaimBlock(b)) {
                 String[] members = utils.getMembers(b.getLocation());
-                List<?> claimBlacklist = cfg.getList("blacklisted-claim-blocks");
 
                 if (members != null) {
                     // If the player is a member of the claim
@@ -64,7 +65,7 @@ public class BlockBreak implements Listener {
                             plugin.pluginManager.callEvent(new BlockBreakInClaimEvent(p, b, true));
                             return;
                         }
-                    }else if (!cfg.getBoolean("can-break-in-others-claims")) {
+                    } else if (!cfg.getBoolean("can-break-in-others-claims")) {
                         // Prevent non-members from breaking blocks
                         e.setCancelled(true);
                         p.sendMessage(utils.chat("&cYou cannot break blocks in this claim"));
@@ -75,17 +76,17 @@ public class BlockBreak implements Listener {
             }
         }
 
-        if(plugin.getConfig().getBoolean("andesite-splash-on")) {
-            if(b.getType() == Material.ANDESITE) {
+        if (plugin.getConfig().getBoolean("andesite-splash-on")) {
+            if (b.getType() == Material.ANDESITE) {
                 // Add splash if it's been at least 0.1 second since the last time andesite was broken (to avoid chain reaction)
-                if(System.nanoTime() - andesiteLatestBreak > 1E8) {
+                if (System.nanoTime() - andesiteLatestBreak > 1E8) {
                     andesiteLatestBreak = System.nanoTime();
                     for (int x = -1; x <= 1; x++)
                         for (int y = -1; y <= 1; y++)
                             for (int z = -1; z <= 1; z++)
-                                if(!(x == 0 && y == 0 && z == 0))
+                                if (!(x == 0 && y == 0 && z == 0))
                                     if (b.getRelative(x, y, z).getType() == Material.ANDESITE)
-                                        if(plugin.getConfig().getBoolean("andesite-splash-reduce-durability"))
+                                        if (plugin.getConfig().getBoolean("andesite-splash-reduce-durability"))
                                             p.breakBlock(b.getRelative(x, y, z));
                                         else
                                             b.getRelative(x, y, z).breakNaturally(p.getInventory().getItemInMainHand());
@@ -102,21 +103,23 @@ public class BlockBreak implements Listener {
         List<?> blacklistedBlocks = cfg.getList("blacklisted-blocks");
         List<?> lootDisabledTypes = cfg.getList("no-loot-on-break");
 
-        if(blacklistedBlocks != null && lootDisabledTypes != null) {
+        if (blacklistedBlocks != null && lootDisabledTypes != null) {
             // Does Block4Block apply, i.e., has the block type not been exempted from Block4Block through the blacklist
             boolean requiresBlock = !blacklistedBlocks.contains(b.getType().toString());
+            boolean isFreeToBreakInClaim = claimBlacklist.contains(b.getType().toString());
 
             utils.removeExpiredB4BGracePeriods();
 
             // If the block is still covered by the grace period, do not apply B4B rules
-            if(utils.b4bGracePeriods.containsKey(b)) {
+            if (utils.b4bGracePeriods.containsKey(b)) {
                 plugin.pluginManager.callEvent(new B4BlockBreakWithinGracePeriodEvent(p, b, requiresBlock));
                 return;
             }
 
-            utils.b4bCheck(p, b, e, lootDisabledTypes, requiresBlock);
+            utils.b4bCheck(p, b, e, lootDisabledTypes, requiresBlock, isFreeToBreakInClaim);
         }
     }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onSpawnerBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
@@ -144,7 +147,7 @@ public class BlockBreak implements Listener {
         String claimID = utils.getClaimID(b.getLocation());
 
         // Allow milking
-        if(utils.isAir(b.getType()))
+        if (utils.isAir(b.getType()))
             return;
 
         // Disallow filling buckets with anything other than milk
@@ -152,7 +155,7 @@ public class BlockBreak implements Listener {
             String[] members = utils.getMembers(b.getLocation());
 
             if (members != null) {
-                if(utils.isMemberOfClaim(members, p))
+                if (utils.isMemberOfClaim(members, p))
                     return;
 
                 p.sendMessage(utils.chat("&cYou cannot fill buckets in this claim"));
