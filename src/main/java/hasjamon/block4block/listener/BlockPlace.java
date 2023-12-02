@@ -60,9 +60,10 @@ public class BlockPlace implements Listener {
 
             // If the block isn't the lectern claiming the chunk and the player isn't placing an easily breakable crop
             if (!utils.isClaimBlock(block) && !isEasilyBreakableCrop(block.getType())) {
+                boolean isMember = utils.isMemberOfClaim(members, player);
+                plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(player, block, isMember));
                 // If the player placing the block isn't a member: Prevent block placement
-                if (!utils.isMemberOfClaim(members, player)) {
-                    plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(player, block, false));
+                if (!isMember) {
                     event.setCancelled(true);
                     player.sendMessage(utils.chat("&cYou cannot place blocks in this claim"));
                     return;
@@ -135,8 +136,9 @@ public class BlockPlace implements Listener {
             String[] members = utils.getMembers(block.getLocation());
 
             if (members != null) {
-                if (!utils.isMemberOfClaim(members, player)) {
-                    plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(player, block, false));
+                boolean isMember = utils.isMemberOfClaim(members, player);
+                plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(player, block, isMember));
+                if (!isMember) {
                     event.setCancelled(true);
                     player.sendMessage(utils.chat("&cYou cannot empty buckets in this claim"));
                 }
