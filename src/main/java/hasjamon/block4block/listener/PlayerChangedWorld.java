@@ -24,7 +24,7 @@ public class PlayerChangedWorld implements Listener {
 
     private void sendFireTickMessage(Player player, Boolean enabled, World.Environment dimension) {
         String worldName = utils.getWorldName(dimension);
-        String msg = utils.chat("&7Fire " + (enabled ? "&cspreads" : "&adoes not spread") + " &7in " + worldName);
+        String msg = utils.chat("Fire " + (enabled ? "&cspreads" : "&adoes not spread") + " &fin " + worldName);
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(msg));
     }
 }

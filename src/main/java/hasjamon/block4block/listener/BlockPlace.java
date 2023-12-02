@@ -6,6 +6,8 @@ import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.BlockPlaceInClaimEvent;
 import hasjamon.block4block.utils.GracePeriod;
 import hasjamon.block4block.utils.utils;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -35,7 +37,7 @@ public class BlockPlace implements Listener {
             EntityType.BLAZE
     );
 
-    public BlockPlace(Block4Block plugin){
+    public BlockPlace(Block4Block plugin) {
         netherSpawnTypeTransformations.put(EntityType.SLIME, EntityType.MAGMA_CUBE);
         nonNetherSpawnTypeTransformations.put(EntityType.MAGMA_CUBE, EntityType.SLIME);
 
@@ -57,7 +59,7 @@ public class BlockPlace implements Listener {
             String[] members = utils.getMembers(block.getLocation());
 
             // If the block isn't the lectern claiming the chunk and the player isn't placing an easily breakable crop
-            if (!utils.isClaimBlock(block) && !isEasilyBreakableCrop(block.getType())){
+            if (!utils.isClaimBlock(block) && !isEasilyBreakableCrop(block.getType())) {
                 // If the player placing the block isn't a member: Prevent block placement
                 if (!utils.isMemberOfClaim(members, player)) {
                     plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(player, block, false));
@@ -86,10 +88,10 @@ public class BlockPlace implements Listener {
                     CreatureSpawner spawner = (CreatureSpawner) block.getState();
                     Optional<EntityType> spawnTypeOpt = getSpawnerType(itemMeta);
 
-                    if(spawnTypeOpt.isPresent()){
+                    if (spawnTypeOpt.isPresent()) {
                         EntityType spawnType = spawnTypeOpt.get();
 
-                        if (disallowedSpawnersOutsideNether.contains(spawnType)){
+                        if (disallowedSpawnersOutsideNether.contains(spawnType)) {
                             event.setCancelled(true);
                             player.sendMessage(utils.chat("&cYou cannot place " + utils.prettifyEnumName(spawnType) + " Spawner outside the Nether"));
                             return;
@@ -100,7 +102,7 @@ public class BlockPlace implements Listener {
             }
         }
 
-        switch(event.getBlockReplacedState().getType()){
+        switch (event.getBlockReplacedState().getType()) {
             case AIR, CAVE_AIR, VOID_AIR, WATER, LAVA, GRASS, TALL_GRASS:
                 utils.b4bGracePeriods.put(block, new GracePeriod(System.nanoTime(), block.getType()));
         }
@@ -123,27 +125,41 @@ public class BlockPlace implements Listener {
         return Optional.empty();
     }
 
-    @EventHandler
-    public void onBucketEmpty(PlayerBucketEmptyEvent e){
-        Block b = e.getBlock();
-        Player p = e.getPlayer();
-        String claimID = utils.getClaimID(b.getLocation());
+    @EventHandler(ignoreCancelled = true)
+    public void onBucketEmpty(PlayerBucketEmptyEvent event) {
+        Block block = event.getBlock();
+        Player player = event.getPlayer();
+        String claimID = utils.getClaimID(block.getLocation());
 
-        if(plugin.cfg.getClaimData().contains(claimID)){
-            String[] members = utils.getMembers(b.getLocation());
+        if (plugin.cfg.getClaimData().contains(claimID)) {
+            String[] members = utils.getMembers(block.getLocation());
 
             if (members != null) {
-                if(!utils.isMemberOfClaim(members, p)) {
-                    plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(p, b, false));
-                    e.setCancelled(true);
-                    p.sendMessage(utils.chat("&cYou cannot empty buckets in this claim"));
+                if (!utils.isMemberOfClaim(members, player)) {
+                    plugin.pluginManager.callEvent(new BlockPlaceInClaimEvent(player, block, false));
+                    event.setCancelled(true);
+                    player.sendMessage(utils.chat("&cYou cannot empty buckets in this claim"));
                 }
             }
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBucketEmptyMonitor(PlayerBucketEmptyEvent event) {
+        Block block = event.getBlock();
+        Material bucket = event.getBucket();
+        Player player = event.getPlayer();
+        int blockY = block.getLocation().getBlockY();
+        World.Environment dimension = block.getWorld().getEnvironment();
+
+        if (bucket == Material.LAVA_BUCKET && !utils.willLavaFlowAt(blockY, dimension)) {
+            String msg = utils.chat("Lava stops flowing at heights above " + utils.lavaFlowMaxY);
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(msg));
+        }
+    }
+
     private boolean isEasilyBreakableCrop(Material blockType) {
-        switch (blockType){
+        switch (blockType) {
             case WHEAT, POTATOES, CARROTS, BEETROOTS, SUGAR_CANE, COCOA, NETHER_WART -> {
                 return true;
             }

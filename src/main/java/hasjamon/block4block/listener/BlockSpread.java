@@ -1,6 +1,5 @@
 package hasjamon.block4block.listener;
 
-import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -11,12 +10,6 @@ import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 
 public class BlockSpread implements Listener {
-    private final int lavaFlowMaxY;
-
-    public BlockSpread(Block4Block plugin) {
-        lavaFlowMaxY = plugin.getConfig().getInt("lava-flow-max-y");
-    }
-
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBlockFromTo(BlockFromToEvent event) {
         Block source = event.getBlock();
@@ -50,7 +43,9 @@ public class BlockSpread implements Listener {
 
             case LAVA:
                 World.Environment dimension = source.getWorld().getEnvironment();
-                result = source.getLocation().getBlockY() > lavaFlowMaxY && dimension != World.Environment.NETHER;
+                int blockY = source.getLocation().getBlockY();
+                
+                result = !utils.willLavaFlowAt(blockY, dimension);
                 break;
         }
 

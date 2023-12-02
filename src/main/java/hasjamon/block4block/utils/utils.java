@@ -65,6 +65,7 @@ public class utils {
     );
     public static int minSecBetweenAlerts;
     public static int claimWidth;
+    public static int lavaFlowMaxY;
     private static boolean masterBookChangeMsgSent = false;
     public static boolean isPaperServer = true;
     public static boolean canUseReflection = true;
@@ -533,12 +534,12 @@ public class utils {
                             "&aSpend &c" + requiredType + " &afrom your hotbar to break this!");
                     e.setCancelled(true);
                     p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
-                    plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, false));
+                    plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, false, isFreeToBreakInClaim));
                     return;
                 }
             }
 
-            plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, true));
+            plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, true, isFreeToBreakInClaim));
             getClaimBlocksProtectedBy(b).forEach(claimBlock ->
                     claimInvulnerabilityStartTick.put(claimBlock.getLocation(), currentTick)
             );
@@ -1191,5 +1192,9 @@ public class utils {
 
     public static <E extends Enum<E>> String prettifyEnumName(E theEnum) {
         return WordUtils.capitalizeFully(theEnum.name().replaceAll("_", " "));
+    }
+
+    public static boolean willLavaFlowAt(int blockY, World.Environment dimension) {
+        return blockY <= lavaFlowMaxY || dimension == World.Environment.NETHER;
     }
 }

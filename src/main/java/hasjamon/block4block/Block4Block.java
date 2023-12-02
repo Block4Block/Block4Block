@@ -49,6 +49,7 @@ public class Block4Block extends JavaPlugin {
         getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateCurrentTick, 0, 1);
         utils.minSecBetweenAlerts = this.getConfig().getInt("seconds-between-intruder-alerts");
         utils.claimWidth = this.getConfig().getInt("claim-width");
+        utils.lavaFlowMaxY = this.getConfig().getInt("lava-flow-max-y");
         utils.gracePeriod = this.getConfig().getInt("b4b-grace-period");
         if (this.getConfig().getBoolean("enable-claim-maps"))
             addMapRenderers();
@@ -161,7 +162,7 @@ public class Block4Block extends JavaPlugin {
         pluginManager.registerEvents(new CraftItem(), this);
         pluginManager.registerEvents(new PlayerHarvestBlock(), this);
         pluginManager.registerEvents(new BlockFertilize(), this);
-        pluginManager.registerEvents(new BlockSpread(this), this);
+        pluginManager.registerEvents(new BlockSpread(), this);
         pluginManager.registerEvents(new PlayerToggleGlide(this), this);
         pluginManager.registerEvents(new PlayerChangedWorld(), this);
     }
