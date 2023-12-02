@@ -235,7 +235,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter {
                                 plugin.cfg.saveClaimContest();
 
                                 if(!claimant.equals("No one")) {
-                                    Bukkit.broadcastMessage(ChatColor.GOLD + claimant + " has claimed the Contest Chunk!");
+                                    Bukkit.broadcastMessage(ChatColor.GOLD + claimant + " has claimed the Contest Area!");
                                     plugin.pluginManager.callEvent(new ContestChunkClaimedEvent(claimant));
                                 }
                             }

@@ -180,7 +180,7 @@ public class utils {
             plugin.cfg.saveOfflineClaimNotifications();
 
         } else {
-            sendMessage.accept(chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this chunk!"));
+            sendMessage.accept(chat("&cHINT: Add \"claim\" at the top of the first page, followed by a list members, to claim this area!"));
         }
 
         return true;

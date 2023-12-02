@@ -175,7 +175,7 @@ public class HelpCommand implements CommandExecutor, Listener {
         inv.setItem(19,createItem(Material.LECTERN,
                 "§cClaim: §ePlacing a claim.",
                 "§7Use F3+G to see chunk borders.",
-                "§7Place the lectern in the chunk you wish to claim.",
+                "§7Place the lectern in the area you wish to claim.",
                 "§7Put a claim book in the lectern to place your claim.",
                 "§7You cannot place a claim next to bedrock."
         ));

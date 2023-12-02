@@ -20,7 +20,7 @@ public class CraftItem implements Listener {
 
                 if(meta != null) {
                     meta.setPages("claim\n" + player.getName() + "\n\n" +
-                            "Place this book on a lectern to claim the chunk it's in.\n\n"+
+                            "Place this book on a lectern to claim the area it's in.\n\n"+
                             "If you have teammates, write each of their names on their own line.\n\n"+
                             "Press F3+G to view chunk borders.");
                     result.setItemMeta(meta);
