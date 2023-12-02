@@ -22,14 +22,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public class Block4Block extends JavaPlugin{
+public class Block4Block extends JavaPlugin {
     public PluginManager pluginManager = getServer().getPluginManager();
     public ConfigManager cfg;
     private static Block4Block instance;
     private List<?> hints;
     private int nextHint = 0;
 
-    public static Block4Block getInstance(){
+    public static Block4Block getInstance() {
         return instance;
     }
 
@@ -44,18 +44,18 @@ public class Block4Block extends JavaPlugin{
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
         setupHints(); // Prepares hints and starts broadcasting them
-        if(this.getConfig().getBoolean("golems-guard-claims"))
+        if (this.getConfig().getBoolean("golems-guard-claims"))
             getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
         getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateCurrentTick, 0, 1);
         utils.minSecBetweenAlerts = this.getConfig().getInt("seconds-between-intruder-alerts");
         utils.claimWidth = this.getConfig().getInt("claim-width");
         utils.gracePeriod = this.getConfig().getInt("b4b-grace-period");
-        if(this.getConfig().getBoolean("enable-claim-maps"))
+        if (this.getConfig().getBoolean("enable-claim-maps"))
             addMapRenderers();
     }
 
     private void checkReflectionAvailability() {
-        try{
+        try {
             MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
         } catch (NoClassDefFoundError | NoSuchMethodException e) {
             utils.canUseReflection = false;
@@ -70,20 +70,20 @@ public class Block4Block extends JavaPlugin{
         boolean hintsEnabled = getConfig().getBoolean("hints-enabled");
 
         // Shuffle hints, then show a hint every 10 minutes (20 ticks/second * 600 seconds)
-        if(hints != null && hintsEnabled){
+        if (hints != null && hintsEnabled) {
             Collections.shuffle(hints);
             getServer().getScheduler().scheduleSyncRepeatingTask(this, this::showHint, 0, 20 * interval);
         }
     }
 
     private void showHint() {
-        if(++nextHint >= hints.size())
+        if (++nextHint >= hints.size())
             nextHint = 0;
 
         String hint = (String) hints.get(nextHint);
         FileConfiguration hintSettings = this.cfg.getHintSettings();
 
-        for(Player p : Bukkit.getOnlinePlayers()) {
+        for (Player p : Bukkit.getOnlinePlayers()) {
             String pUUID = p.getUniqueId().toString();
             String pSettings = hintSettings.getString(pUUID);
 
@@ -107,21 +107,21 @@ public class Block4Block extends JavaPlugin{
         PluginCommand coordsCmd = this.getCommand("coords");
 
 
-        if(dieCmd != null) dieCmd.setExecutor(new DieCommand());
-        if(hintsCmd != null) hintsCmd.setExecutor(new HintsCommand(this));
-        if(helpCmd != null) helpCmd.setExecutor(new HelpCommand(this));
-        if(ignoreCmd != null && unignoreCmd != null){
+        if (dieCmd != null) dieCmd.setExecutor(new DieCommand());
+        if (hintsCmd != null) hintsCmd.setExecutor(new HintsCommand(this));
+        if (helpCmd != null) helpCmd.setExecutor(new HelpCommand(this));
+        if (ignoreCmd != null && unignoreCmd != null) {
             IgnoreCommand cmd = new IgnoreCommand(this);
             ignoreCmd.setExecutor(cmd);
             unignoreCmd.setExecutor(cmd);
         }
-        if(claimContestCmd != null) claimContestCmd.setExecutor(new ClaimContestCommand(this));
-        if(bedCmd != null) bedCmd.setExecutor(new BedCommand(this));
-        if(welcomeCmd != null) welcomeCmd.setExecutor(new WelcomeCommand());
-        if(claimLocCmd != null) claimLocCmd.setExecutor(new ClaimLocCommand(this));
-        if(claimFixCmd != null) claimFixCmd.setExecutor(new ClaimFixCommand(this));
-        if(chickenBonusCmd != null) chickenBonusCmd.setExecutor(new ChickenBonusCommand(this));
-        if(coordsCmd != null) coordsCmd.setExecutor(new CoordsCommand(this));
+        if (claimContestCmd != null) claimContestCmd.setExecutor(new ClaimContestCommand(this));
+        if (bedCmd != null) bedCmd.setExecutor(new BedCommand(this));
+        if (welcomeCmd != null) welcomeCmd.setExecutor(new WelcomeCommand());
+        if (claimLocCmd != null) claimLocCmd.setExecutor(new ClaimLocCommand(this));
+        if (claimFixCmd != null) claimFixCmd.setExecutor(new ClaimFixCommand(this));
+        if (chickenBonusCmd != null) chickenBonusCmd.setExecutor(new ChickenBonusCommand(this));
+        if (coordsCmd != null) coordsCmd.setExecutor(new CoordsCommand(this));
     }
 
     private void registerEvents() {
@@ -130,11 +130,11 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new LecternBreak(this), this);
         pluginManager.registerEvents(new BookEdit(this), this);
         pluginManager.registerEvents(new BlockPlace(this), this);
-        if(this.getConfig().getBoolean("balance-lavacasting"))
+        if (this.getConfig().getBoolean("balance-lavacasting"))
             pluginManager.registerEvents(new LavaCasting(), this);
-        if(this.getConfig().getBoolean("chickens-lay-spawn-eggs"))
+        if (this.getConfig().getBoolean("chickens-lay-spawn-eggs"))
             pluginManager.registerEvents(new EggLay(this), this);
-        if(this.getConfig().getBoolean("destroy-fishing-rods"))
+        if (this.getConfig().getBoolean("destroy-fishing-rods"))
             pluginManager.registerEvents(new PlayerFish(this), this);
         pluginManager.registerEvents(new EntityDropItem(), this);
         pluginManager.registerEvents(new CreatureSpawn(), this);
@@ -145,17 +145,17 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new PlayerDeath(this), this);
         pluginManager.registerEvents(new PlayerRespawn(), this);
         pluginManager.registerEvents(new ChunkLoad(), this);
-        if(this.getConfig().getBoolean("disable-freecam-interactions"))
+        if (this.getConfig().getBoolean("disable-freecam-interactions"))
             pluginManager.registerEvents(new FreecamInteract(this), this);
-        if(this.getConfig().getBoolean("enable-lava-immunity"))
+        if (this.getConfig().getBoolean("enable-lava-immunity"))
             pluginManager.registerEvents(new PlayerLavaDamage(this), this);
         pluginManager.registerEvents(new EntityExplode(this), this);
-        if(this.getConfig().getBoolean("enable-disguises"))
+        if (this.getConfig().getBoolean("enable-disguises"))
             pluginManager.registerEvents(new EquipPlayerHead(this), this);
-        if(this.getConfig().getBoolean("enable-claim-maps"))
+        if (this.getConfig().getBoolean("enable-claim-maps"))
             pluginManager.registerEvents(new MapUseOnLectern(this), this);
         pluginManager.registerEvents(new MapCraft(), this);
-        if(this.getConfig().getBoolean("enable-path-grace-period"))
+        if (this.getConfig().getBoolean("enable-path-grace-period"))
             pluginManager.registerEvents(new ShovelUse(), this);
         pluginManager.registerEvents(new EntityChangeBlock(this), this);
         pluginManager.registerEvents(new CraftItem(), this);
@@ -163,21 +163,22 @@ public class Block4Block extends JavaPlugin{
         pluginManager.registerEvents(new BlockFertilize(), this);
         pluginManager.registerEvents(new BlockSpread(this), this);
         pluginManager.registerEvents(new PlayerToggleGlide(this), this);
+        pluginManager.registerEvents(new PlayerChangedWorld(), this);
     }
 
     private void addMapRenderers() {
         FileConfiguration claimMaps = cfg.getClaimMaps();
         Set<String> mapIDs = claimMaps.getKeys(false);
 
-        for(String id : mapIDs){
+        for (String id : mapIDs) {
             MapView view = Bukkit.getMap(Integer.parseInt(id));
             String uuid = claimMaps.getString(id);
 
-            if(view != null && uuid != null && view.getRenderers().size() == 1) {
+            if (view != null && uuid != null && view.getRenderers().size() == 1) {
                 OfflinePlayer mapCreator = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
                 view.addRenderer(utils.createClaimRenderer(mapCreator));
                 view.addRenderer(utils.createIntruderRenderer(mapCreator));
-            }else {
+            } else {
                 claimMaps.set(id, null);
             }
         }
@@ -192,8 +193,8 @@ public class Block4Block extends JavaPlugin{
     }
 
     private void populateKnownPlayers() {
-        for(OfflinePlayer p : Bukkit.getOfflinePlayers())
-            if(p != null && p.getName() != null)
+        for (OfflinePlayer p : Bukkit.getOfflinePlayers())
+            if (p != null && p.getName() != null)
                 utils.knownPlayers.add(p.getName().toLowerCase());
     }
 

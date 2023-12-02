@@ -1080,7 +1080,7 @@ public class utils {
 
     public static String getWorldName(World.Environment env) {
         return switch (env) {
-            case NORMAL -> "Overworld";
+            case NORMAL -> "The Overworld";
             case NETHER -> "The Nether";
             case THE_END -> "The End";
             default -> "Unknown World";
