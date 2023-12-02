@@ -26,17 +26,17 @@ import java.util.List;
 public class BookPlaceTake implements Listener {
     private final Block4Block plugin;
 
-    public BookPlaceTake(Block4Block plugin){
+    public BookPlaceTake(Block4Block plugin) {
         this.plugin = plugin;
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onPlace(BlockPlaceEvent e){
+    public void onPlace(BlockPlaceEvent e) {
         Block b = e.getBlock();
         Player p = e.getPlayer();
 
         // If you're placing something on a lectern
-        if(b.getType() == Material.LECTERN){
+        if (b.getType() == Material.LECTERN) {
             ItemStack item = e.getItemInHand();
             Material type = item.getType();
             boolean isBook = (type == Material.WRITTEN_BOOK || type == Material.WRITABLE_BOOK);
@@ -47,35 +47,35 @@ public class BookPlaceTake implements Listener {
             boolean isClaimed = claimData.contains(claimID);
 
             // If you're placing a book
-            if(isBook){
+            if (isBook) {
                 BookMeta meta = (BookMeta) item.getItemMeta();
 
-                if(meta != null){
+                if (meta != null) {
                     // If it's a copy of a master book, update its pages
-                    if(meta.getLore() != null){
+                    if (meta.getLore() != null) {
                         FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
                         String bookID = String.join("", meta.getLore()).substring(17);
 
-                        if(plugin.getConfig().getBoolean("enable-master-books"))
-                            if(masterBooks.contains(bookID + ".pages"))
+                        if (plugin.getConfig().getBoolean("enable-master-books"))
+                            if (masterBooks.contains(bookID + ".pages"))
                                 meta.setPages(masterBooks.getStringList(bookID + ".pages"));
                     }
 
                     // If it's a claim book
-                    if(meta.getPageCount() > 0 && utils.isClaimPage(meta.getPage(1))){
-                        if(isClaimed) {
+                    if (meta.getPageCount() > 0 && utils.isClaimPage(meta.getPage(1))) {
+                        if (isClaimed) {
                             canPlace = false;
                             p.sendMessage(utils.chat("&cThis chunk is already claimed! Find the claim book or remove \"claim\" from your book to place it."));
-                        }else {
+                        } else {
                             canPlace = utils.claimChunk(b, utils.findMembersInBook(meta), p::sendMessage);
                         }
                     }
                 }
             }
 
-            if(canPlace) {
+            if (canPlace) {
                 // If it's a (copy of a) master book, add it to the list of copies on lecterns
-                if(isBook) {
+                if (isBook) {
                     ItemStack book = e.getItemInHand();
                     BookMeta meta = (BookMeta) book.getItemMeta();
                     boolean isMasterBook = false;
@@ -91,7 +91,7 @@ public class BookPlaceTake implements Listener {
                             String xyz = bLoc.getBlockX() + "," + bLoc.getBlockY() + "," + bLoc.getBlockZ();
                             List<String> copies = new ArrayList<>();
 
-                            if(masterBooks.contains(bookID + ".copies-on-lecterns"))
+                            if (masterBooks.contains(bookID + ".copies-on-lecterns"))
                                 copies = masterBooks.getStringList(bookID + ".copies-on-lecterns");
                             copies.add(claimID + "!" + xyz);
 
@@ -100,7 +100,7 @@ public class BookPlaceTake implements Listener {
                         }
                     }
 
-                    plugin.pluginManager.callEvent(new ClaimBookPlacedEvent(p, isMasterBook, isMember));
+                    plugin.pluginManager.callEvent(new ClaimBookPlacedEvent(p, b, isMasterBook, isMember));
                 }
             } else {
                 e.setCancelled(true);
@@ -113,11 +113,11 @@ public class BookPlaceTake implements Listener {
 
     // Runs if a player takes a book from a lectern, then unclaims the chunk if it's a claim book
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onBookTake(PlayerTakeLecternBookEvent e){
+    public void onBookTake(PlayerTakeLecternBookEvent e) {
         Block lecternBlock = e.getLectern().getBlock();
         String claimID = utils.getClaimID(e.getLectern().getLocation());
 
-        if(plugin.cfg.getClaimData().contains(claimID)) {
+        if (plugin.cfg.getClaimData().contains(claimID)) {
             if (utils.isClaimBlock(lecternBlock)) {
                 Player player = e.getPlayer();
                 boolean isMember = utils.isMemberOfClaim(utils.getMembers(claimID), player);
@@ -127,8 +127,8 @@ public class BookPlaceTake implements Listener {
                 if (isMember || numProtectedSides == 0 && !isInvulnerable) {
                     utils.unclaimChunk(lecternBlock, true, player::sendMessage);
                     plugin.pluginManager.callEvent(new ClaimRemovedEvent(player, lecternBlock, isMember));
-                }else{
-                    if(!isInvulnerable) {
+                } else {
+                    if (!isInvulnerable) {
                         String msg = utils.chat("&aLectern is still protected from &c" + numProtectedSides + " &asides");
                         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(msg));
                     }
