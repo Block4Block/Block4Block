@@ -195,7 +195,7 @@ tnt-drops-enabled:
 blacklisted-claim-blocks:
 - NETHER_WART_BLOCK
 - WARPED_WART_BLOCK
-- GLOW_STONE
+- GLOWSTONE
 - COPPER_BLOCK
 - CUT_COPPER
 - CUT_COPPER_SLAB
