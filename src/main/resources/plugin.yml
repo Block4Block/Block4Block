@@ -2,21 +2,21 @@ name: Block4Block
 main: hasjamon.block4block.Block4Block
 api-version: 1.20
 authors: [ HasJamOn, Bahm, gtg_cya ]
-softdepend: [ProtocolLib]
-version: 3.0
+softdepend: [ ProtocolLib ]
+version: 3.1
 description: Block4Block plugin
 commands:
   die:
     description: Use this command to kill yourself if you are stuck.
     usage: /<command>
-    aliases: [suicide, kill]
+    aliases: [ suicide, kill ]
   hints:
     description: Turns hints on/off.
     usage: /<command> [on|off]
   b4bhelp:
     description: Shows an inventory with items that explain how Block4Block works.
     usage: /<command>
-    aliases: [helpb4b]
+    aliases: [ helpb4b ]
   ignore:
     description: Ignores a player to hide their messages until you use /unignore or for x minutes.
     usage: /<command> player [minutes]
