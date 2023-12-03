@@ -150,7 +150,7 @@ public class Block4Block extends JavaPlugin {
             pluginManager.registerEvents(new FreecamInteract(this), this);
         if (this.getConfig().getBoolean("enable-lava-immunity"))
             pluginManager.registerEvents(new PlayerLavaDamage(this), this);
-        pluginManager.registerEvents(new EntityExplode(this), this);
+        pluginManager.registerEvents(new Explode(this), this);
         if (this.getConfig().getBoolean("enable-disguises"))
             pluginManager.registerEvents(new EquipPlayerHead(this), this);
         if (this.getConfig().getBoolean("enable-claim-maps"))

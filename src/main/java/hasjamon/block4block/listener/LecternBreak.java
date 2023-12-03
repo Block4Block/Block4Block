@@ -13,17 +13,18 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 public class LecternBreak implements Listener {
     private final Block4Block plugin;
 
-    public LecternBreak(Block4Block plugin){
+    public LecternBreak(Block4Block plugin) {
         this.plugin = plugin;
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onBreak(BlockBreakEvent event){
+    public void onBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
 
         if (block.getType() == Material.LECTERN) {
@@ -38,8 +39,8 @@ public class LecternBreak implements Listener {
                 if (isMember || numProtectedSides == 0 && !isInvulnerable) {
                     utils.unclaimChunk(block, true, player::sendMessage);
                     plugin.pluginManager.callEvent(new ClaimRemovedEvent(player, block, isMember));
-                }else{
-                    if(!isInvulnerable) {
+                } else {
+                    if (!isInvulnerable) {
                         String msg = utils.chat("&aLectern is still protected from &c" + numProtectedSides + " &asides");
                         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(msg));
                     }
@@ -63,7 +64,7 @@ public class LecternBreak implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBreakMonitor(BlockBreakEvent e){
+    public void onBreakMonitor(BlockBreakEvent e) {
         Block b = e.getBlock();
 
         if (b.getType() == Material.LECTERN) {
@@ -79,12 +80,22 @@ public class LecternBreak implements Listener {
         }
     }
 
-    // If a claim lectern is destroyed in an explosion, unclaim the chunk
+    // If a claim lectern is destroyed by an exploding entity, unclaim the chunk
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onExplosionMonitor(EntityExplodeEvent e) {
-        for (Block block : e.blockList())
+    public void onEntityExplodeMonitor(EntityExplodeEvent event) {
+        for (Block block : event.blockList())
             if (utils.isUnprotectedClaimLectern(block))
-                utils.unclaimChunk(block, false, (msg) -> {});
+                utils.unclaimChunk(block, false, (msg) -> {
+                });
+    }
+
+    // If a claim lectern is destroyed by an exploding block, unclaim the chunk
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockExplodeMonitor(BlockExplodeEvent event) {
+        for (Block block : event.blockList())
+            if (utils.isUnprotectedClaimLectern(block))
+                utils.unclaimChunk(block, false, (msg) -> {
+                });
     }
 
     // If a claim lectern is destroyed in a fire, unclaim the chunk
@@ -93,6 +104,7 @@ public class LecternBreak implements Listener {
         Block block = e.getBlock();
 
         if (utils.isUnprotectedClaimLectern(block))
-            utils.unclaimChunk(block, false, (msg) -> {});
+            utils.unclaimChunk(block, false, (msg) -> {
+            });
     }
 }
