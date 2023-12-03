@@ -8,6 +8,8 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.block.Block;
 import org.bukkit.block.Lectern;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -74,16 +76,21 @@ public class BookPlaceTake implements Listener {
             }
 
             if (canPlace) {
-                // If it's a (copy of a) master book, add it to the list of copies on lecterns
                 if (isBook) {
                     ItemStack book = e.getItemInHand();
                     BookMeta meta = (BookMeta) book.getItemMeta();
-                    boolean isMasterBook = false;
-                    boolean isMember = utils.isMemberOfClaim(utils.getMembers(claimID), p);
 
                     if (meta != null) {
                         List<String> lore = meta.getLore();
+                        boolean isMasterBook = false;
+                        boolean isMember = utils.findMembersInBook(meta).stream()
+                                .anyMatch(member -> member.equalsIgnoreCase(p.getName()));
 
+                        if (isMember)
+                            p.playSound(p, Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.RECORDS, 1, 1f);
+                        plugin.pluginManager.callEvent(new ClaimBookPlacedEvent(p, b, isMasterBook, isMember));
+
+                        // If it's a (copy of a) master book, add it to the list of copies on lecterns
                         if (lore != null) {
                             isMasterBook = true;
                             FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
@@ -99,8 +106,6 @@ public class BookPlaceTake implements Listener {
                             plugin.cfg.saveMasterBooks();
                         }
                     }
-
-                    plugin.pluginManager.callEvent(new ClaimBookPlacedEvent(p, b, isMasterBook, isMember));
                 }
             } else {
                 e.setCancelled(true);

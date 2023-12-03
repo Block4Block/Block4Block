@@ -24,7 +24,7 @@ import java.util.*;
 public class BookEdit implements Listener {
     private final Block4Block plugin;
 
-    public BookEdit(Block4Block plugin){
+    public BookEdit(Block4Block plugin) {
         this.plugin = plugin;
     }
 
@@ -35,7 +35,7 @@ public class BookEdit implements Listener {
         Block clickedBlock = e.getClickedBlock();
 
         if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            if(clickedBlock == null || clickedBlock.getType() != Material.LECTERN) {
+            if (clickedBlock == null || clickedBlock.getType() != Material.LECTERN) {
                 if (item != null) {
                     // If player is holding a book and quill
                     if (item.getType() == Material.WRITABLE_BOOK) {
@@ -76,18 +76,18 @@ public class BookEdit implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onPlaceBook(PlayerInteractEvent e){
+    public void onPlaceBook(PlayerInteractEvent e) {
         Player p = e.getPlayer();
         Block clickedBlock = e.getClickedBlock();
 
-        if(e.getAction() == Action.RIGHT_CLICK_BLOCK && clickedBlock != null && clickedBlock.getType() == Material.LECTERN) {
+        if (e.getAction() == Action.RIGHT_CLICK_BLOCK && clickedBlock != null && clickedBlock.getType() == Material.LECTERN) {
             Lectern lectern = (Lectern) clickedBlock.getState();
             ItemStack book = lectern.getInventory().getItem(0);
 
             if (book != null) {
                 String claimID = utils.getClaimID(lectern.getLocation());
 
-                if(book.getType() == Material.WRITTEN_BOOK) {
+                if (book.getType() == Material.WRITTEN_BOOK) {
                     BookMeta meta = (BookMeta) book.getItemMeta();
 
                     if (meta != null && meta.getLore() != null) {
@@ -128,10 +128,10 @@ public class BookEdit implements Listener {
                             book.setItemMeta(meta);
                         }
                     }
-                }else if(book.getType() == Material.WRITABLE_BOOK){
+                } else if (book.getType() == Material.WRITABLE_BOOK) {
                     BookMeta meta = (BookMeta) book.getItemMeta();
 
-                    if(meta != null && plugin.getConfig().getBoolean("enable-claim-takeovers")) {
+                    if (meta != null && plugin.getConfig().getBoolean("enable-claim-takeovers")) {
                         FileConfiguration claimTakeovers = plugin.cfg.getClaimTakeovers();
                         List<String> replacements = claimTakeovers.getStringList(claimID);
                         List<String> pages = new ArrayList<>(meta.getPages());
@@ -159,10 +159,10 @@ public class BookEdit implements Listener {
         BookMeta prevMeta = e.getPreviousBookMeta();
         List<String> lore = meta.getLore();
 
-        if(!plugin.getConfig().getBoolean("enable-master-books"))
+        if (!plugin.getConfig().getBoolean("enable-master-books"))
             return;
 
-        if(lore == null) {
+        if (lore == null) {
             if (e.isSigning()) {
                 long nextID = getNextMasterBookID(false);
                 List<String> newLore = new ArrayList<>();
@@ -175,15 +175,15 @@ public class BookEdit implements Listener {
                 plugin.cfg.saveMasterBooks();
                 plugin.pluginManager.callEvent(new MasterBookCreatedEvent(p));
             }
-        }else{
+        } else {
             String bookID = String.join("", lore).substring(17);
-            boolean isClaimBook = utils.isClaimPage(meta.getPage(1));
-            boolean wasClaimBook = utils.isClaimPage(prevMeta.getPage(1));
+            boolean isClaimBook = utils.isClaimBook(meta);
+            boolean wasClaimBook = utils.isClaimBook(prevMeta);
 
             masterBooks.set(bookID + ".pages", meta.getPages());
             plugin.cfg.saveMasterBooks();
 
-            if(isClaimBook || wasClaimBook) {
+            if (isClaimBook || wasClaimBook) {
                 FileConfiguration claimData = plugin.cfg.getClaimData();
                 Set<Block> toBeUnclaimed = new HashSet<>();
                 Set<Block> toBeClaimed = new HashSet<>();
@@ -197,16 +197,16 @@ public class BookEdit implements Listener {
                     World.Environment env = World.Environment.valueOf(environment);
 
                     // If the book is turned into a claim book, but the chunk is already claimed
-                    if(!wasClaimBook && (claimData.contains(claimID) || chunksToBeClaimed.contains(claimID))){
-                        if(!plugin.getConfig().getBoolean("hide-coords-globally") && utils.showCoordsInMsgs(p)) {
+                    if (!wasClaimBook && (claimData.contains(claimID) || chunksToBeClaimed.contains(claimID))) {
+                        if (!plugin.getConfig().getBoolean("hide-coords-globally") && utils.showCoordsInMsgs(p)) {
                             p.sendMessage(ChatColor.GRAY + "A copy of the master book at (" +
                                     String.join(", ", xyz) + ") in " +
-                                    utils.getWorldName(env)  + " was in a claimed chunk and has been corrupted!");
-                        }else{
+                                    utils.getWorldName(env) + " was in a claimed chunk and has been corrupted!");
+                        } else {
                             p.sendMessage(ChatColor.GRAY + "A copy of the master book at [hidden] in " +
-                                    utils.getWorldName(env)  + " was in a claimed chunk and has been corrupted!");
+                                    utils.getWorldName(env) + " was in a claimed chunk and has been corrupted!");
                         }
-                    }else{
+                    } else {
                         int x = Integer.parseInt(xyz[0]);
                         int y = Integer.parseInt(xyz[1]);
                         int z = Integer.parseInt(xyz[2]);
@@ -214,12 +214,12 @@ public class BookEdit implements Listener {
                         List<World> worlds = Bukkit.getWorlds();
                         Optional<World> world = worlds.stream().filter(w -> w.getEnvironment().name().equals(environment)).findFirst();
 
-                        if(world.isPresent()) {
+                        if (world.isPresent()) {
                             Block lectern = world.get().getBlockAt(x, y, z);
 
                             // If the copy is corrupted / a fake claim book, do nothing
-                            if(claimData.contains(claimID) || chunksToBeClaimed.contains(claimID))
-                                if(Math.round(claimData.getDouble(claimID + ".location.X")) != x ||
+                            if (claimData.contains(claimID) || chunksToBeClaimed.contains(claimID))
+                                if (Math.round(claimData.getDouble(claimID + ".location.X")) != x ||
                                         Math.round(claimData.getDouble(claimID + ".location.Y")) != y ||
                                         Math.round(claimData.getDouble(claimID + ".location.Z")) != z)
                                     continue;
@@ -229,15 +229,15 @@ public class BookEdit implements Listener {
                                 chunksToBeClaimed.add(claimID);
                                 toBeClaimed.add(lectern);
                             }
-                        }else{
+                        } else {
                             p.sendMessage("Something went wrong. Please contact a server admin.");
                         }
                     }
                 }
 
-                if(toBeUnclaimed.size() > 0)
+                if (toBeUnclaimed.size() > 0)
                     utils.unclaimChunkBulk(toBeUnclaimed, bookID, meta);
-                if(toBeClaimed.size() > 0)
+                if (toBeClaimed.size() > 0)
                     utils.claimChunkBulk(toBeClaimed, meta, bookID);
             }
         }
@@ -249,7 +249,7 @@ public class BookEdit implements Listener {
 
         masterBooks.set("next-id", nextID + 1);
 
-        if(saveConfig)
+        if (saveConfig)
             plugin.cfg.saveMasterBooks();
 
         return nextID;

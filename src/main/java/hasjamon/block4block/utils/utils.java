@@ -125,11 +125,11 @@ public class utils {
     }
 
     public static boolean isProtectedClaimLectern(Block block) {
-        return block.getType() == Material.LECTERN && utils.isClaimBlock(block) && (utils.countProtectedSides(block) > 0 || isClaimInvulnerable(block));
+        return block.getType() == Material.LECTERN && isClaimBlock(block) && (countProtectedSides(block) > 0 || isClaimInvulnerable(block));
     }
 
     public static boolean isUnprotectedClaimLectern(Block block) {
-        return block.getType() == Material.LECTERN && utils.isClaimBlock(block) && utils.countProtectedSides(block) == 0 && !isClaimInvulnerable(block);
+        return block.getType() == Material.LECTERN && isClaimBlock(block) && countProtectedSides(block) == 0 && !isClaimInvulnerable(block);
     }
 
     public static long countProtectedSides(Block block) {
@@ -373,6 +373,10 @@ public class utils {
 
     public static boolean isClaimPage(String page) {
         return page.length() >= 5 && page.substring(0, 5).equalsIgnoreCase("claim");
+    }
+
+    public static boolean isClaimBook(BookMeta meta) {
+        return isClaimPage(meta.getPage(1));
     }
 
     public static void unclaimChunk(Block block, boolean causedByPlayer, Consumer<String> sendMessage) {
