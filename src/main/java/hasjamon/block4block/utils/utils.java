@@ -31,6 +31,7 @@ import org.bukkit.inventory.BlockInventoryHolder;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.map.*;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
@@ -1196,5 +1197,16 @@ public class utils {
 
     public static boolean willLavaFlowAt(int blockY, World.Environment dimension) {
         return blockY <= lavaFlowMaxY || dimension == World.Environment.NETHER;
+    }
+
+    public static boolean isPhantomElytra(ItemStack itemStack) {
+        if (itemStack != null && itemStack.getType() == Material.ELYTRA) {
+            ItemMeta meta = itemStack.getItemMeta();
+
+            if (meta != null && meta.getLore() != null)
+                return meta.getLore().get(0).equals("An inferior version that can only glide for a second");
+        }
+
+        return false;
     }
 }
