@@ -3,9 +3,6 @@ package hasjamon.block4block.listener;
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.GameMode;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BossBar;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,15 +12,15 @@ import org.bukkit.event.player.PlayerMoveEvent;
 public class PlayerMove implements Listener {
     private final Block4Block plugin;
 
-    public PlayerMove(Block4Block plugin){
+    public PlayerMove(Block4Block plugin) {
         this.plugin = plugin;
     }
 
     @EventHandler
-    public void onPlayerMove(PlayerMoveEvent e){
+    public void onPlayerMove(PlayerMoveEvent e) {
         Player p = e.getPlayer();
 
-        if(e.getTo() != null) {
+        if (e.getTo() != null) {
             String prevChunkID = utils.getChunkID(e.getFrom());
             String currentChunkID = utils.getChunkID(e.getTo());
 
@@ -49,7 +46,7 @@ public class PlayerMove implements Listener {
                     if (plugin.getConfig().getBoolean("golems-guard-claims"))
                         for (IronGolem golem : utils.ironGolems.keySet())
                             if (currentChunkID.equals(utils.getChunkID(golem.getLocation())))
-                                golem.damage(0, p);
+                                golem.setTarget(p);
                 }
 
                 utils.updateBossBar(p, currentClaimID);

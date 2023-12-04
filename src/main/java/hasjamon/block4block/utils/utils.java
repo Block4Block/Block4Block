@@ -745,7 +745,7 @@ public class utils {
                 if (intruders.containsKey(claimID))
                     for (Player intruder : intruders.get(claimID))
                         if (currentChunkID.equals(getChunkID(intruder.getLocation())))
-                            golem.damage(0, intruder);
+                            golem.setTarget(intruder);
             }
         }
     }
