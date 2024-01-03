@@ -1,7 +1,6 @@
 package hasjamon.block4block.utils;
 
 import com.comphenix.protocol.utility.MinecraftReflection;
-import com.google.common.collect.Sets;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
@@ -59,7 +58,7 @@ public class utils {
     public static final Set<String> knownPlayers = new HashSet<>();
     public static final Set<Material> nonProtectiveBlockTypes = new HashSet<>();
     public static final Set<BlockFace> protectiveBlockFaces = new HashSet<>();
-    private static final Set<Material> airTypes = Sets.newHashSet(
+    private static final Set<Material> airTypes = Set.of(
             Material.AIR,
             Material.VOID_AIR,
             Material.CAVE_AIR

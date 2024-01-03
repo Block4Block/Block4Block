@@ -1,7 +1,5 @@
 package hasjamon.block4block.listener;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.BlockPlaceInClaimEvent;
 import hasjamon.block4block.utils.GracePeriod;
@@ -26,14 +24,14 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 public class BlockPlace implements Listener {
     private final Block4Block plugin;
-    private final HashMap<EntityType, EntityType> netherSpawnTypeTransformations = Maps.newHashMap();
-    private final HashMap<EntityType, EntityType> nonNetherSpawnTypeTransformations = Maps.newHashMap();
-    private final HashSet<EntityType> disallowedSpawnersOutsideNether = Sets.newHashSet(
+    private final HashMap<EntityType, EntityType> netherSpawnTypeTransformations = new HashMap<>();
+    private final HashMap<EntityType, EntityType> nonNetherSpawnTypeTransformations = new HashMap<>();
+    private final Set<EntityType> disallowedSpawnersOutsideNether = Set.of(
             EntityType.BLAZE
     );
 
