@@ -17,15 +17,16 @@ public class ChickenBonusCommand implements CommandExecutor {
         this.plugin = plugin;
     }
 
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
-        if(sender instanceof Player player){
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (sender instanceof Player player) {
+            int radius = plugin.getConfig().getInt("named-chicken-radius");
             ChickenBonuses bonuses = utils.calcChickenBonuses(player);
             Map<Character, Integer> letterBonuses = bonuses.letterBonuses;
             int numNamedChickens = bonuses.numNamedChickens;
 
             double spawnChance = plugin.getConfig().getDouble("spawn-egg-chance");
             double withBonus = spawnChance * utils.calcGeneralChickenBonus(numNamedChickens);
-            player.sendMessage("§7Unique coords with named chickens nearby: " + numNamedChickens);
+            player.sendMessage("§7Unique coords with named chickens within " + radius + " blocks: " + numNamedChickens);
             player.sendMessage("§7Chance to lay a spawn egg: " + Math.floor(withBonus * 10000) / 100 + "%");
             player.sendMessage("§7Letter bonuses: " + letterBonuses.toString());
             return true;
