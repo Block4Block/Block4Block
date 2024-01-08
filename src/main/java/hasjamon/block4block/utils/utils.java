@@ -552,6 +552,8 @@ public class utils {
         if (noloot) {
             dropInventory(b);
 
+            // It would be great if we could just use `e.setDropItems(false);` instead of the below
+            // unfortunately, that would make attached blocks such as buttons disappear
             if (b.getType() == Material.PISTON_HEAD) {
                 PistonHead pistonHead = (PistonHead) b.getBlockData();
                 Block piston = b.getRelative(pistonHead.getFacing().getOppositeFace());
