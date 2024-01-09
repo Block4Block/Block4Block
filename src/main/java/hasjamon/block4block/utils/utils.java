@@ -597,7 +597,7 @@ public class utils {
     }
 
     public static ChickenBonuses calcChickenBonuses(Entity center) {
-        int radius = plugin.getConfig().getInt("named-chicken-radius");
+        double radius = plugin.getConfig().getInt("named-chicken-radius") + 0.5;
         List<Entity> nearbyEntities = center.getNearbyEntities(radius, radius, radius);
         Set<String> namedChickensPos = new HashSet<>();
         Map<Character, Integer> letterBonuses = new HashMap<>();
