@@ -1477,6 +1477,7 @@ b4b-substitutions:
   INFESTED_DEEPSLATE: DEEPSLATE
   PISTON_HEAD: PISTON
   POWDER_SNOW: POWDER_SNOW_BUCKET
+  TRIPWIRE: STRING
 
 # Weights for adjusting the rarity of each spawn egg; higher = more common
 spawn-egg-weights:
