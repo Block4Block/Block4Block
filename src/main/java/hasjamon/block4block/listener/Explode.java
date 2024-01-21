@@ -67,7 +67,7 @@ public class Explode implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public void onBlockExplodeMonitor(BlockExplodeEvent event) {
+    public void onBlockExplode(BlockExplodeEvent event) {
         FileConfiguration claimData = plugin.cfg.getClaimData();
         List<Material> explodableBlockTypes = plugin.getConfig().getStringList("explodable-by-intended-game-mechanics")
                 .stream()

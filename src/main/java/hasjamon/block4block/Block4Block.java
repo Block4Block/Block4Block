@@ -165,6 +165,7 @@ public class Block4Block extends JavaPlugin {
         pluginManager.registerEvents(new BlockSpread(), this);
         pluginManager.registerEvents(new PlayerToggleGlide(this), this);
         pluginManager.registerEvents(new PlayerChangedWorld(), this);
+        pluginManager.registerEvents(new ExplosionPrime(), this);
     }
 
     private void addMapRenderers() {
