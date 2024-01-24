@@ -30,8 +30,6 @@ public class ExplosionPrime implements Listener {
                 nearbyCats.forEach(cat -> cat.getNearbyEntities(range + 10, range + 10, range + 10).stream()
                         .filter(ent -> ent.getType() == EntityType.PLAYER)
                         .forEach(player -> {
-                            //double volume = Math.max(0, 1 - (player.getLocation().distance(cat.getLocation()) / (range * 3)));
-                            //((Player) player).playSound(player, Sound.ENTITY_CAT_AMBIENT, SoundCategory.HOSTILE, (float) volume, (float) 1.0);
                             double volume = Math.max(0, 1 - (player.getLocation().distance(cat.getLocation()) / (range * 3)));
                             // Modified sound selection logic
                             Random random = new Random();
