@@ -1406,6 +1406,7 @@ no-loot-on-break:
   - YELLOW_WOOL
   - ZOMBIE_HEAD
   - ZOMBIE_WALL_HEAD
+  - TRIPWIRE
 
 # Blocks that require different blocks to break (BlockToBreak: BlockToSpend)
 b4b-substitutions:
