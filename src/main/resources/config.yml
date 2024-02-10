@@ -54,7 +54,7 @@ enable-disguises: true
 disguise-duration: 5000
 # BETA FEATURE: When one player kills another, should the killed player's claims be transferred to the killer?
 enable-claim-takeovers: false
-# Should players have to ability to create claim maps by right-clicking a lectern with a map in their main-hand?
+# Should players have the ability to create claim maps by right-clicking a lectern with a map in their main-hand?
 enable-claim-maps: true
 # How big a square of chunks should be claimed? Chunks are claimed in a grid, similar to the way Minecraft maps work.
 # NOTE: Changing this will hugely impact existing claims, which will likely invalidate many claims and move borders.
@@ -438,6 +438,11 @@ blacklisted-claim-blocks:
   - PEARLESCENT_FROGLIGHT
   - CALIBRATED_SCULK_SENSOR
   - CHISELED_BOOKSHELF
+  - PACKED_MUD
+  - MUD_BRICKS
+  - MUD_BRICK_SLAB
+  - MUD_BRICK_STAIRS
+  - MUD_BRICK_WALL
 
 # Blocks that are exempt from Block4Block
 blacklisted-blocks:
