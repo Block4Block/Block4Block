@@ -456,6 +456,8 @@ blacklisted-claim-blocks:
   - BAMBOO_SLAB
   - BAMBOO_STAIRS
   - BAMBOO_TRAPDOOR
+  - SLIME_BLOCK
+  - HONEY_BLOCK
 
 
 # Blocks that are exempt from Block4Block
