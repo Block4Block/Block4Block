@@ -1165,7 +1165,7 @@ public class utils {
         double x = claimData.getDouble(claimID + ".location.X");
         double y = claimData.getDouble(claimID + ".location.Y");
         double z = claimData.getDouble(claimID + ".location.Z");
-        boolean hideCoords = plugin.getConfig().getBoolean("hide-coords-globally") || !showCoordsInMsgs(p) || claimWidth == 1;
+        boolean hideCoords = plugin.getConfig().getBoolean("hide-coords-globally") || !showCoordsInMsgs(p);
         boolean showExactCoords = plugin.getConfig().getBoolean("lectern-message-settings.show-exact-coords");
         boolean showY = plugin.getConfig().getBoolean("lectern-message-settings.show-y");
         String result;
