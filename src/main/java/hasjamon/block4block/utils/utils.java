@@ -823,7 +823,7 @@ public class utils {
 
         if (strs.size() == 3)
             textures.add(new Property(strs.get(0), strs.get(1), strs.get(2)));
-        else
+        else if (strs.size() == 2)
             textures.add(new Property(strs.get(0), strs.get(1)));
 
         return textures;
