@@ -73,11 +73,11 @@ claim-map-colors:
     g: 0
     b: 255
 
-# Settings for the "Claim lectern is in the chunk near x, y, z" message that's sent if claim-width > 1
+# Settings for the claim coordinates shown in the boss bar
 lectern-message-settings:
-  send-lectern-messages: true
-  show-y: true
-  show-exact-coords: false # Changes the message to "Claim lectern is at x, y, z"
+  send-lectern-messages: true # Show claim coordinates in boss bar
+  show-y: true # Show not just x and z but also y
+  show-exact-coords: true # Show the exact coordinates instead of the center of chunk containing the claim lectern
 
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:
