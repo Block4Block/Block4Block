@@ -612,7 +612,7 @@ blacklisted-blocks:
 
 # Blocks with loot disabled on break
 no-loot-on-break:
-  - GLOW_STONE
+  - GLOWSTONE
   - COPPER_BLOCK
   - CUT_COPPER
   - CUT_COPPER_SLAB
