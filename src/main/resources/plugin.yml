@@ -1,6 +1,6 @@
 name: Block4Block
 main: hasjamon.block4block.Block4Block
-api-version: 1.20
+api-version: 1.21
 authors: [ HasJamOn, Bahm, gtg_cya ]
 softdepend: [ ProtocolLib ]
 version: 3.2
