@@ -56,7 +56,7 @@ public class BookEdit implements Listener {
                             if (!meta.hasGeneration() || meta.getGeneration() == BookMeta.Generation.ORIGINAL) {
                                 item.setType(Material.WRITABLE_BOOK);
                                 item.setItemMeta(meta);
-                                item.addUnsafeEnchantment(Enchantment.LUCK, 1);
+                                item.addUnsafeEnchantment(Enchantment.BINDING_CURSE, 1);
                             } else {
                                 FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
                                 String bookID = String.join("", meta.getLore()).substring(17);

@@ -1079,7 +1079,7 @@ public class utils {
     private static MapCursor getMapCursor(Player intruder, byte px, byte pz) {
         double yaw = intruder.getLocation().getYaw();
         byte direction = (byte) Math.min(15, Math.max(0, (((yaw + 371.25) % 360) / 22.5)));
-        MapCursor.Type type = MapCursor.Type.RED_POINTER;
+        MapCursor.Type type = MapCursor.Type.RED_MARKER;
         String caption = intruder.getName();
 
         return new MapCursor(px, pz, direction, type, true, caption);

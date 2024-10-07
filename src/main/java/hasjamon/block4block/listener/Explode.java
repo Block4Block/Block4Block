@@ -48,7 +48,7 @@ public class Explode implements Listener {
 
         event.blockList().removeIf(block -> !utils.getClaimBlocksProtectedBy(block).isEmpty());
 
-        if (entityType == EntityType.PRIMED_TNT || entityType == EntityType.MINECART_TNT) {
+        if (entityType == EntityType.TNT || entityType == EntityType.TNT_MINECART) {
             List<String> tntDropsEnabled = plugin.getConfig().getStringList("tnt-drops-enabled");
 
             for (Block block : event.blockList()) {

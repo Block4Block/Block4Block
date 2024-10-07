@@ -102,7 +102,7 @@ public class BlockPlace implements Listener {
         }
 
         switch (event.getBlockReplacedState().getType()) {
-            case AIR, CAVE_AIR, VOID_AIR, WATER, LAVA, GRASS, TALL_GRASS:
+            case AIR, CAVE_AIR, VOID_AIR, WATER, LAVA, SHORT_GRASS, TALL_GRASS:
                 utils.b4bGracePeriods.put(block, new GracePeriod(System.nanoTime(), block.getType()));
         }
     }

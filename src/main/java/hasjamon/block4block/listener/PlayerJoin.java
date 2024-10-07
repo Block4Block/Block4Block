@@ -88,10 +88,10 @@ public class PlayerJoin implements Listener {
             Property prop = textures.iterator().next();
             List<String> copy = new ArrayList<>();
 
-            copy.add(prop.getName());
-            copy.add(prop.getValue());
+            copy.add(prop.name());
+            copy.add(prop.value());
             if (prop.hasSignature())
-                copy.add(prop.getSignature());
+                copy.add(prop.signature());
 
             plugin.cfg.getPlayerTextures().set(p.getUniqueId().toString(), copy);
             plugin.cfg.savePlayerTextures();
