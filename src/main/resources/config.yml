@@ -525,7 +525,7 @@ blacklisted-blocks:
   - LECTERN
   - COBWEB
   - SNOW
-  - GRASS
+  - SHORT_GRASS
   - FERN
   - TALL_GRASS
   - SEAGRASS
