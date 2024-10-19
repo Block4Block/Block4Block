@@ -5,11 +5,12 @@ import hasjamon.block4block.events.MasterBookCreatedEvent;
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.Lectern;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -54,9 +55,11 @@ public class BookEdit implements Listener {
                         if (meta != null && meta.getLore() != null) {
                             // If the book is not a copy
                             if (!meta.hasGeneration() || meta.getGeneration() == BookMeta.Generation.ORIGINAL) {
-                                item.setType(Material.WRITABLE_BOOK);
-                                item.setItemMeta(meta);
-                                item.addUnsafeEnchantment(Enchantment.BINDING_CURSE, 1);
+                                // Disabled because it unfortunately clears book meta when it doesn't match the item type
+//                                item.setType(Material.WRITABLE_BOOK);
+//                                meta.setHideTooltip(true);
+//                                item.setItemMeta(meta);
+//                                item.addUnsafeEnchantment(Enchantment.BINDING_CURSE, 1); // Just to make it glow
                             } else {
                                 FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
                                 String bookID = String.join("", meta.getLore()).substring(17);
@@ -69,82 +72,6 @@ public class BookEdit implements Listener {
                                 }
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
-
-    @EventHandler(ignoreCancelled = true)
-    public void onPlaceBook(PlayerInteractEvent e) {
-        Player p = e.getPlayer();
-        Block clickedBlock = e.getClickedBlock();
-
-        if (e.getAction() == Action.RIGHT_CLICK_BLOCK && clickedBlock != null && clickedBlock.getType() == Material.LECTERN) {
-            Lectern lectern = (Lectern) clickedBlock.getState();
-            ItemStack book = lectern.getInventory().getItem(0);
-
-            if (book != null) {
-                String claimID = utils.getClaimID(lectern.getLocation());
-
-                if (book.getType() == Material.WRITTEN_BOOK) {
-                    BookMeta meta = (BookMeta) book.getItemMeta();
-
-                    if (meta != null && meta.getLore() != null) {
-                        FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
-                        String bookID = String.join("", meta.getLore()).substring(17);
-
-                        if (masterBooks.contains(bookID + ".pages")) {
-                            // Check if it's a claim book, then check if it's the one that claimed the chunk
-                            if (utils.isClaimPage(masterBooks.getStringList(bookID + ".pages").get(0))) {
-                                FileConfiguration claimData = plugin.cfg.getClaimData();
-                                Location bLoc = lectern.getLocation();
-                                boolean isCorrupted = true;
-
-                                if (claimData.contains(claimID + ".location"))
-                                    if (claimData.get(claimID + ".location.X").equals(bLoc.getX()))
-                                        if (claimData.get(claimID + ".location.Y").equals(bLoc.getY()))
-                                            if (claimData.get(claimID + ".location.Z").equals(bLoc.getZ()))
-                                                isCorrupted = false;
-
-                                if (isCorrupted) {
-                                    lectern.getInventory().clear();
-
-                                    List<String> copies = masterBooks.getStringList(bookID + ".copies-on-lecterns");
-                                    String xyz = bLoc.getBlockX() + "," + bLoc.getBlockY() + "," + bLoc.getBlockZ();
-                                    copies.remove(claimID + "!" + xyz);
-                                    masterBooks.set(bookID + ".copies-on-lecterns", copies);
-                                    plugin.cfg.saveMasterBooks();
-
-                                    p.sendMessage(ChatColor.GRAY + "The book was corrupted and turns to dust in your hands.");
-
-                                    e.setCancelled(true);
-                                    return;
-                                }
-                            }
-
-                            if (plugin.getConfig().getBoolean("enable-master-books"))
-                                meta.setPages(masterBooks.getStringList(bookID + ".pages"));
-                            book.setItemMeta(meta);
-                        }
-                    }
-                } else if (book.getType() == Material.WRITABLE_BOOK) {
-                    BookMeta meta = (BookMeta) book.getItemMeta();
-
-                    if (meta != null && plugin.getConfig().getBoolean("enable-claim-takeovers")) {
-                        FileConfiguration claimTakeovers = plugin.cfg.getClaimTakeovers();
-                        List<String> replacements = claimTakeovers.getStringList(claimID);
-                        List<String> pages = new ArrayList<>(meta.getPages());
-
-                        for (String replacement : replacements) {
-                            String[] parts = replacement.split("\\|");
-                            utils.replaceInClaimPages(pages, parts[0], parts[1]);
-                        }
-
-                        meta.setPages(pages);
-                        book.setItemMeta(meta);
-                        claimTakeovers.set(claimID, null);
-                        plugin.cfg.saveClaimTakeovers();
                     }
                 }
             }

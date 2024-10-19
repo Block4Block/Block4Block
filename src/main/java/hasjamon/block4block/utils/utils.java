@@ -375,7 +375,7 @@ public class utils {
     }
 
     public static boolean isClaimBook(BookMeta meta) {
-        return isClaimPage(meta.getPage(1));
+        return meta.hasPages() && isClaimPage(meta.getPage(1));
     }
 
     public static void unclaimChunk(Block block, boolean causedByPlayer, Consumer<String> sendMessage) {

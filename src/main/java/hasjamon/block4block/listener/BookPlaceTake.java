@@ -6,10 +6,7 @@ import hasjamon.block4block.events.ClaimRemovedEvent;
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
-import org.bukkit.SoundCategory;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Lectern;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -17,7 +14,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerTakeLecternBookEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -33,13 +31,13 @@ public class BookPlaceTake implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onPlace(BlockPlaceEvent e) {
-        Block b = e.getBlock();
+    public void onPlace(PlayerInteractEvent e) {
+        Block b = e.getClickedBlock();
         Player p = e.getPlayer();
 
         // If you're placing something on a lectern
-        if (b.getType() == Material.LECTERN) {
-            ItemStack item = e.getItemInHand();
+        if (e.getAction() == Action.RIGHT_CLICK_BLOCK && b != null && b.getType() == Material.LECTERN && e.hasItem()) {
+            ItemStack item = e.getItem();
             Material type = item.getType();
             boolean isBook = (type == Material.WRITTEN_BOOK || type == Material.WRITABLE_BOOK);
             boolean canPlace = true;
@@ -77,8 +75,7 @@ public class BookPlaceTake implements Listener {
 
             if (canPlace) {
                 if (isBook) {
-                    ItemStack book = e.getItemInHand();
-                    BookMeta meta = (BookMeta) book.getItemMeta();
+                    BookMeta meta = (BookMeta) item.getItemMeta();
 
                     if (meta != null) {
                         List<String> lore = meta.getLore();
@@ -109,9 +106,6 @@ public class BookPlaceTake implements Listener {
                 }
             } else {
                 e.setCancelled(true);
-
-                Lectern lectern = (Lectern) b.getState();
-                lectern.getInventory().clear();
             }
         }
     }
@@ -120,7 +114,68 @@ public class BookPlaceTake implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBookTake(PlayerTakeLecternBookEvent e) {
         Block lecternBlock = e.getLectern().getBlock();
-        String claimID = utils.getClaimID(e.getLectern().getLocation());
+        Lectern lectern = (Lectern) lecternBlock.getState();
+        String claimID = utils.getClaimID(lectern.getLocation());
+        ItemStack book = e.getBook();
+        BookMeta meta = (BookMeta) book.getItemMeta();
+        Player p = e.getPlayer();
+
+        if (book.getType() == Material.WRITTEN_BOOK) {
+            if (meta != null && meta.getLore() != null) {
+                FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
+                String bookID = String.join("", meta.getLore()).substring(17);
+
+                if (masterBooks.contains(bookID + ".pages")) {
+                    List<String> masterBookPages = masterBooks.getStringList(bookID + ".pages");
+                    // Check if it's a claim book, then check if it's the one that claimed the chunk
+                    if (!masterBookPages.isEmpty() && utils.isClaimPage(masterBookPages.getFirst())) {
+                        FileConfiguration claimData = plugin.cfg.getClaimData();
+                        Location bLoc = lectern.getLocation();
+                        boolean isCorrupted =
+                                !(claimData.contains(claimID + ".location")
+                                        && claimData.get(claimID + ".location.X").equals(bLoc.getX())
+                                        && claimData.get(claimID + ".location.Y").equals(bLoc.getY())
+                                        && claimData.get(claimID + ".location.Z").equals(bLoc.getZ()));
+
+                        if (isCorrupted) {
+                            lectern.getInventory().clear();
+
+                            List<String> copies = masterBooks.getStringList(bookID + ".copies-on-lecterns");
+                            String xyz = bLoc.getBlockX() + "," + bLoc.getBlockY() + "," + bLoc.getBlockZ();
+                            copies.remove(claimID + "!" + xyz);
+                            masterBooks.set(bookID + ".copies-on-lecterns", copies);
+                            plugin.cfg.saveMasterBooks();
+
+                            p.sendMessage(ChatColor.GRAY + "The book was corrupted and turns to dust in your hands.");
+
+                            e.setCancelled(true);
+                            return;
+                        }
+                    }
+
+                    if (plugin.getConfig().getBoolean("enable-master-books"))
+                        meta.setPages(masterBooks.getStringList(bookID + ".pages"));
+                    book.setItemMeta(meta);
+                }
+            }
+        } else if (book.getType() == Material.WRITABLE_BOOK) {
+            if (meta != null && plugin.getConfig().getBoolean("enable-claim-takeovers")) {
+                FileConfiguration claimTakeovers = plugin.cfg.getClaimTakeovers();
+                List<String> replacements = claimTakeovers.getStringList(claimID);
+                List<String> pages = new ArrayList<>(meta.getPages());
+
+                for (String replacement : replacements) {
+                    String[] parts = replacement.split("\\|");
+                    utils.replaceInClaimPages(pages, parts[0], parts[1]);
+                }
+
+                meta.setPages(pages);
+                book.setItemMeta(meta);
+                claimTakeovers.set(claimID, null);
+                plugin.cfg.saveClaimTakeovers();
+            }
+        }
+
 
         if (plugin.cfg.getClaimData().contains(claimID)) {
             if (utils.isClaimBlock(lecternBlock)) {
