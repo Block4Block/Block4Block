@@ -11,12 +11,14 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerEditBookEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
@@ -55,11 +57,12 @@ public class BookEdit implements Listener {
                         if (meta != null && meta.getLore() != null) {
                             // If the book is not a copy
                             if (!meta.hasGeneration() || meta.getGeneration() == BookMeta.Generation.ORIGINAL) {
-                                // Disabled because it unfortunately clears book meta when it doesn't match the item type
-//                                item.setType(Material.WRITABLE_BOOK);
-//                                meta.setHideTooltip(true);
-//                                item.setItemMeta(meta);
-//                                item.addUnsafeEnchantment(Enchantment.BINDING_CURSE, 1); // Just to make it glow
+                                item.setType(Material.WRITABLE_BOOK);
+                                item.addUnsafeEnchantment(Enchantment.BINDING_CURSE, 1); // Just to make it glow
+                                BookMeta newMeta = (BookMeta) item.getItemMeta();
+                                newMeta.setPages(meta.getPages());
+                                newMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                                item.setItemMeta(newMeta);
                             } else {
                                 FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
                                 String bookID = String.join("", meta.getLore()).substring(17);
@@ -96,6 +99,7 @@ public class BookEdit implements Listener {
 
                 newLore.add(utils.chat("&6Master Book &7#" + nextID));
                 meta.setLore(newLore);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 e.setNewBookMeta(meta);
                 masterBooks.set(nextID + ".pages", meta.getPages());
 
