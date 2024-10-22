@@ -38,6 +38,8 @@ public class BlockPlace implements Listener {
     public BlockPlace(Block4Block plugin) {
         netherSpawnTypeTransformations.put(EntityType.SLIME, EntityType.MAGMA_CUBE);
         nonNetherSpawnTypeTransformations.put(EntityType.MAGMA_CUBE, EntityType.SLIME);
+        netherSpawnTypeTransformations.put(EntityType.BREEZE, EntityType.BLAZE);
+        nonNetherSpawnTypeTransformations.put(EntityType.BLAZE, EntityType.BREEZE);
 
         this.plugin = plugin;
     }
