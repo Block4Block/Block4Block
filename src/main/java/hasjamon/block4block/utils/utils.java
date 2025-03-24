@@ -12,9 +12,7 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.apache.commons.lang.WordUtils;
 import org.bukkit.*;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Lectern;
+import org.bukkit.block.*;
 import org.bukkit.block.data.type.PistonHead;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -34,6 +32,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.map.*;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
+import org.bukkit.block.Chest;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
@@ -1213,5 +1212,84 @@ public class utils {
         }
 
         return false;
+    }
+
+    public static boolean canOpenChest(Block block, Player player) {
+        // Ensure the block is a valid chest container
+        if (!(block.getState() instanceof org.bukkit.block.Chest)) {
+            return false;
+        }
+
+        org.bukkit.block.Chest chestState = (org.bukkit.block.Chest) block.getState();
+        List<Block> chestBlocks = new ArrayList<>();
+
+        // Check if this is a double chest
+        if (chestState.getInventory() instanceof org.bukkit.inventory.DoubleChestInventory) {
+            org.bukkit.inventory.DoubleChestInventory doubleInv =
+                    (org.bukkit.inventory.DoubleChestInventory) chestState.getInventory();
+            if (doubleInv.getHolder() instanceof org.bukkit.block.DoubleChest) {
+                org.bukkit.block.DoubleChest doubleChest =
+                        (org.bukkit.block.DoubleChest) doubleInv.getHolder();
+
+                // Get the left/right chest
+                Chest leftChest = (Chest) doubleChest.getLeftSide();
+                Chest rightChest = (Chest) doubleChest.getRightSide();
+
+                // Convert each Chest to a Block
+                Block leftBlock = leftChest.getLocation().getBlock();
+                Block rightBlock = rightChest.getLocation().getBlock();
+
+                chestBlocks.add(leftBlock);
+                chestBlocks.add(rightBlock);
+            } else {
+                // Not actually a double chest, so just add the single block
+                chestBlocks.add(block);
+            }
+        } else {
+            // Single chest
+            chestBlocks.add(block);
+        }
+
+        // Check for blocks above any part of the chest
+        for (Block chestBlock : chestBlocks) {
+            Block above = chestBlock.getRelative(BlockFace.UP);
+            if (above.getType().isOccluding()) {
+                return false; // A block above prevents opening
+            }
+        }
+
+        return true;
+    }
+
+
+    // Determine which direction the chest is connected to
+    private static BlockFace getConnectedFace(org.bukkit.block.data.type.Chest chestData) {
+        switch (chestData.getFacing()) {
+            case NORTH:
+                return chestData.getType() == org.bukkit.block.data.type.Chest.Type.LEFT ? BlockFace.WEST : BlockFace.EAST;
+            case SOUTH:
+                return chestData.getType() == org.bukkit.block.data.type.Chest.Type.LEFT ? BlockFace.EAST : BlockFace.WEST;
+            case EAST:
+                return chestData.getType() == org.bukkit.block.data.type.Chest.Type.LEFT ? BlockFace.NORTH : BlockFace.SOUTH;
+            case WEST:
+                return chestData.getType() == org.bukkit.block.data.type.Chest.Type.LEFT ? BlockFace.SOUTH : BlockFace.NORTH;
+            default:
+                return BlockFace.SELF;
+        }
+    }
+
+    // Helper method to check if two chests are part of a double chest
+    private static boolean isDoubleChest(Block chest1, Block chest2) {
+        // Check if both blocks are chests before proceeding
+        if (chest1.getType() != Material.CHEST || chest2.getType() != Material.CHEST) {
+            return false;
+        }
+
+        // Correctly cast the chest states
+        org.bukkit.block.Chest chestState1 = (org.bukkit.block.Chest) chest1.getState();
+        org.bukkit.block.Chest chestState2 = (org.bukkit.block.Chest) chest2.getState();
+
+        // Compare inventory holders to determine if they share the same inventory
+        return chestState1.getInventory().getHolder() == chestState2.getInventory().getHolder();
     }
 }

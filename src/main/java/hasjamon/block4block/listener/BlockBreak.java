@@ -24,6 +24,8 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 
+import static hasjamon.block4block.utils.utils.canOpenChest;
+
 
 public class BlockBreak implements Listener {
     private final Block4Block plugin;
@@ -40,6 +42,22 @@ public class BlockBreak implements Listener {
         Block b = e.getBlock();
         FileConfiguration cfg = plugin.getConfig();
         boolean isInsideClaim = plugin.cfg.getClaimData().contains(utils.getClaimID(b.getLocation()));
+
+        // Prevent breaking chests in someone else's claim
+        if (isInsideClaim && b.getType() == Material.CHEST) {
+            String[] members = utils.getMembers(b.getLocation());
+            boolean isMember = utils.isMemberOfClaim(members, p);
+
+            // Check if the chest can be opened by the player
+            boolean canOpen = canOpenChest(b, p);
+
+            // If the player is not a member and cannot open the chest
+            if (!isMember && !canOpen) {
+                e.setCancelled(true);
+                p.sendMessage(utils.chat("&cThe chest is shielded by the blocks above it."));
+                return;
+            }
+        }
 
         // Lecterns are exempt from B4B rules. Changing this would require refactoring of LecternBreak's onBreak.
         if (b.getType() == Material.LECTERN) return;
