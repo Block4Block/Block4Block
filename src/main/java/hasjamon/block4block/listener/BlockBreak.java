@@ -149,6 +149,7 @@ public class BlockBreak implements Listener {
         if (b.getType() == Material.SPAWNER) {
             CreatureSpawner spawner = (CreatureSpawner) b.getState();
             EntityType spawnType = spawner.getSpawnedType();
+            String expectedSpawnerType = spawnType.name();
             ItemStack spawnerItem = new ItemStack(Material.SPAWNER);
             ItemMeta itemMeta = spawnerItem.getItemMeta();
 
@@ -161,44 +162,54 @@ public class BlockBreak implements Listener {
 
                 // Prevent breaking if player is not a member of the claim
                 if (!isMember) {
-                    String expectedSpawnerName = utils.prettifyEnumName(spawnType) + " Spawner";
                     boolean isCorrectItem = false;
                     int itemSlot = -1;
 
                     // Check item in main hand
-                    if (p.getInventory().getItemInMainHand().hasItemMeta() &&
-                            p.getInventory().getItemInMainHand().getItemMeta().hasDisplayName() &&
-                            p.getInventory().getItemInMainHand().getItemMeta().getDisplayName().equals(expectedSpawnerName)) {
-                        isCorrectItem = true;
-                        itemSlot = p.getInventory().getHeldItemSlot(); // Main hand slot
+                    if (p.getInventory().getItemInMainHand().hasItemMeta()) {
+                        ItemMeta mainHandMeta = p.getInventory().getItemInMainHand().getItemMeta();
+                        if (mainHandMeta != null && mainHandMeta.getPersistentDataContainer().has(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING)) {
+                            String storedType = mainHandMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING);
+                            if (storedType != null && storedType.equals(expectedSpawnerType)) {
+                                isCorrectItem = true;
+                                itemSlot = p.getInventory().getHeldItemSlot(); // Main hand slot
+                            }
+                        }
                     }
 
                     // Check item in offhand
-                    if (!isCorrectItem && p.getInventory().getItemInOffHand().hasItemMeta() &&
-                            p.getInventory().getItemInOffHand().getItemMeta().hasDisplayName() &&
-                            p.getInventory().getItemInOffHand().getItemMeta().getDisplayName().equals(expectedSpawnerName)) {
-                        isCorrectItem = true;
-                        itemSlot = -2; // Special case for offhand
+                    if (!isCorrectItem && p.getInventory().getItemInOffHand().hasItemMeta()) {
+                        ItemMeta offHandMeta = p.getInventory().getItemInOffHand().getItemMeta();
+                        if (offHandMeta != null && offHandMeta.getPersistentDataContainer().has(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING)) {
+                            String storedType = offHandMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING);
+                            if (storedType != null && storedType.equals(expectedSpawnerType)) {
+                                isCorrectItem = true;
+                                itemSlot = -2; // Special case for offhand
+                            }
+                        }
                     }
 
                     // Check item in hotbar
                     if (!isCorrectItem) {
                         for (int i = 0; i < 9; i++) {
                             ItemStack item = p.getInventory().getItem(i);
-                            if (item != null && item.hasItemMeta() &&
-                                    item.getItemMeta().hasDisplayName() &&
-                                    item.getItemMeta().getDisplayName().equals(expectedSpawnerName)) {
-                                isCorrectItem = true;
-                                itemSlot = i; // Store hotbar slot
-                                break;
+                            if (item != null && item.hasItemMeta()) {
+                                ItemMeta hotbarMeta = item.getItemMeta();
+                                if (hotbarMeta != null && hotbarMeta.getPersistentDataContainer().has(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING)) {
+                                    String storedType = hotbarMeta.getPersistentDataContainer().get(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING);
+                                    if (storedType != null && storedType.equals(expectedSpawnerType)) {
+                                        isCorrectItem = true;
+                                        itemSlot = i; // Store hotbar slot
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
-
                     // Cancel breaking if none of the items match the expected spawner name
                     if (!isCorrectItem) {
                         e.setCancelled(true);
-                        String message = utils.chat("&aSpend &c" + expectedSpawnerName + " &afrom your hotbar to break this!");
+                        String message = utils.chat("&aSpend &c" + expectedSpawnerType + "_SPAWNER &afrom your hotbar to break this!");
                         p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                         return;
                     }
