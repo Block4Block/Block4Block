@@ -139,21 +139,93 @@ public class BlockBreak implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void onSpawnerBreak(BlockBreakEvent event) {
-        Block block = event.getBlock();
+    public void onSpawnerBreak(BlockBreakEvent e) {
+        Player p = e.getPlayer();
+        Block b = e.getBlock();
 
-        if (block.getType() == Material.SPAWNER) {
-            CreatureSpawner spawner = (CreatureSpawner) block.getState();
+        if (b.getType() == Material.SPAWNER) {
+            CreatureSpawner spawner = (CreatureSpawner) b.getState();
             EntityType spawnType = spawner.getSpawnedType();
             ItemStack spawnerItem = new ItemStack(Material.SPAWNER);
             ItemMeta itemMeta = spawnerItem.getItemMeta();
 
-            if (itemMeta != null && spawnType != null) {
+            // Check if the spawner is inside a claim
+            boolean isInsideClaim = plugin.cfg.getClaimData().contains(utils.getClaimID(b.getLocation()));
+
+            if (isInsideClaim) {
+                String[] members = utils.getMembers(b.getLocation());
+                boolean isMember = utils.isMemberOfClaim(members, p);
+
+                // Prevent breaking if player is not a member of the claim
+                if (!isMember) {
+                    String expectedSpawnerName = utils.prettifyEnumName(spawnType) + " Spawner";
+                    boolean isCorrectItem = false;
+                    int itemSlot = -1;
+
+                    // Check item in main hand
+                    if (p.getInventory().getItemInMainHand().hasItemMeta() &&
+                            p.getInventory().getItemInMainHand().getItemMeta().hasDisplayName() &&
+                            p.getInventory().getItemInMainHand().getItemMeta().getDisplayName().equals(expectedSpawnerName)) {
+                        isCorrectItem = true;
+                        itemSlot = p.getInventory().getHeldItemSlot(); // Main hand slot
+                    }
+
+                    // Check item in offhand
+                    if (!isCorrectItem && p.getInventory().getItemInOffHand().hasItemMeta() &&
+                            p.getInventory().getItemInOffHand().getItemMeta().hasDisplayName() &&
+                            p.getInventory().getItemInOffHand().getItemMeta().getDisplayName().equals(expectedSpawnerName)) {
+                        isCorrectItem = true;
+                        itemSlot = -2; // Special case for offhand
+                    }
+
+                    // Check item in hotbar
+                    if (!isCorrectItem) {
+                        for (int i = 0; i < 9; i++) {
+                            ItemStack item = p.getInventory().getItem(i);
+                            if (item != null && item.hasItemMeta() &&
+                                    item.getItemMeta().hasDisplayName() &&
+                                    item.getItemMeta().getDisplayName().equals(expectedSpawnerName)) {
+                                isCorrectItem = true;
+                                itemSlot = i; // Store hotbar slot
+                                break;
+                            }
+                        }
+                    }
+
+                    // Cancel breaking if none of the items match the expected spawner name
+                    if (!isCorrectItem) {
+                        e.setCancelled(true);
+                        p.sendMessage(utils.chat("&cYou cannot break this spawner with the wrong item."));
+                        return;
+                    }
+
+                    // Remove 1 item from the appropriate slot if correct item was found
+                    if (itemSlot == -2) {
+                        // Remove from offhand
+                        ItemStack offhandItem = p.getInventory().getItemInOffHand();
+                        offhandItem.setAmount(offhandItem.getAmount() - 1);
+                        p.getInventory().setItemInOffHand(offhandItem.getAmount() > 0 ? offhandItem : null);
+                    } else if (itemSlot >= 0) {
+                        // Remove from hotbar or main hand
+                        ItemStack itemToRemove = p.getInventory().getItem(itemSlot);
+                        itemToRemove.setAmount(itemToRemove.getAmount() - 1);
+                        p.getInventory().setItem(itemSlot, itemToRemove.getAmount() > 0 ? itemToRemove : null);
+                    }
+                }
+                else{
+                    itemMeta.setDisplayName(utils.prettifyEnumName(spawnType) + " Spawner");
+                    itemMeta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP); // Hides the "Interact with spawn egg..." text
+                    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING, spawnType.name());
+                    spawnerItem.setItemMeta(itemMeta);
+                    b.getWorld().dropItemNaturally(b.getLocation(), spawnerItem);
+                }
+            }
+            if (itemMeta != null && spawnType != null && !isInsideClaim) {
                 itemMeta.setDisplayName(utils.prettifyEnumName(spawnType) + " Spawner");
                 itemMeta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP); // Hides the "Interact with spawn egg..." text
                 itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING, spawnType.name());
                 spawnerItem.setItemMeta(itemMeta);
-                block.getWorld().dropItemNaturally(block.getLocation(), spawnerItem);
+                b.getWorld().dropItemNaturally(b.getLocation(), spawnerItem);
             }
         }
     }
