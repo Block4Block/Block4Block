@@ -4,6 +4,7 @@ import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.B4BlockBreakWithinGracePeriodEvent;
 import hasjamon.block4block.events.BlockBreakInClaimEvent;
 import hasjamon.block4block.utils.utils;
+import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -21,6 +22,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import net.md_5.bungee.api.chat.TextComponent;
 
 import java.util.List;
 
@@ -54,7 +56,8 @@ public class BlockBreak implements Listener {
             // If the player is not a member and cannot open the chest
             if (!isMember && !canOpen) {
                 e.setCancelled(true);
-                p.sendMessage(utils.chat("&cThe chest is shielded by the blocks above it."));
+                String message = utils.chat("&cThe chest is shielded by the blocks above it.");
+                p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                 return;
             }
         }
@@ -195,7 +198,8 @@ public class BlockBreak implements Listener {
                     // Cancel breaking if none of the items match the expected spawner name
                     if (!isCorrectItem) {
                         e.setCancelled(true);
-                        p.sendMessage(utils.chat("&cYou cannot break this spawner with the wrong item."));
+                        String message = utils.chat("&aSpend &c" + expectedSpawnerName + " &afrom your hotbar to break this!");
+                        p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                         return;
                     }
 
