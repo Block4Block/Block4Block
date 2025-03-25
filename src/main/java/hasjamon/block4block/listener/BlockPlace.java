@@ -31,9 +31,6 @@ public class BlockPlace implements Listener {
     private final Block4Block plugin;
     private final HashMap<EntityType, EntityType> netherSpawnTypeTransformations = new HashMap<>();
     private final HashMap<EntityType, EntityType> nonNetherSpawnTypeTransformations = new HashMap<>();
-    private final Set<EntityType> disallowedSpawnersOutsideNether = Set.of(
-            EntityType.BLAZE
-    );
 
     public BlockPlace(Block4Block plugin) {
         netherSpawnTypeTransformations.put(EntityType.SLIME, EntityType.MAGMA_CUBE);
@@ -90,13 +87,7 @@ public class BlockPlace implements Listener {
                     Optional<EntityType> spawnTypeOpt = getSpawnerType(itemMeta);
 
                     if (spawnTypeOpt.isPresent()) {
-                        EntityType spawnType = spawnTypeOpt.get();
-
-                        if (disallowedSpawnersOutsideNether.contains(spawnType)) {
-                            event.setCancelled(true);
-                            player.sendMessage(utils.chat("&cYou cannot place " + utils.prettifyEnumName(spawnType) + " Spawner outside the Nether"));
-                            return;
-                        } else {
+                        EntityType spawnType = spawnTypeOpt.get();{
                             transformSpawnerType(spawner, spawnType, nonNetherSpawnTypeTransformations);
                         }
                     }
