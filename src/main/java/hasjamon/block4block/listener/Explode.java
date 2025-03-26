@@ -74,13 +74,25 @@ public class Explode implements Listener {
                 .map(Material::valueOf)
                 .toList();
 
+        // Check if the explosion is in the Nether
+        boolean isNether = event.getBlock().getWorld().getEnvironment() == World.Environment.NETHER;
+
         // Don't blow up blocks that...
         // (1) Aren't on the relevant whitelist, or
-        // (2) Are inside a claim, or
+        // (2) Are inside a claim (except in the Nether), or
         // (3) Are next to a claim lectern
-        event.blockList().removeIf(block ->
-                !explodableBlockTypes.contains(block.getType()) ||
-                        claimData.contains(utils.getClaimID(block.getLocation())) ||
-                        !utils.getClaimBlocksProtectedBy(block).isEmpty());
+        event.blockList().removeIf(block -> {
+            boolean isExplodable = explodableBlockTypes.contains(block.getType());
+            boolean isInClaim = claimData.contains(utils.getClaimID(block.getLocation()));
+            boolean isProtectedByLectern = !utils.getClaimBlocksProtectedBy(block).isEmpty();
+
+            // Allow explosions in claims in the Nether, but protect if next to a claim lectern
+            if (isExplodable && isNether) {
+                return isProtectedByLectern;
+            }
+
+            // Default behavior for other cases
+            return !isExplodable || isInClaim || isProtectedByLectern;
+        });
     }
 }
