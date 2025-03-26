@@ -47,3 +47,6 @@ commands:
   coords:
     description: Turns coords in system messages on/off.
     usage: /<command> [on|off]
+  claimvisual:
+    description: Toggle claim visualization on or off
+    usage: /claimvisual <on/off>

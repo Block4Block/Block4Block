@@ -26,6 +26,7 @@ public class Block4Block extends JavaPlugin {
     public PluginManager pluginManager = getServer().getPluginManager();
     public ConfigManager cfg;
     private static Block4Block instance;
+    private ClaimVisual claimVisual;
     private List<?> hints;
     private int nextHint = 0;
 
@@ -44,6 +45,14 @@ public class Block4Block extends JavaPlugin {
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
         setupHints(); // Prepares hints and starts broadcasting them
+        // Initialize and register ClaimVisual
+        claimVisual = new ClaimVisual(this);
+        pluginManager.registerEvents(claimVisual, this);
+
+        // Register ClaimVisualCommand
+        if (getCommand("claimvisual") != null) {
+            getCommand("claimvisual").setExecutor(new ClaimVisualCommand(claimVisual.getVisualEnabledPlayers()));
+        }
         if (this.getConfig().getBoolean("golems-guard-claims"))
             getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
         getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateCurrentTick, 0, 1);
@@ -106,6 +115,13 @@ public class Block4Block extends JavaPlugin {
         PluginCommand claimFixCmd = this.getCommand("claimfix");
         PluginCommand chickenBonusCmd = this.getCommand("chickenbonus");
         PluginCommand coordsCmd = this.getCommand("coords");
+        PluginCommand claimVisualCmd = this.getCommand("claimvisual");
+
+        ClaimVisual claimVisual = new ClaimVisual(this);
+
+        if (getCommand("claimvisual") != null) {
+            getCommand("claimvisual").setExecutor(new ClaimVisualCommand(claimVisual.getVisualEnabledPlayers()));
+        }
 
 
         if (dieCmd != null) dieCmd.setExecutor(new DieCommand());
