@@ -1177,9 +1177,6 @@ public class utils {
                 // Get the list of protected block faces from the custom config
                 Set<BlockFace> protectedBlockFaces = utils.protectiveBlockFaces;
 
-                // Log the protected block faces to check the values in the config
-                plugin.getLogger().info("Protected Block Faces: " + protectedBlockFaces);
-
                 // Retrieve the claim's block location (e.g., the lectern's position) from the claim data
                 String claimID = getClaimID(p.getLocation());  // Use player's location or another relevant location
                 double lecternX = claimData.getDouble(claimID + ".location.X", Double.MAX_VALUE);
@@ -1201,13 +1198,6 @@ public class utils {
 
                 // Calculate the total sides based on the configuration
                 int totalSides = protectedBlockFaces.size();
-
-                // Log the totalSides to confirm it is being calculated correctly
-                plugin.getLogger().info("Total Sides (based on config): " + totalSides);
-
-                // Log the values of protectedCount and totalSides for debugging
-                plugin.getLogger().info("Protected Count: " + protectedCount);
-                plugin.getLogger().info("Total Sides: " + totalSides);
 
                 // Prevent NaN error by ensuring totalSides is not 0
                 if (totalSides == 0) {
