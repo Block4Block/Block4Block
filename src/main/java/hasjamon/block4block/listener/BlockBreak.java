@@ -6,9 +6,11 @@ import hasjamon.block4block.events.BlockBreakInClaimEvent;
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
@@ -25,6 +27,7 @@ import org.bukkit.persistence.PersistentDataType;
 import net.md_5.bungee.api.chat.TextComponent;
 
 import java.util.List;
+import java.util.Set;
 
 import static hasjamon.block4block.utils.utils.canOpenChest;
 
@@ -69,6 +72,12 @@ public class BlockBreak implements Listener {
         List<?> claimBlacklist = cfg.getList("blacklisted-claim-blocks");
 
         if (isInsideClaim) {
+            // Check if the block is next to a claim block in a protected direction
+            if (utils.isAdjacentToClaimBlock(b)) {
+                String claimID = utils.getClaimID(b.getLocation());  // Get the claim ID based on the block location
+                utils.updateBossBar(p, claimID);  // Update the boss bar using the claim ID
+            }
+
             if (!utils.isClaimBlock(b)) {
                 String[] members = utils.getMembers(b.getLocation());
 
@@ -96,7 +105,7 @@ public class BlockBreak implements Listener {
                 }
             }
         }
-
+        
         if (plugin.getConfig().getBoolean("andesite-splash-on")) {
             if (b.getType() == Material.ANDESITE) {
                 // Add splash if it's been at least 0.1 second since the last time andesite was broken (to avoid chain reaction)

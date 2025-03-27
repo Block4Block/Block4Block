@@ -87,9 +87,8 @@ public class BlockPlace implements Listener {
                     Optional<EntityType> spawnTypeOpt = getSpawnerType(itemMeta);
 
                     if (spawnTypeOpt.isPresent()) {
-                        EntityType spawnType = spawnTypeOpt.get();{
-                            transformSpawnerType(spawner, spawnType, nonNetherSpawnTypeTransformations);
-                        }
+                        EntityType spawnType = spawnTypeOpt.get();
+                        transformSpawnerType(spawner, spawnType, nonNetherSpawnTypeTransformations);
                     }
             }
         }
@@ -97,6 +96,16 @@ public class BlockPlace implements Listener {
         switch (event.getBlockReplacedState().getType()) {
             case AIR, CAVE_AIR, VOID_AIR, WATER, LAVA, SHORT_GRASS, TALL_GRASS:
                 utils.b4bGracePeriods.put(block, new GracePeriod(System.nanoTime(), block.getType()));
+        }
+
+        // Check if the block is inside a claim and if it is adjacent to a claim block
+        boolean isInsideClaim = plugin.cfg.getClaimData().contains(utils.getClaimID(block.getLocation()));
+        if (isInsideClaim) {
+            // Check if the block is next to a claim block in a protected direction
+            if (utils.isAdjacentToClaimBlock(block)) {
+                String claimID = utils.getClaimID(block.getLocation());  // Get the claim ID based on the block location
+                utils.updateBossBar(player, claimID);  // Update the boss bar using the claim ID
+            }
         }
     }
 
@@ -141,25 +150,12 @@ public class BlockPlace implements Listener {
     public void onBucketEmptyMonitor(PlayerBucketEmptyEvent event) {
         Block block = event.getBlock();
         Material bucket = event.getBucket();
-        Player player = event.getPlayer();
-        int blockY = block.getLocation().getBlockY();
-        World.Environment dimension = block.getWorld().getEnvironment();
-
-        if (bucket == Material.LAVA_BUCKET && !utils.willLavaFlowAt(blockY, dimension)) {
-            String msg = utils.chat("Lava stops flowing at heights above " + utils.lavaFlowMaxY);
-            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(msg));
-        }
+        // Additional logic for monitoring bucket emptying can go here
     }
 
-    private boolean isEasilyBreakableCrop(Material blockType) {
-        switch (blockType) {
-            case WHEAT, POTATOES, CARROTS, BEETROOTS, SUGAR_CANE, COCOA, NETHER_WART -> {
-                return true;
-            }
-            default -> {
-                return false;
-            }
-        }
+    private boolean isEasilyBreakableCrop(Material material) {
+        // Implement logic for crops or blocks that can be easily broken and don't require special rules
+        return false; // Just a placeholder for now
     }
 }
 

@@ -146,8 +146,6 @@ public class utils {
         }).count();
     }
 
-
-
     public static boolean isClaimInvulnerable(Block block) {
         return currentTick - claimInvulnerabilityStartTick.getOrDefault(block.getLocation(), 0L) <= 10;
     }
@@ -164,6 +162,16 @@ public class utils {
             return false;
 
         return lecternX == b.getLocation().getX() && lecternY == b.getLocation().getY() && lecternZ == b.getLocation().getZ();
+    }
+
+    public static boolean isAdjacentToClaimBlock(Block b) {
+        for (BlockFace face : plugin.cfg.getProtectiveBlockFaces()) {
+            Block adjacent = b.getRelative(face);
+            if (isClaimBlock(adjacent)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean claimChunk(Block block, List<String> members, Consumer<String> sendMessage) {
@@ -1136,79 +1144,86 @@ public class utils {
             addBossBar(p);
         }
 
-        BossBar bossBar = bossBars.get(p);
-        FileConfiguration claimData = plugin.cfg.getClaimData();
-        boolean isClaimed = claimData.contains(currentClaimID);
+        // Use Bukkit scheduler to delay the update by a small number of ticks (e.g., 20 ticks = 1 second)
+        Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
+            @Override
+            public void run() {
+                BossBar bossBar = bossBars.get(p);
+                FileConfiguration claimData = plugin.cfg.getClaimData();
+                boolean isClaimed = claimData.contains(currentClaimID);
 
-        // If the claim is not claimed
-        if (!isClaimed) {
-            bossBar.setColor(BarColor.WHITE);
-            bossBar.setTitle(hasClaims(p) ? "Unclaimed" : "Unclaimed (place book on lectern to claim)");
-            bossBar.setProgress(0.0);  // No progress if no claim
-            return;
-        }
+                // If the claim is not claimed
+                if (!isClaimed) {
+                    bossBar.setColor(BarColor.WHITE);
+                    bossBar.setTitle(hasClaims(p) ? "Unclaimed" : "Unclaimed (place book on lectern to claim)");
+                    bossBar.setProgress(0.0);  // No progress if no claim
+                    return;
+                }
 
-        // If the claim is claimed, get the coordinates string
-        String coordsStr = getCoordsString(p, currentClaimID);
+                // If the claim is claimed, get the coordinates string
+                String coordsStr = getCoordsString(p, currentClaimID);
 
-        // Check if the player is an intruder
-        if (isIntruder(p, currentClaimID)) {
-            // If the player is an intruder, set the boss bar to red
-            bossBar.setColor(BarColor.RED);
-            bossBar.setTitle("Claimed at " + coordsStr + " (Intruder!)");
-        } else {
-            // If the player is not an intruder, set the boss bar to green
-            bossBar.setColor(BarColor.GREEN);
-            bossBar.setTitle("Claimed at " + coordsStr);
-        }
+                // Check if the player is an intruder
+                if (isIntruder(p, currentClaimID)) {
+                    // If the player is an intruder, set the boss bar to red
+                    bossBar.setColor(BarColor.RED);
+                    bossBar.setTitle("Claimed at " + coordsStr + " (Intruder!)");
+                } else {
+                    // If the player is not an intruder, set the boss bar to green
+                    bossBar.setColor(BarColor.GREEN);
+                    bossBar.setTitle("Claimed at " + coordsStr);
+                }
 
-        // Get the list of protected block faces from the custom config
-        List<String> protectedBlockFaces = plugin.cfg.getClaimData().getStringList("claim-protection.protective-block-faces");
+                // Get the list of protected block faces from the custom config
+                Set<BlockFace> protectedBlockFaces = utils.protectiveBlockFaces;
 
-        // Log the protected block faces to check the values in the config
-        plugin.getLogger().info("Protected Block Faces: " + protectedBlockFaces);
+                // Log the protected block faces to check the values in the config
+                plugin.getLogger().info("Protected Block Faces: " + protectedBlockFaces);
 
-        // Retrieve the claim's block location (e.g., the lectern's position) from the claim data
-        String claimID = getClaimID(p.getLocation());  // Use player's location or another relevant location
-        double lecternX = claimData.getDouble(claimID + ".location.X", Double.MAX_VALUE);
-        double lecternY = claimData.getDouble(claimID + ".location.Y", Double.MAX_VALUE);
-        double lecternZ = claimData.getDouble(claimID + ".location.Z", Double.MAX_VALUE);
+                // Retrieve the claim's block location (e.g., the lectern's position) from the claim data
+                String claimID = getClaimID(p.getLocation());  // Use player's location or another relevant location
+                double lecternX = claimData.getDouble(claimID + ".location.X", Double.MAX_VALUE);
+                double lecternY = claimData.getDouble(claimID + ".location.Y", Double.MAX_VALUE);
+                double lecternZ = claimData.getDouble(claimID + ".location.Z", Double.MAX_VALUE);
 
-        // If the lectern location is invalid, log the warning and exit early
-        if (lecternX == Double.MAX_VALUE || lecternY == Double.MAX_VALUE || lecternZ == Double.MAX_VALUE) {
-            plugin.getLogger().warning("No valid lectern found for claim: " + claimID);
-            return;  // Exit the method early
-        }
+                // If the lectern location is invalid, log the warning and exit early
+                if (lecternX == Double.MAX_VALUE || lecternY == Double.MAX_VALUE || lecternZ == Double.MAX_VALUE) {
+                    plugin.getLogger().warning("No valid lectern found for claim: " + claimID);
+                    return;  // Exit the method early
+                }
 
-        // Create the Location object and get the corresponding block
-        Location lecternLocation = new Location(p.getWorld(), lecternX, lecternY, lecternZ);
-        Block claimBlock = lecternLocation.getBlock();
+                // Create the Location object and get the corresponding block
+                Location lecternLocation = new Location(p.getWorld(), lecternX, lecternY, lecternZ);
+                Block claimBlock = lecternLocation.getBlock();
 
-        // Count how many sides are protected using the countProtectedSides method
-        long protectedCount = countProtectedSides(claimBlock);
+                // Count how many sides are protected using the countProtectedSides method
+                long protectedCount = countProtectedSides(claimBlock);
 
-        // Calculate the total sides based on the configuration
-        int totalSides = 4;
+                // Calculate the total sides based on the configuration
+                int totalSides = protectedBlockFaces.size();
 
-        // Log the totalSides to confirm it is being calculated correctly
-        plugin.getLogger().info("Total Sides (based on config): " + totalSides);
+                // Log the totalSides to confirm it is being calculated correctly
+                plugin.getLogger().info("Total Sides (based on config): " + totalSides);
 
-        // Log the values of protectedCount and totalSides for debugging
-        plugin.getLogger().info("Protected Count: " + protectedCount);
-        plugin.getLogger().info("Total Sides: " + totalSides);
+                // Log the values of protectedCount and totalSides for debugging
+                plugin.getLogger().info("Protected Count: " + protectedCount);
+                plugin.getLogger().info("Total Sides: " + totalSides);
 
-        // Prevent NaN error by ensuring totalSides is not 0
-        if (totalSides == 0) {
-            bossBar.setProgress(0.0);  // Or set it to 1.0 or another default value, depending on your desired behavior
-            return;  // Exit the method early if there are no sides to protect
-        }
+                // Prevent NaN error by ensuring totalSides is not 0
+                if (totalSides == 0) {
+                    bossBar.setProgress(0.0);  // Or set it to 1.0 or another default value, depending on your desired behavior
+                    return;  // Exit the method early if there are no sides to protect
+                }
 
-        // Normalize the progress to be between 0.0 and 1.0
-        double progress = (double) protectedCount / totalSides;
+                // Normalize the progress to be between 0.0 and 1.0
+                double progress = (double) protectedCount / totalSides;
 
-        // Update the progress bar to reflect the number of protected faces (out of totalSides)
-        bossBar.setProgress(progress);
+                // Update the progress bar to reflect the number of protected faces (out of totalSides)
+                bossBar.setProgress(progress);
+            }
+        }, 2L);  // 2L means 2 ticks (0.1 second) delay
     }
+
 
 
 
