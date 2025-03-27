@@ -5,10 +5,7 @@ import hasjamon.block4block.command.*;
 import hasjamon.block4block.files.ConfigManager;
 import hasjamon.block4block.listener.*;
 import hasjamon.block4block.utils.utils;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -186,6 +183,9 @@ public class Block4Block extends JavaPlugin {
         pluginManager.registerEvents(new PlayerToggleGlide(this), this);
         pluginManager.registerEvents(new PlayerChangedWorld(), this);
         pluginManager.registerEvents(new ExplosionPrime(), this);
+        pluginManager.registerEvents(new hasjamon.block4block.listener.BlackBearEgg(
+                new NamespacedKey(this, "black_bear_spawn_egg")
+        ), this);
     }
 
     private void addMapRenderers() {

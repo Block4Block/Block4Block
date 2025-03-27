@@ -19,10 +19,7 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.IronGolem;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.BlockInventoryHolder;
 import org.bukkit.inventory.Inventory;
@@ -631,48 +628,70 @@ public class utils {
         return new ChickenBonuses(letterBonuses, namedChickensPos.size());
     }
 
-    public static Material getRandomSpawnEgg(Map<Character, Integer> letterBonuses) {
-        ConfigurationSection weightConfig = plugin.getConfig().getConfigurationSection("spawn-egg-weights");
-        Random rand = new Random();
-        int totalWeight = calcTotalWeight(letterBonuses);
-        int i = rand.nextInt(totalWeight);
+    public static class SpawnEggUtils {
 
-        if (weightConfig != null) {
-            for (String eggName : weightConfig.getKeys(false)) {
-                Character firstLetter = eggName.toLowerCase().charAt(0);
-                Integer bonus = letterBonuses.get(firstLetter);
-                int weight = weightConfig.getInt(eggName);
+        // Use your plugin instance appropriately here; for example, if you have a static instance reference in your main class:
+        private static final NamespacedKey eggKey = new NamespacedKey(Block4Block.getInstance(), "black_bear_spawn_egg");
 
-                if (bonus != null)
-                    weight *= (1 + bonus);
-                i -= weight;
+        public static ItemStack getRandomSpawnEgg(Map<Character, Integer> letterBonuses) {
+            ConfigurationSection weightConfig = Block4Block.getInstance().getConfig().getConfigurationSection("spawn-egg-weights");
+            Random rand = new Random();
+            int totalWeight = calcTotalWeight(letterBonuses);
+            int i = rand.nextInt(totalWeight);
 
-                if (i <= 0)
-                    return Material.valueOf(eggName);
+            if (weightConfig != null) {
+                for (String eggName : weightConfig.getKeys(false)) {
+                    Character firstLetter = eggName.toLowerCase().charAt(0);
+                    Integer bonus = letterBonuses.get(firstLetter);
+                    int weight = weightConfig.getInt(eggName);
+
+                    if (bonus != null)
+                        weight *= (1 + bonus);
+                    i -= weight;
+
+                    // Handle Black Bear Spawn Egg: return the custom item if selected
+                    if (eggName.equalsIgnoreCase("BLACK_BEAR_SPAWN_EGG")) {
+                        return createBlackBearEgg();
+                    }
+
+                    if (i <= 0) {
+                        return new ItemStack(Material.valueOf(eggName));
+                    }
+                }
             }
+
+            // Default fallback
+            return new ItemStack(Material.TROPICAL_FISH_SPAWN_EGG);
         }
 
-        // We should never get this far
-        return Material.TROPICAL_FISH_SPAWN_EGG;
-    }
+        private static int calcTotalWeight(Map<Character, Integer> letterBonuses) {
+            ConfigurationSection weightConfig = Block4Block.getInstance().getConfig().getConfigurationSection("spawn-egg-weights");
+            int totalWeight = 0;
 
-    private static int calcTotalWeight(Map<Character, Integer> letterBonuses) {
-        ConfigurationSection weightConfig = plugin.getConfig().getConfigurationSection("spawn-egg-weights");
-        int totalWeight = 0;
+            if (weightConfig != null) {
+                for (String eggName : weightConfig.getKeys(false)) {
+                    Character firstLetter = eggName.toLowerCase().charAt(0);
+                    Integer bonus = letterBonuses.get(firstLetter);
+                    int weight = weightConfig.getInt(eggName);
 
-        if (weightConfig != null) {
-            for (String eggName : weightConfig.getKeys(false)) {
-                Character firstLetter = eggName.toLowerCase().charAt(0);
-                Integer bonus = letterBonuses.get(firstLetter);
-                int weight = weightConfig.getInt(eggName);
-
-                if (bonus != null)
-                    weight *= (1 + bonus);
-                totalWeight += weight;
+                    if (bonus != null)
+                        weight *= (1 + bonus);
+                    totalWeight += weight;
+                }
             }
+            return totalWeight;
         }
 
-        return totalWeight;
+        public static ItemStack createBlackBearEgg() {
+            ItemStack egg = new ItemStack(Material.COAL);
+            ItemMeta meta = egg.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(ChatColor.WHITE + "Black Bear Spawn Egg");
+                meta.getPersistentDataContainer().set(eggKey, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+                egg.setItemMeta(meta);
+            }
+            return egg;
+        }
     }
 
     public static void onIntruderEnterClaim(Player intruder, String claimID) {

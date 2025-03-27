@@ -15,7 +15,7 @@ import java.util.Map;
 public class EggLay implements Listener {
     private final Block4Block plugin;
 
-    public EggLay(Block4Block plugin){
+    public EggLay(Block4Block plugin) {
         this.plugin = plugin;
     }
 
@@ -32,7 +32,17 @@ public class EggLay implements Listener {
 
             double spawnChance = plugin.getConfig().getDouble("spawn-egg-chance");
             if (Math.random() <= spawnChance * utils.calcGeneralChickenBonus(numNamedChickens)) {
-                itemStack.setType(utils.getRandomSpawnEgg(letterBonuses));
+                // Get the correct spawn egg (now returns ItemStack)
+                ItemStack randomEgg = utils.SpawnEggUtils.getRandomSpawnEgg(letterBonuses);
+
+                // Check if it's the Black Bear Egg and replace appropriately
+                if (randomEgg.getType() == Material.COAL) {
+                    // Replace the item with a correctly configured Black Bear Egg
+                    item.setItemStack(utils.SpawnEggUtils.createBlackBearEgg());
+                } else {
+                    // Set the regular spawn egg
+                    item.setItemStack(randomEgg);
+                }
             }
         }
     }
