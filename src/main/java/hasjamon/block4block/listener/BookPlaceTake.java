@@ -104,6 +104,9 @@ public class BookPlaceTake implements Listener {
                         }
                     }
                 }
+
+                // After a book is placed, update the boss bar for the player
+                utils.updateBossBar(p, claimID);
             } else {
                 e.setCancelled(true);
             }
@@ -135,7 +138,7 @@ public class BookPlaceTake implements Listener {
                                 !(claimData.contains(claimID + ".location")
                                         && claimData.get(claimID + ".location.X").equals(bLoc.getX())
                                         && claimData.get(claimID + ".location.Y").equals(bLoc.getY())
-                                        && claimData.get(claimID + ".location.Z").equals(bLoc.getZ()));
+                                        && claimData.get(claimID + ".location.Z").equals(bLoc.getZ())) ;
 
                         if (isCorrupted) {
                             lectern.getInventory().clear();
@@ -176,12 +179,17 @@ public class BookPlaceTake implements Listener {
             }
         }
 
-
         if (plugin.cfg.getClaimData().contains(claimID)) {
             if (utils.isClaimBlock(lecternBlock)) {
                 Player player = e.getPlayer();
                 boolean isMember = utils.isMemberOfClaim(utils.getMembers(claimID), player);
+
+                // Get the list of protected block faces from the config
+                List<String> protectedBlockFaces = plugin.cfg.getClaimData().getStringList("claim-protection.protective-block-faces");
+
+                // Pass both lecternBlock and the protectedBlockFaces list to countProtectedSides
                 long numProtectedSides = utils.countProtectedSides(lecternBlock);
+
                 boolean isInvulnerable = utils.isClaimInvulnerable(lecternBlock);
 
                 if (isMember || numProtectedSides == 0 && !isInvulnerable) {
@@ -196,5 +204,8 @@ public class BookPlaceTake implements Listener {
                 }
             }
         }
+
+        // After a book is taken and a claim is removed, update the boss bar
+        utils.updateBossBar(p, claimID);
     }
 }

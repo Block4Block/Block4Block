@@ -3,6 +3,7 @@ package hasjamon.block4block.files;
 import hasjamon.block4block.Block4Block;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -12,6 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ConfigManager {
     private final Block4Block plugin = Block4Block.getPlugin(Block4Block.class);
@@ -260,5 +263,26 @@ public class ConfigManager {
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save coords settings to coordssettings.yml");
         }
+    }
+
+    public Set<BlockFace> getProtectiveBlockFaces() {
+        Set<BlockFace> protectiveBlockFaces = new HashSet<>();
+        FileConfiguration config = plugin.getConfig();  // Assuming plugin.cfg is your main config
+
+        // Check if the 'protective-block-faces' is set in the config
+        if (config.contains("claim-protection.protective-block-faces")) {
+            // Loop through the list in the config and add the BlockFaces
+            for (String face : config.getStringList("claim-protection.protective-block-faces")) {
+                try {
+                    // Convert the string to BlockFace and add to the set
+                    BlockFace blockFace = BlockFace.valueOf(face.toUpperCase());
+                    protectiveBlockFaces.add(blockFace);
+                } catch (IllegalArgumentException e) {
+                    // Handle invalid direction in the config, could log or just ignore
+                    plugin.getLogger().warning("Invalid block face in config: " + face);
+                }
+            }
+        }
+        return protectiveBlockFaces;
     }
 }
