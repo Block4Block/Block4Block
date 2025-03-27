@@ -186,6 +186,9 @@ public class Block4Block extends JavaPlugin {
         pluginManager.registerEvents(new hasjamon.block4block.listener.BlackBearEgg(
                 new NamespacedKey(this, "black_bear_spawn_egg")
         ), this);
+        pluginManager.registerEvents(new SpawnEggThrow(
+                new NamespacedKey(this, "custom_spawn_egg")
+        ), this);
     }
 
     private void addMapRenderers() {
