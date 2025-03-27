@@ -40,6 +40,10 @@ public class Block4Block extends JavaPlugin {
         instance = this; // Creates instance of the plugin
         checkReflectionAvailability();
         cfg = new ConfigManager(); // Initializes config
+
+        // Log the config to verify if it's correctly loaded
+        getLogger().info("Loaded claim-protection config: " + cfg.getClaimData().getStringList("claim-protection.protective-block-faces"));
+
         populateKnownPlayers();
         populateConfigConstants();
         registerEvents(); // Registers all the listeners
