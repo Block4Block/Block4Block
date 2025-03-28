@@ -208,6 +208,7 @@ tnt-drops-enabled:
 
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
+  - JUKEBOX
   - SPAWNER
   - HEAVY_CORE
   - CRAFTER
