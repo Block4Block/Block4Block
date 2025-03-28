@@ -1186,7 +1186,7 @@ public class utils {
                 if (isIntruder(p, currentClaimID)) {
                     // If the player is an intruder, set the boss bar to red
                     bossBar.setColor(BarColor.RED);
-                    bossBar.setTitle("Claimed at " + coordsStr + " (Intruder!)");
+                    bossBar.setTitle("Claimed at " + coordsStr + " (Intruding)");
                 } else {
                     // If the player is not an intruder, set the boss bar to green
                     bossBar.setColor(BarColor.GREEN);
