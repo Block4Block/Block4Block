@@ -1,6 +1,5 @@
 package hasjamon.block4block.listener;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -10,12 +9,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.projectiles.ProjectileSource;
+
+import java.util.Random;
 
 public class SpawnEggThrow implements Listener {
     private final NamespacedKey eggKey;
+    private final Random random = new Random(); // Create an instance of Random
 
     public SpawnEggThrow(NamespacedKey eggKey) {
         this.eggKey = eggKey;
@@ -31,12 +31,21 @@ public class SpawnEggThrow implements Listener {
         event.setCancelled(true);
         Player player = event.getPlayer();
 
-        // Launch the egg as a projectile
-        Egg egg = player.launchProjectile(Egg.class);
-        egg.getPersistentDataContainer().set(eggKey, PersistentDataType.STRING, spawnEggType.name());
+        // Launch the egg as a snowball projectile to prevent natural egg hatching
+        Snowball snowball = player.launchProjectile(Snowball.class);
+        snowball.getPersistentDataContainer().set(eggKey, PersistentDataType.STRING, spawnEggType.name());
 
-        // Play egg throw sound
-        player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1.0f, 1.0f);
+        // Make the snowball visually look like the correct spawn egg
+        ItemStack eggVisual = new ItemStack(spawnEggType);
+        snowball.setItem(eggVisual);
+
+        // Adjustable velocity // not necessary default matches Egg.
+        //snowball.setVelocity(snowball.getVelocity().multiply(0.6)); // Reduces velocity to ~60% of normal
+
+        float pitch = 0.2f + (random.nextFloat() * 0.2f);
+
+        // Play egg throw sound with randomized pitch
+        player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 0.5f, pitch);
 
         // Remove one item from player's hand
         ItemStack handItem = player.getInventory().getItem(event.getHand());
@@ -51,17 +60,17 @@ public class SpawnEggThrow implements Listener {
 
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent event) {
-        if (!(event.getEntity() instanceof Egg)) return;
+        if (!(event.getEntity() instanceof Snowball)) return;
 
-        Egg egg = (Egg) event.getEntity();
-        if (!egg.getPersistentDataContainer().has(eggKey, PersistentDataType.STRING)) return;
+        Snowball snowball = (Snowball) event.getEntity();
+        if (!snowball.getPersistentDataContainer().has(eggKey, PersistentDataType.STRING)) return;
 
-        String spawnEggName = egg.getPersistentDataContainer().get(eggKey, PersistentDataType.STRING);
+        String spawnEggName = snowball.getPersistentDataContainer().get(eggKey, PersistentDataType.STRING);
         if (spawnEggName == null) return;
 
         EntityType entityType = getEntityTypeFromEgg(spawnEggName);
         if (entityType != null) {
-            egg.getWorld().spawnEntity(egg.getLocation(), entityType);
+            snowball.getWorld().spawnEntity(snowball.getLocation(), entityType);
         }
     }
 
