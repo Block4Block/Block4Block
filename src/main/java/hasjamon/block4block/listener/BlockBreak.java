@@ -11,7 +11,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
@@ -31,9 +30,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.*;
-
-import static hasjamon.block4block.utils.utils.canOpenChest;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 public class BlockBreak implements Listener {
     private final Block4Block plugin;
@@ -125,6 +125,8 @@ public class BlockBreak implements Listener {
             }
             utils.b4bCheck(p, b, e, lootDisabledTypes, requiresBlock, isFreeToBreakInClaim);
         }
+
+        // Apply lore to natural block drops
         applyLoreToBlockDrops(b, p, e);
     }
 
@@ -161,55 +163,28 @@ public class BlockBreak implements Listener {
         }
     }
 
-
-    // ----- Apply Lore to Block Drops -----
     // ----- Apply Lore to Block Drops -----
     private void applyLoreToBlockDrops(Block b, Player p, BlockBreakEvent e) {
-        Collection<ItemStack> drops = b.getDrops(p.getInventory().getItemInMainHand());
+        Collection<ItemStack> drops = b.getDrops(p.getInventory().getItemInMainHand()); // Natural drops
         String loreLabel = getBlockMarkerLabel(p, b);
 
-        // Debug: Check if drops are detected
-        p.sendMessage("Block broken: " + b.getType().toString());
-        p.sendMessage("Detected drops: " + (drops.isEmpty() ? "None" : drops.size()));
-
-        // Debug: Check if the lore label is generated correctly
-        if (loreLabel != null && !loreLabel.isEmpty()) {
-            p.sendMessage("Lore label generated: " + loreLabel);
-        } else {
-            p.sendMessage("Error: Lore label is null or empty.");
-        }
-
-        // Cancel default drops to prevent duplication
+        // Cancel the default drop to prevent double drops
         e.setDropItems(false);
 
         for (ItemStack drop : drops) {
-            // Debug: Check each item drop
             if (drop == null || drop.getType() == Material.AIR) {
-                p.sendMessage("Drop ignored: Air or null.");
-                continue;
+                continue; // Skip invalid drops
             }
 
-            p.sendMessage("Processing drop: " + drop.getType().toString());
-
-            // Clean existing lore
+            // Clean old lore and apply new lore
             cleanLore(drop);
-
-            // Apply new lore
             applyLoreMark(drop, loreLabel);
 
-            // Debug: Check if lore was applied successfully
-            if (drop.hasItemMeta() && drop.getItemMeta().hasLore()) {
-                List<String> lore = drop.getItemMeta().getLore();
-                p.sendMessage("Lore applied to drop: " + drop.getType().toString() + " -> " + lore);
-            } else {
-                p.sendMessage("Error: Lore was NOT applied to drop: " + drop.getType().toString());
-            }
-
-            // Drop item naturally
+            // Drop the modified item naturally
             dropItemNaturally(b.getLocation(), drop);
-            p.sendMessage("Dropped item with lore at location: " + b.getLocation().toString());
         }
     }
+
 
     // ----- Drop Item with Metadata -----
     private void dropItemNaturally(Location loc, ItemStack item) {
@@ -563,4 +538,10 @@ public class BlockBreak implements Listener {
         plugin.getLogger().info("DEBUG: Updated inventory marks.");
     }
 
+    // ----- Helper method to check if a player can open a chest -----
+    private boolean canOpenChest(Block chestBlock, Player player) {
+        Location aboveLocation = chestBlock.getLocation().add(0, 1, 0);
+        Block aboveBlock = aboveLocation.getBlock();
+        return aboveBlock.getType() != Material.AIR;
+    }
 }
