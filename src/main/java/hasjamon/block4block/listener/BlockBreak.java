@@ -60,65 +60,55 @@ public class BlockBreak implements Listener {
         FileConfiguration cfg = plugin.getConfig();
         boolean isInsideClaim = plugin.cfg.getClaimData().contains(utils.getClaimID(b.getLocation()));
 
-        plugin.getLogger().info("DEBUG: onBreak triggered for block " + b.getType() +
-                " by player " + p.getName() + " at " + b.getLocation() +
-                ", isInsideClaim=" + isInsideClaim);
-
         // Prevent breaking chests in someone else's claim
         if (isInsideClaim && b.getType() == Material.CHEST) {
             String[] members = utils.getMembers(b.getLocation());
             boolean isMember = utils.isMemberOfClaim(members, p);
+
+            // Check if the chest can be opened by the player
             boolean canOpen = canOpenChest(b, p);
-            plugin.getLogger().info("DEBUG: Attempting to break chest in claim. isMember=" + isMember + ", canOpen=" + canOpen);
+
+            // If the player is not a member and cannot open the chest
             if (!isMember && !canOpen) {
                 e.setCancelled(true);
-                plugin.getLogger().info("DEBUG: Breaking chest cancelled because player not allowed to open it.");
-                p.spigot().sendMessage(ChatMessageType.ACTION_BAR,
-                        new TextComponent(utils.chat("&cThe chest is shielded by the blocks above it.")));
+                String message = utils.chat("&cThe chest is shielded by the blocks above it.");
+                p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                 return;
             }
         }
 
-        // Lecterns are exempt from B4B rules
-        if (b.getType() == Material.LECTERN) {
-            plugin.getLogger().info("DEBUG: Block is a lectern, skipping B4B logic.");
-            return;
-        }
-
-        // No drops in creative
-        if (p.getGameMode() == GameMode.CREATIVE) {
-            plugin.getLogger().info("DEBUG: Player is in Creative mode, skipping B4B logic.");
-            return;
-        }
+        // Lecterns are exempt from B4B rules. Changing this would require refactoring of LecternBreak's onBreak.
+        if (b.getType() == Material.LECTERN) return;
+        if (p.getGameMode() == GameMode.CREATIVE) return;
 
         List<?> claimBlacklist = cfg.getList("blacklisted-claim-blocks");
 
-        // Check claim logic
         if (isInsideClaim) {
+            // Check if the block is next to a claim block in a protected direction
             if (utils.isAdjacentToClaimBlock(b)) {
-                String claimID = utils.getClaimID(b.getLocation());
-                plugin.getLogger().info("DEBUG: Block is adjacent to a claim block. Updating boss bar for claim " + claimID);
-                utils.updateBossBar(p, claimID);
+                String claimID = utils.getClaimID(b.getLocation());  // Get the claim ID based on the block location
+                utils.updateBossBar(p, claimID);  // Update the boss bar using the claim ID
             }
+
             if (!utils.isClaimBlock(b)) {
                 String[] members = utils.getMembers(b.getLocation());
+
                 if (members != null) {
-                    boolean isMember = utils.isMemberOfClaim(members, p);
-                    plugin.getLogger().info("DEBUG: Checking claim membership. isMember=" + isMember);
-                    if (isMember) {
-                        if (cfg.getBoolean("only-apply-b4b-to-intruders")) {
-                            plugin.getLogger().info("DEBUG: B4B only applies to intruders; skipping for claim member.");
+                    // If the player is a member of the claim
+                    if (utils.isMemberOfClaim(members, p)) {
+                        // If B4B should only apply to intruders: Don't apply B4B rules
+                        if (plugin.getConfig().getBoolean("only-apply-b4b-to-intruders")) {
                             plugin.pluginManager.callEvent(new BlockBreakInClaimEvent(p, b, true));
                             return;
                         }
+
+                        // If the block is claim-blacklisted: Don't apply B4B rules
                         if (claimBlacklist != null && claimBlacklist.contains(b.getType().toString())) {
-                            plugin.getLogger().info("DEBUG: Block is in claim blacklist; using free in claim marker.");
-                            String label = getBlockMarkerLabel(p, b);
-                            markDroppedItems(p, b, label);
+                            plugin.pluginManager.callEvent(new BlockBreakInClaimEvent(p, b, true));
                             return;
                         }
                     } else if (!cfg.getBoolean("can-break-in-others-claims")) {
-                        plugin.getLogger().info("DEBUG: Non-member breaking block in claim is not allowed. Cancelling.");
+                        // Prevent non-members from breaking blocks
                         e.setCancelled(true);
                         p.sendMessage(utils.chat("&cYou cannot break blocks in this claim"));
                         plugin.pluginManager.callEvent(new BlockBreakInClaimEvent(p, b, false));
@@ -128,34 +118,27 @@ public class BlockBreak implements Listener {
             }
         }
 
-        // Andesite splash logic
-        if (cfg.getBoolean("andesite-splash-on") && b.getType() == Material.ANDESITE) {
-            plugin.getLogger().info("DEBUG: Andesite-splash logic triggered.");
-            if (System.nanoTime() - andesiteLatestBreak > 1E8) {
-                andesiteLatestBreak = System.nanoTime();
-                for (int x = -1; x <= 1; x++) {
-                    for (int y = -1; y <= 1; y++) {
-                        for (int z = -1; z <= 1; z++) {
-                            if (!(x == 0 && y == 0 && z == 0)) {
-                                Block neighbor = b.getRelative(x, y, z);
-                                if (neighbor.getType() == Material.ANDESITE) {
-                                    if (cfg.getBoolean("andesite-splash-reduce-durability")) {
-                                        p.breakBlock(neighbor);
-                                    } else {
-                                        neighbor.breakNaturally(p.getInventory().getItemInMainHand());
-                                    }
-                                }
-                            }
-                        }
-                    }
+        if (plugin.getConfig().getBoolean("andesite-splash-on")) {
+            if (b.getType() == Material.ANDESITE) {
+                // Add splash if it's been at least 0.1 second since the last time andesite was broken (to avoid chain reaction)
+                if (System.nanoTime() - andesiteLatestBreak > 1E8) {
+                    andesiteLatestBreak = System.nanoTime();
+                    for (int x = -1; x <= 1; x++)
+                        for (int y = -1; y <= 1; y++)
+                            for (int z = -1; z <= 1; z++)
+                                if (!(x == 0 && y == 0 && z == 0))
+                                    if (b.getRelative(x, y, z).getType() == Material.ANDESITE)
+                                        if (plugin.getConfig().getBoolean("andesite-splash-reduce-durability"))
+                                            p.breakBlock(b.getRelative(x, y, z));
+                                        else
+                                            b.getRelative(x, y, z).breakNaturally(p.getInventory().getItemInMainHand());
                 }
+                return;
             }
-            return;
         }
 
-        // If not inside claim and only-apply-b4b-to-intruders is true, skip
-        if (!isInsideClaim && cfg.getBoolean("only-apply-b4b-to-intruders")) {
-            plugin.getLogger().info("DEBUG: B4B only applies to intruders in claims, skipping because block is not in a claim.");
+        // If the block isn't inside a claim and B4B should only apply to intruders: Do not apply B4B
+        if (!isInsideClaim && plugin.getConfig().getBoolean("only-apply-b4b-to-intruders")) {
             return;
         }
 
@@ -163,29 +146,23 @@ public class BlockBreak implements Listener {
         List<?> lootDisabledTypes = cfg.getList("no-loot-on-break");
 
         if (blacklistedBlocks != null && lootDisabledTypes != null) {
+            // Does Block4Block apply, i.e., has the block type not been exempted from Block4Block through the blacklist
             boolean requiresBlock = !blacklistedBlocks.contains(b.getType().toString());
-            plugin.getLogger().info("DEBUG: Checking B4B logic. requiresBlock=" + requiresBlock);
+            boolean isFreeToBreakInClaim = claimBlacklist != null && claimBlacklist.contains(b.getType().toString());
+
             utils.removeExpiredB4BGracePeriods();
+
+            // If the block is still covered by the grace period, do not apply B4B rules
             if (utils.b4bGracePeriods.containsKey(b)) {
-                plugin.getLogger().info("DEBUG: This block is still in grace period, skipping B4B logic.");
                 plugin.pluginManager.callEvent(new B4BlockBreakWithinGracePeriodEvent(p, b, requiresBlock));
                 return;
             }
-            plugin.getLogger().info("DEBUG: Calling b4bCheck(...) for block " + b.getType());
-            utils.b4bCheck(p, b, e, lootDisabledTypes, requiresBlock, false);
-        } else {
-            plugin.getLogger().info("DEBUG: blacklisted-blocks or no-loot-on-break is null, skipping b4bCheck logic.");
-        }
 
-        if (!e.isCancelled()) {
-            plugin.getLogger().info("DEBUG: Event is not cancelled; proceeding with custom drop logic.");
-            e.setDropItems(false);
-            String label = getBlockMarkerLabel(p, b);
-            markDroppedItems(p, b, label);
-        } else {
-            plugin.getLogger().info("DEBUG: Event got cancelled by b4bCheck or another process; no custom drops.");
+            utils.b4bCheck(p, b, e, lootDisabledTypes, requiresBlock, isFreeToBreakInClaim);
         }
     }
+
+
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onSpawnerBreak(BlockBreakEvent e) {
