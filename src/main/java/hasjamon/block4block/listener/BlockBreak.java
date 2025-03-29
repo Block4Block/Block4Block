@@ -356,7 +356,6 @@ public class BlockBreak implements Listener {
         lore.add("§7" + expectedLabel);
         meta.setLore(lore);
         stack.setItemMeta(meta);
-        plugin.getLogger().info("DEBUG: Updated marker on " + stack.getType() + " to " + expectedLabel);
     }
 
     /**
