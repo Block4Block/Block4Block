@@ -214,7 +214,6 @@ public class BlockBreak implements Listener {
     // ----- Drop Item with Metadata -----
     private void dropItemNaturally(Location loc, ItemStack item) {
         if (loc == null || item == null || item.getType() == Material.AIR) {
-            System.out.println("Error: Cannot drop null/air item at location: " + loc);
             return;
         }
 
@@ -229,13 +228,11 @@ public class BlockBreak implements Listener {
 
         ItemMeta meta = stack.getItemMeta();
         if (meta == null || !meta.hasLore()) {
-            System.out.println("ItemMeta has no lore to clean.");
             return;
         }
 
         List<String> lore = meta.getLore();
         if (lore == null) {
-            System.out.println("Lore is null, nothing to clean.");
             return;
         }
 
@@ -250,12 +247,6 @@ public class BlockBreak implements Listener {
                     clean.equals("b4b");
         });
 
-        if (originalSize != lore.size()) {
-            System.out.println("Lore cleaned. New size: " + lore.size());
-        } else {
-            System.out.println("No matching lore entries found to clean.");
-        }
-
         meta.setLore(lore);
         stack.setItemMeta(meta);
     }
@@ -264,18 +255,11 @@ public class BlockBreak implements Listener {
     // ----- Apply Lore Marker to Item -----
     private void applyLoreMark(ItemStack stack, String label) {
         if (stack == null || !isPlaceable(stack)) {
-            // Debug: Check if item is valid for lore
-            if (stack == null) {
-                System.out.println("Error: Stack is null, cannot apply lore.");
-            } else {
-                System.out.println("Error: Item is not placeable: " + stack.getType().toString());
-            }
             return;
         }
 
         ItemMeta meta = stack.getItemMeta();
         if (meta == null) {
-            System.out.println("Error: ItemMeta is null, cannot apply lore.");
             return;
         }
 
@@ -285,7 +269,6 @@ public class BlockBreak implements Listener {
         // Check if lore is already present
         for (String line : lore) {
             if (normalizeLore(line).equals(normalizeLore(label))) {
-                System.out.println("Lore already present, skipping: " + normalizedLabel);
                 return;
             }
         }
@@ -301,7 +284,6 @@ public class BlockBreak implements Listener {
     // ----- Normalize Lore String -----
     private String normalizeLore(String loreLine) {
         String normalized = loreLine.replace("§7", "").trim().toLowerCase();
-        System.out.println("Normalized lore: " + normalized);
         return normalized;
     }
 
@@ -316,7 +298,6 @@ public class BlockBreak implements Listener {
 
         // Debug: Check if the block is inside a claim
         if (isInClaim) {
-            System.out.println("Block is inside a claim: " + b.getType().toString());
         }
 
         // Return appropriate lore label
