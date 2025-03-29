@@ -11,6 +11,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Container;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
@@ -54,7 +56,7 @@ public class BlockBreak implements Listener {
         if (isInsideClaim && b.getType() == Material.CHEST) {
             String[] members = utils.getMembers(b.getLocation());
             boolean isMember = utils.isMemberOfClaim(members, p);
-            boolean canOpen = canOpenChest(b, p);
+            boolean canOpen = utils.canOpenChest(b, p);
 
             if (!isMember && !canOpen) {
                 e.setCancelled(true);
@@ -126,6 +128,11 @@ public class BlockBreak implements Listener {
             utils.b4bCheck(p, b, e, lootDisabledTypes, requiresBlock, isFreeToBreakInClaim);
         }
 
+        // Ignore lecterns and creative mode
+        if (b.getType() == Material.LECTERN || p.getGameMode() == GameMode.CREATIVE) {
+            return;
+        }
+
         // Apply lore to natural block drops
         applyLoreToBlockDrops(b, p, e);
     }
@@ -165,11 +172,31 @@ public class BlockBreak implements Listener {
 
     // ----- Apply Lore to Block Drops -----
     private void applyLoreToBlockDrops(Block b, Player p, BlockBreakEvent e) {
-        Collection<ItemStack> drops = b.getDrops(p.getInventory().getItemInMainHand()); // Natural drops
-        String loreLabel = getBlockMarkerLabel(p, b);
-
         // Cancel the default drop to prevent double drops
         e.setDropItems(false);
+        String loreLabel = getBlockMarkerLabel(p, b);
+
+        // Check if the block is a container (chest, barrel, etc.)
+        BlockState state = b.getState();
+        if (state instanceof Container) {
+            Container container = (Container) state;
+
+            // Iterate over the container's inventory and drop items with lore
+            for (ItemStack drop : container.getInventory().getContents()) {
+                if (drop != null && drop.getType() != Material.AIR) {
+                    cleanLore(drop);
+                    applyLoreMark(drop, loreLabel);
+                    b.getWorld().dropItemNaturally(b.getLocation(), drop);
+                }
+            }
+
+            // Clear container inventory to avoid duplicate drops
+            container.getInventory().clear();
+            return; // Skip further processing since we handled container drops
+        }
+
+        // Handle normal block drops for non-container blocks
+        Collection<ItemStack> drops = b.getDrops(p.getInventory().getItemInMainHand());
 
         for (ItemStack drop : drops) {
             if (drop == null || drop.getType() == Material.AIR) {
@@ -181,37 +208,30 @@ public class BlockBreak implements Listener {
             applyLoreMark(drop, loreLabel);
 
             // Drop the modified item naturally
-            dropItemNaturally(b.getLocation(), drop);
+            b.getWorld().dropItemNaturally(b.getLocation(), drop);
         }
     }
 
 
-    // ----- Drop Item with Metadata -----
+
+    // ----- Drop Correct Item with Metadata -----
     private void dropItemNaturally(Location loc, ItemStack item) {
         if (loc == null || item == null || item.getType() == Material.AIR) {
             return;
         }
-
         loc.getWorld().dropItemNaturally(loc, item);
     }
 
     // ----- Clean Lore from Item -----
     private void cleanLore(ItemStack stack) {
-        if (stack == null || !stack.hasItemMeta()) {
-            return;
-        }
+        if (stack == null || !stack.hasItemMeta()) return;
 
         ItemMeta meta = stack.getItemMeta();
-        if (meta == null || !meta.hasLore()) {
-            return;
-        }
+        if (meta == null || !meta.hasLore()) return;
 
         List<String> lore = meta.getLore();
-        if (lore == null) {
-            return;
-        }
+        if (lore == null) return;
 
-        int originalSize = lore.size();
         lore.removeIf(line -> {
             String clean = normalizeLore(line);
             return clean.equals("free to break") ||
@@ -227,43 +247,34 @@ public class BlockBreak implements Listener {
     }
 
 
-    // ----- Apply Lore Marker to Item -----
+    // ----- Apply Lore Label to Item -----
     private void applyLoreMark(ItemStack stack, String label) {
-        if (stack == null || !isPlaceable(stack)) {
-            return;
-        }
+        if (stack == null || !isPlaceable(stack)) return;
 
         ItemMeta meta = stack.getItemMeta();
-        if (meta == null) {
-            return;
-        }
+        if (meta == null) return;
 
         List<String> lore = meta.hasLore() ? meta.getLore() : new ArrayList<>();
         String normalizedLabel = "§7" + label;
 
-        // Check if lore is already present
         for (String line : lore) {
             if (normalizeLore(line).equals(normalizeLore(label))) {
                 return;
             }
         }
 
-        // Apply the new lore
         lore.add(normalizedLabel);
         meta.setLore(lore);
         stack.setItemMeta(meta);
-
     }
-
 
     // ----- Normalize Lore String -----
     private String normalizeLore(String loreLine) {
-        String normalized = loreLine.replace("§7", "").trim().toLowerCase();
-        return normalized;
+        return loreLine.replace("§7", "").trim().toLowerCase();
     }
 
 
-    // ----- Determine Lore Marker Label -----
+    // ----- Determine Lore Label for Block -----
     private String getBlockMarkerLabel(Player p, Block b) {
         FileConfiguration cfg = plugin.getConfig();
         boolean useLong = cfg.getBoolean("use-long-form");
@@ -271,11 +282,6 @@ public class BlockBreak implements Listener {
         List<?> freeBlocks = cfg.getList("blacklisted-blocks");
         boolean isInClaim = plugin.cfg.getClaimData().contains(utils.getClaimID(b.getLocation()));
 
-        // Debug: Check if the block is inside a claim
-        if (isInClaim) {
-        }
-
-        // Return appropriate lore label
         if (isInClaim && freeInClaim != null && freeInClaim.contains(b.getType().toString())) {
             return useLong ? "Free in Claim" : "FINC";
         } else if (freeBlocks != null && freeBlocks.contains(b.getType().toString())) {
@@ -413,7 +419,6 @@ public class BlockBreak implements Listener {
         Inventory inv = e.getInventory();
         if (inv != null) {
             updateInventoryMarks(inv);
-            plugin.getLogger().info("DEBUG: Inventory opened by " + e.getPlayer().getName() + ", checking for item updates.");
         }
     }
 
@@ -421,7 +426,6 @@ public class BlockBreak implements Listener {
     public void onInventoryClick(InventoryClickEvent e) {
         if (e.getCurrentItem() != null && isPlaceable(e.getCurrentItem())) {
             updateItemMarker(e.getCurrentItem());
-            plugin.getLogger().info("DEBUG: Clicked item " + e.getCurrentItem().getType() + " updated with correct marker.");
         }
     }
 
