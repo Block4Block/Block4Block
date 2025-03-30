@@ -6,16 +6,15 @@ import hasjamon.block4block.events.BlockBreakInClaimEvent;
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -198,11 +197,13 @@ public class BlockBreak implements Listener {
         // Cancel the default drop to prevent double drops
         e.setDropItems(false);
         String loreLabel = getBlockMarkerLabel(p, b);
+        World world = b.getWorld();
 
         // Check if the block is a container (chest, barrel, etc.)
         BlockState state = b.getState();
         if (state instanceof Container) {
             Container container = (Container) state;
+<<<<<<< Updated upstream
 
             // Iterate over the container's inventory and process drops
             for (ItemStack drop : container.getInventory().getContents()) {
@@ -215,9 +216,16 @@ public class BlockBreak implements Listener {
                         applyLoreMark(drop, loreLabel);
                     }
                     b.getWorld().dropItemNaturally(b.getLocation(), drop);
+=======
+            // Iterate over the container's inventory and drop items with lore
+            for (ItemStack drop : container.getInventory().getContents()) {
+                if (drop != null && drop.getType() != Material.AIR) {
+                    cleanLore(drop);
+                    applyLoreMark(drop, loreLabel);
+                    world.dropItemNaturally(b.getLocation(), drop);
+>>>>>>> Stashed changes
                 }
             }
-
             // Clear container inventory to avoid duplicate drops
             container.getInventory().clear();
             return; // Skip further processing since we handled container drops
@@ -225,11 +233,11 @@ public class BlockBreak implements Listener {
 
         // Handle normal block drops for non-container blocks
         Collection<ItemStack> drops = b.getDrops(p.getInventory().getItemInMainHand());
-
         for (ItemStack drop : drops) {
             if (drop == null || drop.getType() == Material.AIR) {
                 continue; // Skip invalid drops
             }
+<<<<<<< Updated upstream
 
             // Apply or remove markers based on the marking method
             if (method.equals("none")) {
@@ -241,10 +249,67 @@ public class BlockBreak implements Listener {
 
             // Drop the modified item naturally
             b.getWorld().dropItemNaturally(b.getLocation(), drop);
+=======
+            // Clean old lore and apply new lore
+            cleanLore(drop);
+            applyLoreMark(drop, loreLabel);
+            world.dropItemNaturally(b.getLocation(), drop);
+>>>>>>> Stashed changes
         }
+
+        // Schedule a task to scan nearby dropped items and fix lore if missing.
+        // Adjust the radius and delay as necessary.
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            // Scan within 1 block radius (adjust as needed)
+            Collection<Entity> nearbyEntities = world.getNearbyEntities(b.getLocation(), 32, 32, 32);
+            for (Entity entity : nearbyEntities) {
+                if (entity instanceof Item) {
+                    Item droppedItem = (Item) entity;
+                    ItemStack itemStack = droppedItem.getItemStack();
+                    // Check if this item matches the type and if its lore doesn't have the expected marker.
+                    if (itemStack.getType() != Material.AIR && isMatchingType(itemStack, drops)) {
+                        if (!hasCorrectLore(itemStack, loreLabel)) {
+                            // Reapply the lore if it's missing
+                            cleanLore(itemStack);
+                            applyLoreMark(itemStack, loreLabel);
+                            droppedItem.setItemStack(itemStack);
+                        }
+                    }
+                }
+            }
+        }, 20L); // delay of 1 tick; adjust if needed
     }
 
+<<<<<<< Updated upstream
     // Rest of the class remains unchanged...
+=======
+    // Helper method: Check if the item is one of the dropped types
+    private boolean isMatchingType(ItemStack item, Collection<ItemStack> drops) {
+        for (ItemStack drop : drops) {
+            if (drop != null && drop.getType() == item.getType()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Helper method: Check if the item already has the correct lore marker.
+    private boolean hasCorrectLore(ItemStack item, String loreLabel) {
+        if (item == null || !item.hasItemMeta()) return false;
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null || !meta.hasLore()) return false;
+        List<String> lore = meta.getLore();
+        if (lore == null) return false;
+        String normalizedExpected = normalizeLore("§7" + loreLabel);
+        for (String line : lore) {
+            if (normalizeLore(line).equals(normalizedExpected)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+>>>>>>> Stashed changes
     // ----- Drop Correct Item with Metadata -----
     private void dropItemNaturally(Location loc, ItemStack item) {
         if (loc == null || item == null || item.getType() == Material.AIR) {
@@ -538,7 +603,6 @@ public class BlockBreak implements Listener {
                     clean.equalsIgnoreCase("FINC") ||
                     clean.equalsIgnoreCase("B4B")) {
                 iter.remove();
-                plugin.getLogger().info("DEBUG: Removed lore marker from " + stack.getType());
             }
         }
 
@@ -576,7 +640,6 @@ public class BlockBreak implements Listener {
     private void updateItemMarker(ItemStack stack) {
         if (stack == null) return;
         if (!isPlaceable(stack)) {
-            plugin.getLogger().info("DEBUG: Skipping " + stack.getType() + " in updateItemMarker as it's not considered placeable.");
             return;
         }
         String method = plugin.getConfig().getString("marking-method");
