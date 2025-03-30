@@ -62,7 +62,7 @@ public class BlockBreak implements Listener {
                 e.setCancelled(true);
                 String message = utils.chat("&cThe chest is shielded by the blocks above it.");
                 p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
-                return;
+                return; // Return early to prevent any further processing
             }
         }
 
@@ -89,7 +89,7 @@ public class BlockBreak implements Listener {
                         e.setCancelled(true);
                         p.sendMessage(utils.chat("&cYou cannot break blocks in this claim"));
                         plugin.pluginManager.callEvent(new BlockBreakInClaimEvent(p, b, false));
-                        return;
+                        return; // Return early to prevent any further processing
                     }
                 }
             }
@@ -125,7 +125,17 @@ public class BlockBreak implements Listener {
                 plugin.pluginManager.callEvent(new B4BlockBreakWithinGracePeriodEvent(p, b, requiresBlock));
                 return;
             }
-            utils.b4bCheck(p, b, e, lootDisabledTypes, requiresBlock, isFreeToBreakInClaim);
+
+            // Check if the b4bCheck method cancels the event
+            if (utils.b4bCheck(p, b, e, lootDisabledTypes, requiresBlock, isFreeToBreakInClaim)) {
+                // If the event was cancelled by b4bCheck, return early to prevent drops
+                return;
+            }
+        }
+
+        // Only proceed with drops if the event hasn't been cancelled
+        if (e.isCancelled()) {
+            return;
         }
 
         // Ignore lecterns and creative mode
@@ -133,12 +143,17 @@ public class BlockBreak implements Listener {
             return;
         }
 
-        // Apply lore to natural block drops
+        // Apply lore to natural block drops only if the event wasn't cancelled
         applyLoreToBlockDrops(b, p, e);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onSpawnerBreak(BlockBreakEvent e) {
+        // Skip processing if the event has been cancelled
+        if (e.isCancelled()) {
+            return;
+        }
+
         Player p = e.getPlayer();
         Block b = e.getBlock();
 
@@ -165,13 +180,21 @@ public class BlockBreak implements Listener {
                 deductSpawnerItem(p, expectedSpawnerType);
             }
 
-            // Drop spawner with metadata and lore
-            dropSpawnerWithMetadata(b, spawnType);
+            // Drop spawner with metadata and lore only if the event wasn't cancelled
+            if (!e.isCancelled()) {
+                dropSpawnerWithMetadata(b, spawnType);
+            }
         }
     }
 
-    // ----- Apply Lore to Block Drops -----
     private void applyLoreToBlockDrops(Block b, Player p, BlockBreakEvent e) {
+        // First ensure the event hasn't been cancelled
+        if (e.isCancelled()) {
+            return;
+        }
+
+        String method = plugin.getConfig().getString("marking-method");
+
         // Cancel the default drop to prevent double drops
         e.setDropItems(false);
         String loreLabel = getBlockMarkerLabel(p, b);
@@ -181,11 +204,16 @@ public class BlockBreak implements Listener {
         if (state instanceof Container) {
             Container container = (Container) state;
 
-            // Iterate over the container's inventory and drop items with lore
+            // Iterate over the container's inventory and process drops
             for (ItemStack drop : container.getInventory().getContents()) {
                 if (drop != null && drop.getType() != Material.AIR) {
-                    cleanLore(drop);
-                    applyLoreMark(drop, loreLabel);
+                    // Apply or remove markers based on the marking method
+                    if (method.equals("none")) {
+                        removeMarkersFromItem(drop);
+                    } else {
+                        cleanLore(drop);
+                        applyLoreMark(drop, loreLabel);
+                    }
                     b.getWorld().dropItemNaturally(b.getLocation(), drop);
                 }
             }
@@ -203,17 +231,20 @@ public class BlockBreak implements Listener {
                 continue; // Skip invalid drops
             }
 
-            // Clean old lore and apply new lore
-            cleanLore(drop);
-            applyLoreMark(drop, loreLabel);
+            // Apply or remove markers based on the marking method
+            if (method.equals("none")) {
+                removeMarkersFromItem(drop);
+            } else {
+                cleanLore(drop);
+                applyLoreMark(drop, loreLabel);
+            }
 
             // Drop the modified item naturally
             b.getWorld().dropItemNaturally(b.getLocation(), drop);
         }
     }
 
-
-
+    // Rest of the class remains unchanged...
     // ----- Drop Correct Item with Metadata -----
     private void dropItemNaturally(Location loc, ItemStack item) {
         if (loc == null || item == null || item.getType() == Material.AIR) {
@@ -227,22 +258,10 @@ public class BlockBreak implements Listener {
         if (stack == null || !stack.hasItemMeta()) return;
 
         ItemMeta meta = stack.getItemMeta();
-        if (meta == null || !meta.hasLore()) return;
+        if (meta == null) return;
 
-        List<String> lore = meta.getLore();
-        if (lore == null) return;
-
-        lore.removeIf(line -> {
-            String clean = normalizeLore(line);
-            return clean.equals("free to break") ||
-                    clean.equals("free in claim") ||
-                    clean.equals("block for block") ||
-                    clean.equals("f2b") ||
-                    clean.equals("finc") ||
-                    clean.equals("b4b");
-        });
-
-        meta.setLore(lore);
+        // Completely remove all lore, don't try to filter
+        meta.setLore(null);
         stack.setItemMeta(meta);
     }
 
@@ -254,18 +273,78 @@ public class BlockBreak implements Listener {
         ItemMeta meta = stack.getItemMeta();
         if (meta == null) return;
 
-        List<String> lore = meta.hasLore() ? meta.getLore() : new ArrayList<>();
-        String normalizedLabel = "§7" + label;
+        // Always start with a clean slate - no existing lore
+        List<String> lore = new ArrayList<>();
 
-        for (String line : lore) {
-            if (normalizeLore(line).equals(normalizeLore(label))) {
-                return;
-            }
-        }
-
-        lore.add(normalizedLabel);
+        // Add exactly one standardized lore entry
+        lore.add("§7" + label);
         meta.setLore(lore);
         stack.setItemMeta(meta);
+    }
+
+    public void onItemMerge(org.bukkit.event.entity.ItemMergeEvent e) {
+        ItemStack source = e.getEntity().getItemStack();
+        ItemStack target = e.getTarget().getItemStack();
+
+        if (isPlaceable(source) && isPlaceable(target)) {
+            // Get the lore values
+            String sourceLabel = getLoreLabel(source);
+            String targetLabel = getLoreLabel(target);
+
+            // If both have lore and they're conceptually the same type but formatted differently
+            if (sourceLabel != null && targetLabel != null &&
+                    normalizeForComparison(sourceLabel).equals(normalizeForComparison(targetLabel))) {
+
+                // Standardize the lore on both items to ensure they can stack
+                String standardLabel = standardizeLabel(sourceLabel, targetLabel);
+                applyStandardLore(source, standardLabel);
+                applyStandardLore(target, standardLabel);
+
+                // This ensures the event will proceed with the newly standardized items
+                e.setCancelled(false);
+            }
+        }
+    }
+
+    // Helper methods for the item merge handler
+    private String getLoreLabel(ItemStack stack) {
+        if (stack == null || !stack.hasItemMeta()) return null;
+
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null || !meta.hasLore() || meta.getLore().isEmpty()) return null;
+
+        return meta.getLore().get(0); // Get the first lore line
+    }
+
+    private String normalizeForComparison(String label) {
+        if (label == null) return "";
+        // Remove all color codes and whitespace, convert to lowercase
+        return label.replaceAll("§[0-9a-fk-or]", "").trim().toLowerCase();
+    }
+
+    private void applyStandardLore(ItemStack stack, String standardLabel) {
+        if (stack == null) return;
+
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) return;
+
+        List<String> lore = new ArrayList<>();
+        lore.add(standardLabel);
+        meta.setLore(lore);
+        stack.setItemMeta(meta);
+    }
+
+    private String standardizeLabel(String label1, String label2) {
+        // Determine which standardized label to use
+        String normalized = normalizeForComparison(label1);
+
+        if (normalized.equals("free to break") || normalized.equals("f2b")) {
+            return plugin.getConfig().getBoolean("use-long-form") ? "§7Free to Break" : "§7F2B";
+        } else if (normalized.equals("free in claim") || normalized.equals("finc")) {
+            return plugin.getConfig().getBoolean("use-long-form") ? "§7Free in Claim" : "§7FINC";
+        } else {
+            return plugin.getConfig().getBoolean("use-long-form") ? "§7Block for Block" : "§7B4B";
+        }
     }
 
     // ----- Normalize Lore String -----
@@ -431,11 +510,11 @@ public class BlockBreak implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onItemPickup(PlayerPickupItemEvent e) {
-        Player p = e.getPlayer();
         ItemStack item = e.getItem().getItemStack();
 
         if (item != null && isPlaceable(item)) {
-            updateItemMarker(item);
+            // Apply standardized lore to ensure stacking
+            standardizeLoreForStacking(item);
         }
     }
 
@@ -534,12 +613,55 @@ public class BlockBreak implements Listener {
 
     public void updateInventoryMarks(Inventory inv) {
         if (inv == null) return;
-        for (ItemStack item : inv.getContents()) {
-            if (item != null) {
-                updateItemMarker(item);
+
+        String method = plugin.getConfig().getString("marking-method");
+
+        for (int i = 0; i < inv.getSize(); i++) {
+            ItemStack item = inv.getItem(i);
+            if (item != null && isPlaceable(item)) {
+                // Apply or remove markers based on the marking method
+                if (method.equals("none")) {
+                    removeMarkersFromItem(item);
+                } else {
+                    // Always clean and reapply lore to ensure consistency
+                    String expectedLabel = getInventoryMarkerLabel(item);
+                    if (!expectedLabel.equals("SKIP-LABEL")) {
+                        cleanLore(item);
+                        applyLoreMark(item, expectedLabel);
+                        inv.setItem(i, item); // Update inventory with standardized item
+                    }
+                }
             }
         }
-        plugin.getLogger().info("DEBUG: Updated inventory marks.");
+
+        plugin.getLogger().info("DEBUG: Updated inventory marks with standardized formatting.");
+    }
+
+    //Fix stacking when items are picked up into inventory
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInventoryPickupItem(org.bukkit.event.inventory.InventoryPickupItemEvent e) {
+        ItemStack itemStack = e.getItem().getItemStack();
+
+        if (isPlaceable(itemStack)) {
+            String expectedLabel = getInventoryMarkerLabel(itemStack);
+            if (!expectedLabel.equals("SKIP-LABEL")) {
+                cleanLore(itemStack);
+                applyLoreMark(itemStack, expectedLabel);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onHopperPickupEvent(org.bukkit.event.inventory.InventoryMoveItemEvent e) {
+        ItemStack itemStack = e.getItem();
+
+        if (isPlaceable(itemStack)) {
+            String expectedLabel = getInventoryMarkerLabel(itemStack);
+            if (!expectedLabel.equals("SKIP-LABEL")) {
+                cleanLore(itemStack);
+                applyLoreMark(itemStack, expectedLabel);
+            }
+        }
     }
 
     // ----- Helper method to check if a player can open a chest -----
@@ -547,5 +669,24 @@ public class BlockBreak implements Listener {
         Location aboveLocation = chestBlock.getLocation().add(0, 1, 0);
         Block aboveBlock = aboveLocation.getBlock();
         return aboveBlock.getType() != Material.AIR;
+    }
+
+    private void standardizeLoreForStacking(ItemStack stack) {
+        if (stack == null || !stack.hasItemMeta()) return;
+
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) return;
+
+        // First completely remove all lore
+        cleanLore(stack);
+
+        // Then apply the correct lore with consistent formatting
+        String label = getInventoryMarkerLabel(stack);
+        if (!label.equals("SKIP-LABEL")) {
+            List<String> lore = new ArrayList<>();
+            lore.add("§7" + label); // Ensure consistent formatting
+            meta.setLore(lore);
+            stack.setItemMeta(meta);
+        }
     }
 }

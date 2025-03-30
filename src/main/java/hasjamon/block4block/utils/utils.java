@@ -512,7 +512,7 @@ public class utils {
         return false;
     }
 
-    public static void b4bCheck(Player p, Block b, BlockBreakEvent e, List<?> lootDisabledTypes, boolean requiresBlock, boolean isFreeToBreakInClaim) {
+    public static boolean b4bCheck(Player p, Block b, BlockBreakEvent e, List<?> lootDisabledTypes, boolean requiresBlock, boolean isFreeToBreakInClaim) {
         // Are drops disabled for this block type
         boolean noloot = lootDisabledTypes.contains(b.getType().toString());
 
@@ -545,7 +545,7 @@ public class utils {
                     e.setCancelled(true);
                     p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                     plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, false, isFreeToBreakInClaim));
-                    return;
+                    return noloot;
                 }
             }
 
@@ -569,6 +569,7 @@ public class utils {
             b.setType(Material.AIR);
             e.setCancelled(true);
         }
+        return noloot;
     }
 
     public static List<Block> getClaimBlocksProtectedBy(Block protectingBlock) {
