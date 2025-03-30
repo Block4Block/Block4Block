@@ -14,6 +14,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
 import org.bukkit.block.CreatureSpawner;
+import org.bukkit.block.data.type.Bed;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -36,6 +37,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+
+import static hasjamon.block4block.utils.utils.processedBeds;
+import static org.bukkit.Bukkit.getScheduler;
 
 public class BlockBreak implements Listener {
     private final Block4Block plugin;
@@ -146,6 +150,56 @@ public class BlockBreak implements Listener {
         // Apply lore to natural block drops only if the event wasn't cancelled
         applyLoreToBlockDrops(b, p, e);
     }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onBedBreak(BlockBreakEvent e) {
+        Block brokenBlock = e.getBlock();
+
+        // Only process if it's a bed
+        if (!(brokenBlock.getBlockData() instanceof Bed)) {
+            return;
+        }
+
+        // Cancel default drops so we control the outcome
+        e.setDropItems(false);
+        Player player = e.getPlayer();
+        Bed bedData = (Bed) brokenBlock.getBlockData();
+        Block footBlock;
+        Block headBlock;
+
+        // Determine which half is the foot and which is the head
+        if (bedData.getPart() == Bed.Part.FOOT) {
+            footBlock = brokenBlock;
+            headBlock = brokenBlock.getRelative(bedData.getFacing());
+        } else {
+            // If head is broken, determine the foot from the opposite face
+            footBlock = brokenBlock.getRelative(bedData.getFacing().getOppositeFace());
+            headBlock = brokenBlock;
+        }
+
+        // Use the foot block's location as the unique key
+        Location footLoc = footBlock.getLocation();
+
+        // If we've already processed this bed, do nothing
+        if (processedBeds.contains(footLoc)) {
+            return;
+        }
+
+        // Mark this bed as processed
+        processedBeds.add(footLoc);
+
+        // Process the drop once using your custom lore method
+        applyLoreToBlockDrops(footBlock, player, e);
+
+        // Remove both halves of the bed
+        footBlock.setType(Material.AIR);
+        headBlock.setType(Material.AIR);
+
+        // Optionally, you can remove the location from the set after a short delay if needed
+        // to allow future bed placements at the same location to work correctly.
+        getScheduler().runTaskLater(plugin, () -> processedBeds.remove(footLoc), 1L);
+    }
+
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onSpawnerBreak(BlockBreakEvent e) {

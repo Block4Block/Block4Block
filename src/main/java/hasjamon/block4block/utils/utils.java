@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
+    public static final Set<Location> processedBeds = new HashSet<>();
     public static final Map<Block, GracePeriod> b4bGracePeriods = new LinkedHashMap<>();
     public static final Map<Location, GracePeriod> blockChangeGracePeriods = new LinkedHashMap<>();
     public static final Map<String, Set<Player>> intruders = new HashMap<>();
