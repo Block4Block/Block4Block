@@ -94,17 +94,22 @@ public class BookEdit implements Listener {
 
         if (lore == null) {
             if (e.isSigning()) {
-                long nextID = getNextMasterBookID(false);
-                List<String> newLore = new ArrayList<>();
+                // Check if the first page contains "claim"
+                if (meta.getPages().size() > 0 && meta.getPages().get(0).contains("claim")) {
+                    long nextID = getNextMasterBookID(false);
+                    List<String> newLore = new ArrayList<>();
+                    newLore.add(utils.chat("&6Master Book &7#" + nextID));
+                    meta.setLore(newLore);
+                    meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                    e.setNewBookMeta(meta);
+                    masterBooks.set(nextID + ".pages", meta.getPages());
 
-                newLore.add(utils.chat("&6Master Book &7#" + nextID));
-                meta.setLore(newLore);
-                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                e.setNewBookMeta(meta);
-                masterBooks.set(nextID + ".pages", meta.getPages());
-
-                plugin.cfg.saveMasterBooks();
-                plugin.pluginManager.callEvent(new MasterBookCreatedEvent(p));
+                    plugin.cfg.saveMasterBooks();
+                    plugin.pluginManager.callEvent(new MasterBookCreatedEvent(p));
+                } else {
+                    // If the first page does not have "claim", sign as a regular book
+                    e.setNewBookMeta(meta);
+                }
             }
         } else {
             String bookID = String.join("", lore).substring(17);
