@@ -25,7 +25,6 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.Set;
 
 public class BlockPlace implements Listener {
     private final Block4Block plugin;
@@ -73,7 +72,13 @@ public class BlockPlace implements Listener {
                 CreatureSpawner spawner = (CreatureSpawner) block.getState();
                 Optional<EntityType> spawnTypeOpt = getSpawnerType(itemMeta);
 
-                spawnTypeOpt.ifPresent(spawnType -> transformSpawnerType(spawner, spawnType, netherSpawnTypeTransformations));
+                spawnTypeOpt.ifPresent(spawnType -> {
+                    transformSpawnerType(spawner, spawnType, netherSpawnTypeTransformations);
+                    // Mark spawner as player placed
+                    NamespacedKey placedKey = new NamespacedKey(plugin, "playerPlaced");
+                    spawner.getPersistentDataContainer().set(placedKey, PersistentDataType.BYTE, (byte) 1);
+                    spawner.update();
+                });
             }
         } else {
             switch (blockType) {
@@ -89,6 +94,10 @@ public class BlockPlace implements Listener {
                     if (spawnTypeOpt.isPresent()) {
                         EntityType spawnType = spawnTypeOpt.get();
                         transformSpawnerType(spawner, spawnType, nonNetherSpawnTypeTransformations);
+                        // Mark spawner as player placed
+                        NamespacedKey placedKey = new NamespacedKey(plugin, "playerPlaced");
+                        spawner.getPersistentDataContainer().set(placedKey, PersistentDataType.BYTE, (byte) 1);
+                        spawner.update();
                     }
             }
         }
@@ -122,7 +131,6 @@ public class BlockPlace implements Listener {
                 return Optional.of(EntityType.valueOf(spawnTypeName));
             }
         }
-
         return Optional.empty();
     }
 
@@ -158,4 +166,3 @@ public class BlockPlace implements Listener {
         return false; // Just a placeholder for now
     }
 }
-

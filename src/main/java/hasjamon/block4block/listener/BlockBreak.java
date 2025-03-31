@@ -157,6 +157,11 @@ public class BlockBreak implements Listener {
 
         if (b.getType() == Material.SPAWNER) {
             CreatureSpawner spawner = (CreatureSpawner) b.getState();
+            NamespacedKey placedKey = new NamespacedKey(plugin, "playerPlaced");
+            if (spawner.getPersistentDataContainer().has(placedKey, PersistentDataType.BYTE)) {
+                // If it was placed by a player, do not drop experience.
+                e.setExpToDrop(0);
+            }
             EntityType spawnType = spawner.getSpawnedType();
             String expectedSpawnerType = spawnType.name();
             ItemStack spawnerItem = new ItemStack(Material.SPAWNER);
