@@ -67,6 +67,21 @@ complimentary-bed:
   limit: 1
   interval: daily # Number in minutes (1 day = 1440) or use: hourly, daily, weekly, monthly
 
+# Block4Block Nylium Spread Configuration
+# Maximum recursion depth to prevent infinite spread
+nylium-spread:
+max-recursion-depth-warped: 8  # Prevents excessive spread of warped
+max-recursion-depth-crimson: 2 # Prevents excessive spread of crimson
+
+# Spread chance configuration
+spread-chances:
+  warped-nylium:
+    base-chance: 0.20  # 20% chance for Warped Nylium to spread
+    additional-chance: 0.20  # Additional chance for nearby Warped spread
+
+  crimson-nylium:
+    base-chance: 0.80  # 80% chance for Crimson Nylium to spread
+
 
 claim-map-colors:
   my-claims:
