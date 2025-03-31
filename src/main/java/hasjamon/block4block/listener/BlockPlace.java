@@ -6,10 +6,7 @@ import hasjamon.block4block.utils.GracePeriod;
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.entity.EntityType;
@@ -18,7 +15,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -165,4 +164,91 @@ public class BlockPlace implements Listener {
         // Implement logic for crops or blocks that can be easily broken and don't require special rules
         return false; // Just a placeholder for now
     }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onSignChange(SignChangeEvent event) {
+        Player player = event.getPlayer();
+        Block block = event.getBlock();
+        Location location = block.getLocation();
+        Material signType = block.getType();
+
+        // Check if the sign is in a claimed chunk
+        if (plugin.cfg.getClaimData().contains(utils.getClaimID(location))) {
+            String[] members = utils.getMembers(location);
+            boolean isMember = utils.isMemberOfClaim(members, player);
+
+            // If the player is not a member of the claim
+            if (!isMember) {
+                Material requiredSign = getSubstitutionFromConfig(signType);
+
+                if (requiredSign == null) {
+                    // Handle no valid substitution
+                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(utils.chat("&cNo valid substitution found for this sign!")));
+                    event.setCancelled(true);
+                    return;
+                }
+
+                // Check if the required sign is in the hotbar or offhand
+                int itemSlot = findItemSlot(player, requiredSign);
+
+                if (itemSlot != -1) {
+                    // Remove one sign from the correct slot
+                    removeItem(player, itemSlot);
+                } else {
+                    // Cancel modification if the player doesn't have the required sign
+                    String message = utils.chat("&cIntruding on Claim &aunclaim the area or spend &c" + requiredSign + " &afrom your hotbar to break this!");
+                    event.setCancelled(true);
+                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                }
+            }
+        }
+    }
+
+    // Get required sign from config (substitute wall signs with regular signs)
+    private Material getSubstitutionFromConfig(Material signType) {
+        String materialName = signType.name();
+        String substituteName = plugin.getConfig().getString("b4b-substitutions." + materialName);
+
+        if (substituteName != null) {
+            try {
+                return Material.valueOf(substituteName);
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Invalid material in b4b-substitutions for: " + materialName);
+            }
+        }
+        return null; // Return null if no valid substitution
+    }
+
+    // Find item slot in the hotbar or offhand
+    private int findItemSlot(Player player, Material material) {
+        // Check the hotbar (slots 0-8)
+        for (int i = 0; i < 9; i++) {
+            ItemStack item = player.getInventory().getItem(i);
+            if (item != null && item.getType() == material && item.getAmount() > 0) {
+                return i;
+            }
+        }
+        // Check offhand (-2 if found in offhand)
+        ItemStack offhandItem = player.getInventory().getItemInOffHand();
+        if (offhandItem != null && offhandItem.getType() == material && offhandItem.getAmount() > 0) {
+            return -2;
+        }
+        return -1; // Item not found
+    }
+
+    // Remove 1 item from the correct slot
+    private void removeItem(Player player, int itemSlot) {
+        if (itemSlot == -2) {
+            // Remove from offhand
+            ItemStack offhandItem = player.getInventory().getItemInOffHand();
+            offhandItem.setAmount(offhandItem.getAmount() - 1);
+            player.getInventory().setItemInOffHand(offhandItem.getAmount() > 0 ? offhandItem : null);
+        } else if (itemSlot >= 0) {
+            // Remove from hotbar or main hand
+            ItemStack itemToRemove = player.getInventory().getItem(itemSlot);
+            itemToRemove.setAmount(itemToRemove.getAmount() - 1);
+            player.getInventory().setItem(itemSlot, itemToRemove.getAmount() > 0 ? itemToRemove : null);
+        }
+    }
+
 }
