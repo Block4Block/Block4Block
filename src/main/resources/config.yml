@@ -382,8 +382,6 @@ blacklisted-claim-blocks:
   - LIME_BANNER
   - PINK_BANNER
   - GRAY_BANNER
-  - PINK_BANNER
-  - GRAY_BANNER
   - LIGHT_GRAY_BANNER
   - CYAN_BANNER
   - PURPLE_BANNER
