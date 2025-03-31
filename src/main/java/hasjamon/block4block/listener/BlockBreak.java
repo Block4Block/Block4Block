@@ -163,9 +163,20 @@ public class BlockBreak implements Listener {
                 e.setExpToDrop(0);
             }
             EntityType spawnType = spawner.getSpawnedType();
+            if (spawnType == null) {
+                // Skip if spawnType is null to prevent NullPointerException
+                return;
+            }
             String expectedSpawnerType = spawnType.name();
             ItemStack spawnerItem = new ItemStack(Material.SPAWNER);
             ItemMeta itemMeta = spawnerItem.getItemMeta();
+            if (spawner.getPersistentDataContainer().has(placedKey, PersistentDataType.BYTE)) {
+                // Check if the spawner's custom data is correctly set
+                Byte isPlayerPlaced = spawner.getPersistentDataContainer().get(placedKey, PersistentDataType.BYTE);
+                if (isPlayerPlaced == null || isPlayerPlaced != 1) {
+                    return; // Skip invalid spawners
+                }
+            }
 
             // Check if the spawner is inside a claim
             boolean isInsideClaim = plugin.cfg.getClaimData().contains(utils.getClaimID(b.getLocation()));

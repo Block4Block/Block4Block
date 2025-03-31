@@ -1,5 +1,6 @@
 package hasjamon.block4block.listener;
 
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -28,32 +29,37 @@ public class SpawnEggThrow implements Listener {
         ItemStack item = event.getItem();
         Material spawnEggType = item.getType();
 
-        event.setCancelled(true);
         Player player = event.getPlayer();
 
-        // Launch the egg as a snowball projectile to prevent natural egg hatching
-        Snowball snowball = player.launchProjectile(Snowball.class);
-        snowball.getPersistentDataContainer().set(eggKey, PersistentDataType.STRING, spawnEggType.name());
+        if (!(player.getGameMode() == GameMode.CREATIVE)) {
 
-        // Make the snowball visually look like the correct spawn egg
-        ItemStack eggVisual = new ItemStack(spawnEggType);
-        snowball.setItem(eggVisual);
+            //Cancel regular behaviour.
+            event.setCancelled(true);
 
-        // Adjustable velocity // not necessary default matches Egg.
-        //snowball.setVelocity(snowball.getVelocity().multiply(0.6)); // Reduces velocity to ~60% of normal
+            // Launch the egg as a snowball projectile to prevent natural egg hatching
+            Snowball snowball = player.launchProjectile(Snowball.class);
+            snowball.getPersistentDataContainer().set(eggKey, PersistentDataType.STRING, spawnEggType.name());
 
-        float pitch = 0.2f + (random.nextFloat() * 0.2f);
+            // Make the snowball visually look like the correct spawn egg
+            ItemStack eggVisual = new ItemStack(spawnEggType);
+            snowball.setItem(eggVisual);
 
-        // Play egg throw sound with randomized pitch
-        player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 0.5f, pitch);
+            // Adjustable velocity // not necessary default matches Egg.
+            //snowball.setVelocity(snowball.getVelocity().multiply(0.6)); // Reduces velocity to ~60% of normal
 
-        // Remove one item from player's hand
-        ItemStack handItem = player.getInventory().getItem(event.getHand());
-        if (handItem != null) {
-            if (handItem.getAmount() > 1) {
-                handItem.setAmount(handItem.getAmount() - 1);
-            } else {
-                player.getInventory().setItem(event.getHand(), null);
+            float pitch = 0.2f + (random.nextFloat() * 0.2f);
+
+            // Play egg throw sound with randomized pitch
+            player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 0.5f, pitch);
+
+            // Remove one item from player's hand
+            ItemStack handItem = player.getInventory().getItem(event.getHand());
+            if (handItem != null) {
+                if (handItem.getAmount() > 1) {
+                    handItem.setAmount(handItem.getAmount() - 1);
+                } else {
+                    player.getInventory().setItem(event.getHand(), null);
+                }
             }
         }
     }
