@@ -62,6 +62,11 @@ enable-claim-maps: true
 claim-width: 3 # 3x3 chunk
 # At what height should lava sources stop flowing/spreading outside the Nether
 lava-flow-max-y: 72
+# Limit the number of complimentary beds a player can receive per day at spawn
+complimentary-bed:
+  limit: 1
+  interval: daily # Number in minutes (1 day = 1440) or use: hourly, daily, weekly, monthly
+
 
 claim-map-colors:
   my-claims:
@@ -85,7 +90,7 @@ welcome-messages:
   - "1) BEWARE! &7Most blocks will require you to have them and spend one from your hotbar to break them."
   - "2) GET STARTED &7with free-to-break blocks such as logs, ores, crafting tables, ladders, and torches."
   - "3) GET CREATIVE &7by luring creepers into giving you stone, killing pigs for dirt, and placing torches under falling gravel and sand."
-  - "4) GET THROUGH THE NIGHT &7by typing /bed for a free bed. 24 hour cooldown."
+  - "4) GET THROUGH THE NIGHT &7with your complimentary bed received at world spawn. 24 hour cooldown."
   - "5) LEARN MORE &7by reading advancement descriptions. Press L now and take a look!"
   - "§aWe hope you enjoy the challenge!"
 

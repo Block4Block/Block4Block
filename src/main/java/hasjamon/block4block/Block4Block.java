@@ -43,17 +43,16 @@ public class Block4Block extends JavaPlugin {
 
         populateKnownPlayers();
         populateConfigConstants();
+        claimVisual = new ClaimVisual(this);
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
         setupHints(); // Prepares hints and starts broadcasting them
-        // Initialize and register ClaimVisual
-        claimVisual = new ClaimVisual(this);
-        pluginManager.registerEvents(claimVisual, this);
 
-        // Register ClaimVisualCommand
+        // Register ClaimVisualCommand properly
         if (getCommand("claimvisual") != null) {
-            getCommand("claimvisual").setExecutor(new ClaimVisualCommand(claimVisual.getVisualEnabledPlayers()));
+            getCommand("claimvisual").setExecutor(new ClaimVisualCommand(this, claimVisual.getVisualEnabledPlayers()));
         }
+
         if (this.getConfig().getBoolean("golems-guard-claims"))
             getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
         getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateCurrentTick, 0, 1);
@@ -80,7 +79,7 @@ public class Block4Block extends JavaPlugin {
         long interval = getConfig().getLong("seconds-between-hints");
         boolean hintsEnabled = getConfig().getBoolean("hints-enabled");
 
-        // Shuffle hints, then show a hint every 10 minutes (20 ticks/second * 600 seconds)
+        // Shuffle hints, then show a hint every interval seconds
         if (hints != null && hintsEnabled) {
             Collections.shuffle(hints);
             getServer().getScheduler().scheduleSyncRepeatingTask(this, this::showHint, 0, 20 * interval);
@@ -110,20 +109,12 @@ public class Block4Block extends JavaPlugin {
         PluginCommand ignoreCmd = this.getCommand("ignore");
         PluginCommand unignoreCmd = this.getCommand("unignore");
         PluginCommand claimContestCmd = this.getCommand("claimcontest");
-        PluginCommand bedCmd = this.getCommand("bed");
         PluginCommand welcomeCmd = this.getCommand("welcome");
         PluginCommand claimLocCmd = this.getCommand("claimloc");
         PluginCommand claimFixCmd = this.getCommand("claimfix");
         PluginCommand chickenBonusCmd = this.getCommand("chickenbonus");
         PluginCommand coordsCmd = this.getCommand("coords");
         PluginCommand claimVisualCmd = this.getCommand("claimvisual");
-
-        ClaimVisual claimVisual = new ClaimVisual(this);
-
-        if (getCommand("claimvisual") != null) {
-            getCommand("claimvisual").setExecutor(new ClaimVisualCommand(claimVisual.getVisualEnabledPlayers()));
-        }
-
 
         if (dieCmd != null) dieCmd.setExecutor(new DieCommand());
         if (hintsCmd != null) hintsCmd.setExecutor(new HintsCommand(this));
@@ -134,12 +125,12 @@ public class Block4Block extends JavaPlugin {
             unignoreCmd.setExecutor(cmd);
         }
         if (claimContestCmd != null) claimContestCmd.setExecutor(new ClaimContestCommand(this));
-        if (bedCmd != null) bedCmd.setExecutor(new BedCommand(this));
         if (welcomeCmd != null) welcomeCmd.setExecutor(new WelcomeCommand());
         if (claimLocCmd != null) claimLocCmd.setExecutor(new ClaimLocCommand(this));
         if (claimFixCmd != null) claimFixCmd.setExecutor(new ClaimFixCommand(this));
         if (chickenBonusCmd != null) chickenBonusCmd.setExecutor(new ChickenBonusCommand(this));
         if (coordsCmd != null) coordsCmd.setExecutor(new CoordsCommand(this));
+        if (claimVisualCmd != null) claimVisualCmd.setExecutor(new ClaimVisualCommand(this, claimVisual.getVisualEnabledPlayers()));
     }
 
     private void registerEvents() {
@@ -161,6 +152,8 @@ public class Block4Block extends JavaPlugin {
         pluginManager.registerEvents(new PlayerQuit(), this);
         pluginManager.registerEvents(new PlayerJoin(this), this);
         pluginManager.registerEvents(new PlayerDeath(this), this);
+        pluginManager.registerEvents(new ComplimentaryBed(this), this);
+        pluginManager.registerEvents(claimVisual, this);
         pluginManager.registerEvents(new PlayerRespawn(), this);
         pluginManager.registerEvents(new ChunkLoad(), this);
         if (this.getConfig().getBoolean("disable-freecam-interactions"))
@@ -211,7 +204,6 @@ public class Block4Block extends JavaPlugin {
         cfg.saveClaimMaps();
     }
 
-    // TODO: @bahm cache more config constants
     private void populateConfigConstants() {
         populateNonProtectiveBlockTypes();
         populateProtectiveBlockFaces();

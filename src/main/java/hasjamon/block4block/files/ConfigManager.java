@@ -27,8 +27,8 @@ public class ConfigManager {
     private final FileConfiguration ignoreListsCfg = YamlConfiguration.loadConfiguration(ignoreListsFile);
     private final File claimContestFile = new File(this.plugin.getDataFolder(), "claimcontest.yml");
     private final FileConfiguration claimContestCfg = YamlConfiguration.loadConfiguration(claimContestFile);
-    private final File bedCommandUsageFile = new File(this.plugin.getDataFolder(), "bedcommandusage.yml");
-    private final FileConfiguration bedCommandUsageCfg = YamlConfiguration.loadConfiguration(bedCommandUsageFile);
+    private final File complimentaryBedUsageFile = new File(this.plugin.getDataFolder(), "complimentarybedusage.yml");
+    private final FileConfiguration complimentaryBedUsageCfg = YamlConfiguration.loadConfiguration(complimentaryBedUsageFile);
     private final File masterBooksFile = new File(this.plugin.getDataFolder(), "masterbooks.yml");
     private final FileConfiguration masterBooksCfg = YamlConfiguration.loadConfiguration(masterBooksFile);
     private final File offlineClaimNotificationsFile = new File(this.plugin.getDataFolder(), "offlineclaimnotifications.yml");
@@ -52,7 +52,7 @@ public class ConfigManager {
         saveHintSettings();
         saveIgnoreLists();
         saveClaimContest();
-        saveBedCommandUsage();
+        saveComplimentaryBedUsage();
         saveMasterBooks();
         saveOfflineClaimNotifications();
         savePlayerTextures();
@@ -146,16 +146,16 @@ public class ConfigManager {
         this.saveClaimContest();
     }
 
-    public FileConfiguration getBedCommandUsage() {
-        return this.bedCommandUsageCfg;
+    public FileConfiguration getComplimentaryBedUsage() {
+        return this.complimentaryBedUsageCfg;
     }
 
-    public void saveBedCommandUsage() {
+    public void saveComplimentaryBedUsage() {
         try {
-            this.bedCommandUsageCfg.save(this.bedCommandUsageFile);
-            consoleSender.sendMessage(ChatColor.AQUA + "Bed command usage has been saved to bedcommandusage.yml");
+            this.complimentaryBedUsageCfg.save(this.complimentaryBedUsageFile);
+            consoleSender.sendMessage(ChatColor.AQUA + "Complimentary bed usage has been saved to complimentarybedusage.yml");
         } catch (IOException e) {
-            consoleSender.sendMessage(ChatColor.RED + "Failed to save bed command usage to bedcommandusage.yml");
+            consoleSender.sendMessage(ChatColor.RED + "Failed to save complimentary bed usage to complimentarybedusage.yml");
         }
     }
 
