@@ -30,7 +30,7 @@ andesite-splash-on: true
 # Whether or not andesite destroyed by splash should reduce the durability of the tool used to break it
 andesite-splash-reduce-durability: false
 # Prevent cheat clients from interacting with chests, lecterns, etc. through blocks
-disable-freecam-interactions: true
+disable-freecam-interactions: false
 # Should freecam interactions only be prevented when interacting with lecterns?
 # Note: requires disable-freecam-interactions to be true
 disable-freecam-interactions-only-for-lecterns: false

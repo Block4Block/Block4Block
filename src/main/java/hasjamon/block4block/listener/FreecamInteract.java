@@ -19,25 +19,9 @@ import java.util.Set;
 
 public class FreecamInteract implements Listener {
     private final boolean applyOnlyToLecterns;
-    private final Set<Material> boatTypes = Set.of(
-            Material.BIRCH_BOAT,
-            Material.ACACIA_BOAT,
-            Material.OAK_BOAT,
-            Material.JUNGLE_BOAT,
-            Material.SPRUCE_BOAT,
-            Material.DARK_OAK_BOAT,
-            Material.MANGROVE_BOAT,
-            Material.CHERRY_BOAT,
-            Material.BAMBOO_RAFT,
-            Material.BIRCH_CHEST_BOAT,
-            Material.ACACIA_CHEST_BOAT,
-            Material.OAK_CHEST_BOAT,
-            Material.JUNGLE_CHEST_BOAT,
-            Material.SPRUCE_CHEST_BOAT,
-            Material.DARK_OAK_CHEST_BOAT,
-            Material.MANGROVE_CHEST_BOAT,
-            Material.CHERRY_CHEST_BOAT,
-            Material.BAMBOO_CHEST_RAFT
+    private final Set<Material> breakExceptions = Set.of(
+            Material.SCAFFOLDING,
+            Material.WHEAT
     );
 
     public FreecamInteract(Block4Block plugin) {
@@ -60,6 +44,8 @@ public class FreecamInteract implements Listener {
     public void onBlockBreak(BlockBreakEvent e) {
         Block b = e.getBlock();
 
+        if (breakExceptions.contains(b.getType())) return; // Allow breaking exceptions freely
+
         if (!applyOnlyToLecterns || b.getType() == Material.LECTERN)
             if (b.getType() != Material.ANDESITE && !isLookingAtBlock(b, e.getPlayer()))
                 e.setCancelled(true);
@@ -75,6 +61,7 @@ public class FreecamInteract implements Listener {
     }
 
     private boolean isPlacingBoatOnWater(Block b, ItemStack i) {
-        return b.getType() == Material.WATER && boatTypes.contains(i.getType());
+        return b.getType() == Material.WATER && i != null &&
+                (i.getType().name().endsWith("_BOAT") || i.getType().name().endsWith("_RAFT"));
     }
 }
