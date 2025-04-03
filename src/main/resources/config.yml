@@ -4,11 +4,7 @@
 #   2. Add new values for each key you want to replace (e.g., hints-enabled: false)
 #   3. If a key doesn't exist in config.yml, the plugin will look for it in default.yml
 
-# Show on items if they require block for block, are free to break or free in claim.
-# Possible values: "lore", "none"
-marking-method: "none"
-#Long or short form marker in lore. example, short: F2B long: Free to Break.
-use-long-form: true
+
 # Should all coordinates in messages show as [hidden] instead for all players, regardless of their /coords settings
 hide-coords-globally: false
 # Should B4B (spending blocks to break blocks) apply globally or only for players intruding on others' claims
@@ -34,7 +30,7 @@ andesite-splash-on: true
 # Whether or not andesite destroyed by splash should reduce the durability of the tool used to break it
 andesite-splash-reduce-durability: false
 # Prevent cheat clients from interacting with chests, lecterns, etc. through blocks
-disable-freecam-interactions: true
+disable-freecam-interactions: false
 # Should freecam interactions only be prevented when interacting with lecterns?
 # Note: requires disable-freecam-interactions to be true
 disable-freecam-interactions-only-for-lecterns: false
@@ -66,6 +62,26 @@ enable-claim-maps: true
 claim-width: 3 # 3x3 chunk
 # At what height should lava sources stop flowing/spreading outside the Nether
 lava-flow-max-y: 72
+# Limit the number of complimentary beds a player can receive per day at spawn
+complimentary-bed:
+  limit: 1
+  interval: daily # Number in minutes (1 day = 1440) or use: hourly, daily, weekly, monthly
+
+# Block4Block Nylium Spread Configuration
+# Maximum recursion depth to prevent infinite spread
+nylium-spread:
+max-recursion-depth-warped: 8  # Prevents excessive spread of warped
+max-recursion-depth-crimson: 2 # Prevents excessive spread of crimson
+
+# Spread chance configuration
+spread-chances:
+  warped-nylium:
+    base-chance: 0.20  # 20% chance for Warped Nylium to spread
+    additional-chance: 0.20  # Additional chance for nearby Warped spread
+
+  crimson-nylium:
+    base-chance: 0.80  # 80% chance for Crimson Nylium to spread
+
 
 claim-map-colors:
   my-claims:
@@ -89,7 +105,7 @@ welcome-messages:
   - "1) BEWARE! &7Most blocks will require you to have them and spend one from your hotbar to break them."
   - "2) GET STARTED &7with free-to-break blocks such as logs, ores, crafting tables, ladders, and torches."
   - "3) GET CREATIVE &7by luring creepers into giving you stone, killing pigs for dirt, and placing torches under falling gravel and sand."
-  - "4) GET THROUGH THE NIGHT &7by typing /bed for a free bed. 24 hour cooldown."
+  - "4) GET THROUGH THE NIGHT &7with your complimentary bed received at world spawn. 24 hour cooldown."
   - "5) LEARN MORE &7by reading advancement descriptions. Press L now and take a look!"
   - "§aWe hope you enjoy the challenge!"
 
@@ -181,7 +197,7 @@ claim-explosion-immunity:
 
 # Blocks endermen aren't allowed to place inside claims
 enderman-place-in-claim-blacklist:
-  - GRASS_BLOCK
+  #- GRASS_BLOCK
 
 # Blocks destroyed by TNT explosions only drop if on this list
 # NOTE: If a block on this list has an inventory (e.g., CHEST), all items in the inventory will likewise be lost
@@ -384,8 +400,6 @@ blacklisted-claim-blocks:
   - LIGHT_BLUE_BANNER
   - YELLOW_BANNER
   - LIME_BANNER
-  - PINK_BANNER
-  - GRAY_BANNER
   - PINK_BANNER
   - GRAY_BANNER
   - LIGHT_GRAY_BANNER
@@ -594,8 +608,6 @@ blacklisted-blocks:
   - RED_BED
   - BLACK_BED
   - BED
-  - ITEM_FRAME
-  - GLOW_ITEM_FRAME
   - REDSTONE_ORE
   - NETHER_GOLD_ORE
   - NETHER_QUARTZ_ORE

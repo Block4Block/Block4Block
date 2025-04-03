@@ -1,5 +1,6 @@
 package hasjamon.block4block.listener;
 
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -27,11 +28,17 @@ public class SpawnEggThrow implements Listener {
 
         ItemStack item = event.getItem();
         Material spawnEggType = item.getType();
-
-        event.setCancelled(true);
         Player player = event.getPlayer();
 
-        // Launch the egg as a snowball projectile to prevent natural egg hatching
+        // Allow natural behavior in Creative mode
+        if (player.getGameMode() == GameMode.CREATIVE) {
+            return; // Do nothing, let Minecraft handle it
+        }
+
+        // Cancel regular behavior in non-creative modes
+        event.setCancelled(true);
+
+        // Launch the egg as a snowball projectile
         Snowball snowball = player.launchProjectile(Snowball.class);
         snowball.getPersistentDataContainer().set(eggKey, PersistentDataType.STRING, spawnEggType.name());
 
@@ -39,8 +46,8 @@ public class SpawnEggThrow implements Listener {
         ItemStack eggVisual = new ItemStack(spawnEggType);
         snowball.setItem(eggVisual);
 
-        // Adjustable velocity // not necessary default matches Egg.
-        //snowball.setVelocity(snowball.getVelocity().multiply(0.6)); // Reduces velocity to ~60% of normal
+        // Optional: Reduce velocity if needed (uncomment to use)
+        // snowball.setVelocity(snowball.getVelocity().multiply(0.6));
 
         float pitch = 0.2f + (random.nextFloat() * 0.2f);
 
