@@ -33,7 +33,7 @@ public class Block4Block extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        this.getConfig().options().copyDefaults(true); // Makes config work properly
+        this.getConfig().options().copyDefaults(true);
         instance = this; // Creates instance of the plugin
         checkReflectionAvailability();
         cfg = new ConfigManager(); // Initializes config
@@ -42,13 +42,14 @@ public class Block4Block extends JavaPlugin {
         getLogger().info("Loaded claim-protection config: " + cfg.getClaimData().getStringList("claim-protection.protective-block-faces"));
 
         populateKnownPlayers();
+        // TODO: @bahm cache more config constants
         populateConfigConstants();
         claimVisual = new ClaimVisual(this);
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
         setupHints(); // Prepares hints and starts broadcasting them
 
-        // Register ClaimVisualCommand properly
+        // Register ClaimVisualCommand
         if (getCommand("claimvisual") != null) {
             getCommand("claimvisual").setExecutor(new ClaimVisualCommand(this, claimVisual.getVisualEnabledPlayers()));
         }
