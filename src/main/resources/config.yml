@@ -4,11 +4,7 @@
 #   2. Add new values for each key you want to replace (e.g., hints-enabled: false)
 #   3. If a key doesn't exist in config.yml, the plugin will look for it in default.yml
 
-# Show on items if they require block for block, are free to break or free in claim.
-# Possible values: "lore", "none"
-marking-method: "none"
-#Long or short form marker in lore. example, short: F2B long: Free to Break.
-use-long-form: true
+
 # Should all coordinates in messages show as [hidden] instead for all players, regardless of their /coords settings
 hide-coords-globally: false
 # Should B4B (spending blocks to break blocks) apply globally or only for players intruding on others' claims
@@ -612,8 +608,6 @@ blacklisted-blocks:
   - RED_BED
   - BLACK_BED
   - BED
-  - ITEM_FRAME
-  - GLOW_ITEM_FRAME
   - REDSTONE_ORE
   - NETHER_GOLD_ORE
   - NETHER_QUARTZ_ORE
