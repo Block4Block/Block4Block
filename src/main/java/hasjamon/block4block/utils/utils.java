@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 public class utils {
     private static final Block4Block plugin = Block4Block.getInstance();
+    public static final Set<Location> processedBeds = new HashSet<>();
     public static final Map<Block, GracePeriod> b4bGracePeriods = new LinkedHashMap<>();
     public static final Map<Location, GracePeriod> blockChangeGracePeriods = new LinkedHashMap<>();
     public static final Map<String, Set<Player>> intruders = new HashMap<>();
@@ -512,7 +513,7 @@ public class utils {
         return false;
     }
 
-    public static void b4bCheck(Player p, Block b, BlockBreakEvent e, List<?> lootDisabledTypes, boolean requiresBlock, boolean isFreeToBreakInClaim) {
+    public static boolean b4bCheck(Player p, Block b, BlockBreakEvent e, List<?> lootDisabledTypes, boolean requiresBlock, boolean isFreeToBreakInClaim) {
         // Are drops disabled for this block type
         boolean noloot = lootDisabledTypes.contains(b.getType().toString());
 
@@ -545,7 +546,7 @@ public class utils {
                     e.setCancelled(true);
                     p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                     plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, false, isFreeToBreakInClaim));
-                    return;
+                    return noloot;
                 }
             }
 
@@ -569,6 +570,7 @@ public class utils {
             b.setType(Material.AIR);
             e.setCancelled(true);
         }
+        return noloot;
     }
 
     public static List<Block> getClaimBlocksProtectedBy(Block protectingBlock) {

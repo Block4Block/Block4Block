@@ -1,5 +1,6 @@
 package hasjamon.block4block.listener;
 
+
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -39,6 +40,9 @@ public class SpawnEggThrow implements Listener {
         event.setCancelled(true);
 
         // Launch the egg as a snowball projectile
+
+        // Launch the egg as a snowball projectile to prevent natural egg hatching
+
         Snowball snowball = player.launchProjectile(Snowball.class);
         snowball.getPersistentDataContainer().set(eggKey, PersistentDataType.STRING, spawnEggType.name());
 
@@ -46,8 +50,12 @@ public class SpawnEggThrow implements Listener {
         ItemStack eggVisual = new ItemStack(spawnEggType);
         snowball.setItem(eggVisual);
 
+
         // Optional: Reduce velocity if needed (uncomment to use)
         // snowball.setVelocity(snowball.getVelocity().multiply(0.6));
+
+        // Adjustable velocity // not necessary default matches Egg.
+        //snowball.setVelocity(snowball.getVelocity().multiply(0.6)); // Reduces velocity to ~60% of normal
 
         float pitch = 0.2f + (random.nextFloat() * 0.2f);
 
