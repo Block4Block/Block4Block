@@ -197,7 +197,7 @@ claim-explosion-immunity:
 
 # Blocks endermen aren't allowed to place inside claims
 enderman-place-in-claim-blacklist:
-  - GRASS_BLOCK
+  #- GRASS_BLOCK
 
 # Blocks destroyed by TNT explosions only drop if on this list
 # NOTE: If a block on this list has an inventory (e.g., CHEST), all items in the inventory will likewise be lost
