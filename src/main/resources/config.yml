@@ -228,6 +228,7 @@ tnt-drops-enabled:
 
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
+  - JACK_O_LANTERN
   - JUKEBOX
   - SPAWNER
   - HEAVY_CORE
@@ -524,6 +525,7 @@ blacklisted-claim-blocks:
 
 # Blocks that are exempt from Block4Block
 blacklisted-blocks:
+  - CARVED_PUMPKIN
   - CREAKING_HEART
   - CRIMSON_ROOTS
   - WARPED_ROOTS
@@ -885,7 +887,6 @@ no-loot-on-break:
   - CAMPFIRE
   - CANDLE
   - CARTOGRAPHY_TABLE
-  - CARVED_PUMPKIN
   - CAULDRON
   - CAVE_VINES
   - CAVE_VINES_PLANT
