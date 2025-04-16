@@ -228,6 +228,7 @@ tnt-drops-enabled:
 
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
+  - DAYLIGHT_DETECTOR
   - JACK_O_LANTERN
   - JUKEBOX
   - SPAWNER
