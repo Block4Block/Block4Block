@@ -85,13 +85,13 @@ spread-chances:
 
 claim-map-colors:
   my-claims:
-    r: 0
-    g: 255
-    b: 255
+    r: 137
+    g: 243
+    b: 54
   others-claims:
-    r: 255
+    r: 250
     g: 0
-    b: 255
+    b: 63
 
 # Settings for the claim coordinates shown in the boss bar
 lectern-message-settings:
