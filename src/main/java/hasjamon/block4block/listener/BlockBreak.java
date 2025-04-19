@@ -15,13 +15,18 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.potion.PotionType;
 
 import java.util.List;
 
@@ -359,7 +364,123 @@ public class BlockBreak implements Listener {
                 if (utils.isMemberOfClaim(members, p))
                     return;
 
-                p.sendMessage(utils.chat("&cYou cannot fill buckets in this claim"));
+                String message = utils.chat("&cYou cannot fill buckets in others claim");
+                p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                e.setCancelled(true);
+            }
+        }
+    }
+
+    // For preventing dirt to mud conversion with water bottles
+    @EventHandler(ignoreCancelled = true)
+    public void onInteractWithWaterBottle(PlayerInteractEvent e) {
+        // Check if player is right-clicking a block
+        if (e.getAction() != Action.RIGHT_CLICK_BLOCK || e.getClickedBlock() == null) {
+            return;
+        }
+
+        Player p = e.getPlayer();
+        Block b = e.getClickedBlock();
+
+        // Check if block is dirt (to prevent mud conversion)
+        if (b.getType() != Material.DIRT) {
+            return;
+        }
+
+        // Get item from the hand that triggered the event
+        ItemStack item = null;
+        if (e.getHand() == EquipmentSlot.HAND) {
+            item = p.getInventory().getItemInMainHand();
+        } else if (e.getHand() == EquipmentSlot.OFF_HAND) {
+            item = p.getInventory().getItemInOffHand();
+        }
+
+        // Check if player is using a water bottle
+        if (item == null || item.getType() != Material.POTION) {
+            return;
+        }
+
+        // Check if it's a water bottle specifically
+        if (!isWaterBottle(item)) {
+            return;
+        }
+
+        // Check if in claim
+        String claimID = utils.getClaimID(b.getLocation());
+        if (plugin.cfg.getClaimData().contains(claimID)) {
+            String[] members = utils.getMembers(b.getLocation());
+
+            if (members != null) {
+                if (utils.isMemberOfClaim(members, p)) {
+                    return; // Allow for claim members
+                }
+
+                String message = utils.chat("&cYou cannot convert dirt to mud in others claim");
+                p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                e.setCancelled(true);
+            }
+        }
+    }
+
+    // Helper method to check if an ItemStack is a water bottle
+    private boolean isWaterBottle(ItemStack item) {
+        if (item == null || item.getType() != Material.POTION) {
+            return false;
+        }
+
+        PotionMeta meta = (PotionMeta) item.getItemMeta();
+        if (meta == null) {
+            return false;
+        }
+
+        try {
+            // Modern method (1.16+)
+            return meta.getBasePotionType() == PotionType.WATER;
+        } catch (NoSuchMethodError e) {
+            try {
+                // Legacy method
+                return meta.getBasePotionData().getType() == PotionType.WATER;
+            } catch (Exception ignored) {
+                // Fallback for very old versions - water bottles have no effects
+                return !meta.hasCustomEffects() && meta.getCustomEffects().isEmpty();
+            }
+        }
+    }
+
+    // For preventing copper scrapping with axe
+    @EventHandler(ignoreCancelled = true)
+    public void onCopperScrape(PlayerInteractEvent e) {
+        // Check if player is right-clicking with axe
+        if (e.getAction() != Action.RIGHT_CLICK_BLOCK || e.getClickedBlock() == null) {
+            return;
+        }
+
+        Player p = e.getPlayer();
+        Block b = e.getClickedBlock();
+
+        // Check if player is using an axe
+        ItemStack item = e.getItem();
+        if (item == null || !item.getType().name().endsWith("_AXE")) {
+            return;
+        }
+
+        // Check if block is a copper block (any type of copper block)
+        if (!b.getType().name().contains("COPPER")) {
+            return;
+        }
+
+        // Check if in claim
+        String claimID = utils.getClaimID(b.getLocation());
+        if (plugin.cfg.getClaimData().contains(claimID)) {
+            String[] members = utils.getMembers(b.getLocation());
+
+            if (members != null) {
+                if (utils.isMemberOfClaim(members, p)) {
+                    return; // Allow for claim members
+                }
+
+                String message = utils.chat("&cYou cannot scrape copper blocks in others claim");
+                p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                 e.setCancelled(true);
             }
         }
