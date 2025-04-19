@@ -138,6 +138,13 @@ public class Block4Block extends JavaPlugin {
         pluginManager.registerEvents(new BlockBreak(this), this);
         pluginManager.registerEvents(new BookPlaceTake(this), this);
         pluginManager.registerEvents(new LecternBreak(this), this);
+        // Register BookReadLectern only if ProtocolLib is enabled
+        if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
+            pluginManager.registerEvents(new BookReadLectern(this), this);
+        } else {
+            // Using `this` instead of `plugin` to refer to the current class instance
+            this.getLogger().info("ProtocolLib not found - skipping BookReadLectern.");
+        }
         pluginManager.registerEvents(new BookEdit(this), this);
         pluginManager.registerEvents(new BlockPlace(this), this);
         if (this.getConfig().getBoolean("balance-lavacasting"))

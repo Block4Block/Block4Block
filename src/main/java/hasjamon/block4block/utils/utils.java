@@ -927,7 +927,7 @@ public class utils {
         }
     }
 
-    public static void replaceInClaimPages(List<String> pages, String search, String replace) {
+    public static boolean replaceInClaimPages(List<String> pages, String search, String replace) {
         for (int i = 0; i < pages.size(); i++) {
             String page = pages.get(i);
 
@@ -942,6 +942,7 @@ public class utils {
 
             pages.set(i, String.join("\n", membersArray));
         }
+        return false;
     }
 
     private static int getBlocksPerPixel(MapView.Scale scale) {
