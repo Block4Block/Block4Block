@@ -1019,38 +1019,98 @@ public class utils {
         return claims;
     }
 
-    private static void addClaimsToCanvas(MapCanvas canvas, Map<String, Coords2D> claimsBefore, Map<String, Coords2D> claimsNow, OfflinePlayer p, int blocksPerPixel) {
+    private static void addClaimsToCanvas(
+            MapCanvas canvas,
+            Map<String, Coords2D> claimsBefore,
+            Map<String, Coords2D> claimsNow,
+            OfflinePlayer p,
+            int blocksPerPixel
+    ) {
+        int chunkPixels = 16 / blocksPerPixel;
+
+        // --- 1) CLEAR any chunks that disappeared ---
         if (claimsBefore != null) {
+            // remove all still‑present chunks
             claimsBefore.values().removeAll(claimsNow.values());
-
             for (String chunkID : claimsBefore.keySet()) {
-                Coords2D ij = claimsBefore.get(chunkID);
-                int i = ij.x;
-                int j = ij.z;
-
-                for (int k = 0; k < 16 / blocksPerPixel; k++)
-                    for (int l = 0; l < 16 / blocksPerPixel; l++)
-                        canvas.setPixel(i + k, j + l, canvas.getBasePixel(i + k, j + l));
+                Coords2D c = claimsBefore.get(chunkID);
+                int x0 = c.x, z0 = c.z;
+                for (int dx = 0; dx < chunkPixels; dx++)
+                    for (int dz = 0; dz < chunkPixels; dz++)
+                        canvas.setPixel(x0 + dx, z0 + dz,
+                                canvas.getBasePixel(x0 + dx, z0 + dz));
             }
         }
 
+        // --- 2) Build per‑chunk color map for all current chunks ---
+        Map<String, Byte> chunkColor = new HashMap<>();
         for (String chunkID : claimsNow.keySet()) {
-            Coords2D ij = claimsNow.get(chunkID);
-            int i = ij.x;
-            int j = ij.z;
-
-            String[] members = getMembers(getClaimID(chunkID));
-            boolean isMember = isMemberOfClaim(members, p);
-            String configStr = isMember ? "my-claims" : "others-claims";
-            int r = plugin.getConfig().getInt("claim-map-colors." + configStr + ".r");
-            int g = plugin.getConfig().getInt("claim-map-colors." + configStr + ".g");
-            int b = plugin.getConfig().getInt("claim-map-colors." + configStr + ".b");
+            Coords2D c = claimsNow.get(chunkID);
+            // determine color
+            String claimID = getClaimID(chunkID);
+            boolean member = isMemberOfClaim(getMembers(claimID), p);
+            String cfg = member ? "my-claims" : "others-claims";
+            int r = plugin.getConfig().getInt("claim-map-colors." + cfg + ".r");
+            int g = plugin.getConfig().getInt("claim-map-colors." + cfg + ".g");
+            int b = plugin.getConfig().getInt("claim-map-colors." + cfg + ".b");
             byte color = MapPalette.matchColor(r, g, b);
+            chunkColor.put(chunkID, color);
+        }
 
-            for (int k = 0; k < 16 / blocksPerPixel; k++)
-                for (int l = 0; l < 16 / blocksPerPixel; l++)
-                    if (canvas.getBasePixel(i + k, j + l) != MapPalette.TRANSPARENT)
-                        canvas.setPixel(i + k, j + l, color);
+        // --- 3) For each color‑group, draw only external edges ---
+        // group chunkIDs by color
+        Map<Byte, Set<String>> byColor = new HashMap<>();
+        for (var e : chunkColor.entrySet()) {
+            byColor
+                    .computeIfAbsent(e.getValue(), k -> new HashSet<>())
+                    .add(e.getKey());
+        }
+
+        // helper to parse chunkID "ENV|X,Z" → int{x,z}
+        record ChunkPos(int x, int z) {}
+        for (var grp : byColor.entrySet()) {
+            byte color = grp.getKey();
+            Set<String> chunks = grp.getValue();
+
+            // build quick lookup of chunk positions
+            Map<ChunkPos, Coords2D> posMap = new HashMap<>();
+            for (String chunkID : chunks) {
+                // parse out chunkX,chunkZ
+                String[] parts = chunkID.split("\\|")[1].split(",");
+                int cx = Integer.parseInt(parts[0]);
+                int cz = Integer.parseInt(parts[1]);
+                posMap.put(new ChunkPos(cx, cz), claimsNow.get(chunkID));
+            }
+
+            // for each chunk, if neighbor missing → draw that side
+            for (var entry : posMap.entrySet()) {
+                ChunkPos cp = entry.getKey();
+                Coords2D pix = entry.getValue();
+                int x0 = pix.x, z0 = pix.z;
+                int x1 = x0 + chunkPixels - 1;
+                int z1 = z0 + chunkPixels - 1;
+
+                // West side?
+                if (!posMap.containsKey(new ChunkPos(cp.x - 1, cp.z))) {
+                    for (int dz = 0; dz < chunkPixels; dz++)
+                        canvas.setPixel(x0, z0 + dz, color);
+                }
+                // East side?
+                if (!posMap.containsKey(new ChunkPos(cp.x + 1, cp.z))) {
+                    for (int dz = 0; dz < chunkPixels; dz++)
+                        canvas.setPixel(x1, z0 + dz, color);
+                }
+                // North side?
+                if (!posMap.containsKey(new ChunkPos(cp.x, cp.z - 1))) {
+                    for (int dx = 0; dx < chunkPixels; dx++)
+                        canvas.setPixel(x0 + dx, z0, color);
+                }
+                // South side?
+                if (!posMap.containsKey(new ChunkPos(cp.x, cp.z + 1))) {
+                    for (int dx = 0; dx < chunkPixels; dx++)
+                        canvas.setPixel(x0 + dx, z1, color);
+                }
+            }
         }
     }
 
