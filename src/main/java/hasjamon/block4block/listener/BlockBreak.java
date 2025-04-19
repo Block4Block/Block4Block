@@ -43,6 +43,23 @@ public class BlockBreak implements Listener {
         FileConfiguration cfg = plugin.getConfig();
         boolean isInsideClaim = plugin.cfg.getClaimData().contains(utils.getClaimID(b.getLocation()));
 
+        // Prevent breaking chests in someone else's claim
+        if (isInsideClaim && b.getType() == Material.CHEST) {
+            String[] members = utils.getMembers(b.getLocation());
+            boolean isMember = utils.isMemberOfClaim(members, p);
+
+            // Check if the chest can be opened by the player
+            boolean canOpen = canOpenChest(b, p);
+
+            // If the player is not a member and cannot open the chest
+            if (!isMember && !canOpen) {
+                e.setCancelled(true);
+                String message = utils.chat("&cThe chest is shielded by the blocks above it.");
+                p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                return;
+            }
+        }
+
         // Special handling for double chests
         if (b.getType() == Material.CHEST) {
             Chest chestState = (Chest) b.getState();
@@ -118,23 +135,6 @@ public class BlockBreak implements Listener {
                 }
 
                 return; // Skip the rest of the onBreak logic
-            }
-        }
-
-        // Prevent breaking chests in someone else's claim
-        if (isInsideClaim && b.getType() == Material.CHEST) {
-            String[] members = utils.getMembers(b.getLocation());
-            boolean isMember = utils.isMemberOfClaim(members, p);
-
-            // Check if the chest can be opened by the player
-            boolean canOpen = canOpenChest(b, p);
-
-            // If the player is not a member and cannot open the chest
-            if (!isMember && !canOpen) {
-                e.setCancelled(true);
-                String message = utils.chat("&cThe chest is shielded by the blocks above it.");
-                p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
-                return;
             }
         }
 
