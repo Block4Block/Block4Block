@@ -6,12 +6,9 @@ import hasjamon.block4block.events.BlockBreakInClaimEvent;
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.GameMode;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.CreatureSpawner;
+import org.bukkit.block.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -27,10 +24,8 @@ import org.bukkit.persistence.PersistentDataType;
 import net.md_5.bungee.api.chat.TextComponent;
 
 import java.util.List;
-import java.util.Set;
 
 import static hasjamon.block4block.utils.utils.canOpenChest;
-
 
 public class BlockBreak implements Listener {
     private final Block4Block plugin;
@@ -47,6 +42,69 @@ public class BlockBreak implements Listener {
         Block b = e.getBlock();
         FileConfiguration cfg = plugin.getConfig();
         boolean isInsideClaim = plugin.cfg.getClaimData().contains(utils.getClaimID(b.getLocation()));
+
+        // Special handling for double chests
+        if (b.getType() == Material.CHEST) {
+            Chest chestState = (Chest) b.getState();
+
+            // Check if it's a double chest
+            if (chestState.getInventory().getHolder() instanceof DoubleChest) {
+                DoubleChest doubleChest = (DoubleChest) chestState.getInventory().getHolder();
+                Chest leftSide = (Chest) doubleChest.getLeftSide();
+                Chest rightSide = (Chest) doubleChest.getRightSide();
+
+                // Determine which side is being broken
+                boolean isLeftSide = leftSide.getLocation().equals(b.getLocation());
+
+                // Check if player has a chest in inventory
+                boolean hasChest = false;
+
+                // Check offhand first
+                if (p.getInventory().getItemInOffHand().getType() == Material.CHEST) {
+                    p.getInventory().getItemInOffHand().setAmount(p.getInventory().getItemInOffHand().getAmount() - 1);
+                    hasChest = true;
+                } else {
+                    // Check hotbar (slots 0-8)
+                    for (int i = 0; i < 9; i++) {
+                        ItemStack item = p.getInventory().getItem(i);
+                        if (item != null && item.getType() == Material.CHEST) {
+                            item.setAmount(item.getAmount() - 1);
+                            hasChest = true;
+                            break;
+                        }
+                    }
+                }
+
+                // If player doesn't have a chest, prevent breaking
+                if (!hasChest) {
+                    e.setCancelled(true);
+                    String message = utils.chat("&aYou need a &cCHEST &ain your hotbar to break this!");
+                    p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                    return;
+                }
+
+                // Cancel the event to handle drops manually
+                e.setCancelled(true);
+
+                // Get the chest content - simplify by extracting only the relevant half
+                ItemStack[] allContents = chestState.getInventory().getContents();
+                int startSlot = isLeftSide ? 0 : 27;
+                int endSlot = isLeftSide ? 26 : 53;
+
+                // Drop only the contents of the broken side
+                for (int i = startSlot; i <= endSlot; i++) {
+                    if (i < allContents.length && allContents[i] != null && allContents[i].getType() != Material.AIR) {
+                        b.getWorld().dropItemNaturally(b.getLocation(), allContents[i]);
+                        chestState.getInventory().setItem(i, null); // Clear this slot
+                    }
+                }
+
+                // Break the chest block (without dropping the chest itself)
+                b.setType(Material.AIR);
+
+                return; // Skip the rest of the onBreak logic
+            }
+        }
 
         // Prevent breaking chests in someone else's claim
         if (isInsideClaim && b.getType() == Material.CHEST) {
@@ -105,7 +163,7 @@ public class BlockBreak implements Listener {
                 }
             }
         }
-        
+
         if (plugin.getConfig().getBoolean("andesite-splash-on")) {
             if (b.getType() == Material.ANDESITE) {
                 // Add splash if it's been at least 0.1 second since the last time andesite was broken (to avoid chain reaction)
@@ -136,7 +194,7 @@ public class BlockBreak implements Listener {
         if (blacklistedBlocks != null && lootDisabledTypes != null) {
             // Does Block4Block apply, i.e., has the block type not been exempted from Block4Block through the blacklist
             boolean requiresBlock = !blacklistedBlocks.contains(b.getType().toString());
-            boolean isFreeToBreakInClaim = claimBlacklist.contains(b.getType().toString());
+            boolean isFreeToBreakInClaim = claimBlacklist != null && claimBlacklist.contains(b.getType().toString());
 
             utils.removeExpiredB4BGracePeriods();
 
@@ -251,16 +309,14 @@ public class BlockBreak implements Listener {
                         itemToRemove.setAmount(itemToRemove.getAmount() - 1);
                         p.getInventory().setItem(itemSlot, itemToRemove.getAmount() > 0 ? itemToRemove : null);
                     }
-                }
-                else{
+                } else if (itemMeta != null) {
                     itemMeta.setDisplayName(utils.prettifyEnumName(spawnType) + " Spawner");
                     itemMeta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP); // Hides the "Interact with spawn egg..." text
                     itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING, spawnType.name());
                     spawnerItem.setItemMeta(itemMeta);
                     b.getWorld().dropItemNaturally(b.getLocation(), spawnerItem);
                 }
-            }
-            if (itemMeta != null && spawnType != null && !isInsideClaim) {
+            } else if (itemMeta != null && spawnType != null) {
                 itemMeta.setDisplayName(utils.prettifyEnumName(spawnType) + " Spawner");
                 itemMeta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP); // Hides the "Interact with spawn egg..." text
                 itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "spawnType"), PersistentDataType.STRING, spawnType.name());
