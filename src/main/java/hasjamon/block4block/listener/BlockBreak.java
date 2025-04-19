@@ -56,31 +56,41 @@ public class BlockBreak implements Listener {
                 // Determine which side is being broken
                 boolean isLeftSide = leftSide.getLocation().equals(b.getLocation());
 
-                // Check if player has a chest in inventory
-                boolean hasChest = false;
-
-                // Check offhand first
-                if (p.getInventory().getItemInOffHand().getType() == Material.CHEST) {
-                    p.getInventory().getItemInOffHand().setAmount(p.getInventory().getItemInOffHand().getAmount() - 1);
-                    hasChest = true;
-                } else {
-                    // Check hotbar (slots 0-8)
-                    for (int i = 0; i < 9; i++) {
-                        ItemStack item = p.getInventory().getItem(i);
-                        if (item != null && item.getType() == Material.CHEST) {
-                            item.setAmount(item.getAmount() - 1);
-                            hasChest = true;
-                            break;
-                        }
-                    }
+                // Check if player is in their own claim
+                boolean inOwnClaim = false;
+                if (isInsideClaim) {
+                    String[] members = utils.getMembers(b.getLocation());
+                    inOwnClaim = utils.isMemberOfClaim(members, p);
                 }
 
-                // If player doesn't have a chest, prevent breaking
-                if (!hasChest) {
-                    e.setCancelled(true);
-                    String message = utils.chat("&aYou need a &cCHEST &ain your hotbar to break this!");
-                    p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
-                    return;
+                // Only require a chest if not in own claim
+                if (!inOwnClaim) {
+                    // Check if player has a chest in inventory
+                    boolean hasChest = false;
+
+                    // Check offhand first
+                    if (p.getInventory().getItemInOffHand().getType() == Material.CHEST) {
+                        p.getInventory().getItemInOffHand().setAmount(p.getInventory().getItemInOffHand().getAmount() - 1);
+                        hasChest = true;
+                    } else {
+                        // Check hotbar (slots 0-8)
+                        for (int i = 0; i < 9; i++) {
+                            ItemStack item = p.getInventory().getItem(i);
+                            if (item != null && item.getType() == Material.CHEST) {
+                                item.setAmount(item.getAmount() - 1);
+                                hasChest = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // If player doesn't have a chest, prevent breaking
+                    if (!hasChest) {
+                        e.setCancelled(true);
+                        String message = utils.chat("&aYou need a &cCHEST &ain your hotbar to break this!");
+                        p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                        return;
+                    }
                 }
 
                 // Cancel the event to handle drops manually
@@ -101,6 +111,11 @@ public class BlockBreak implements Listener {
 
                 // Break the chest block (without dropping the chest itself)
                 b.setType(Material.AIR);
+
+                // Drop a chest if in own claim (free breaking)
+                if (inOwnClaim) {
+                    b.getWorld().dropItemNaturally(b.getLocation(), new ItemStack(Material.CHEST, 1));
+                }
 
                 return; // Skip the rest of the onBreak logic
             }
