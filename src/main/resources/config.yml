@@ -526,7 +526,6 @@ blacklisted-claim-blocks:
 
 # Blocks that are exempt from Block4Block
 blacklisted-blocks:
-  - CARVED_PUMPKIN
   - CREAKING_HEART
   - CRIMSON_ROOTS
   - WARPED_ROOTS
@@ -682,6 +681,7 @@ blacklisted-blocks:
 
 # Blocks with loot disabled on break
 no-loot-on-break:
+  - CARVED_PUMPKIN
   - RESIN_BLOCK
   - RESIN_CLUMP
   - RESIN_BRICKS
