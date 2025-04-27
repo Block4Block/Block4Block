@@ -2,356 +2,1365 @@ package hasjamon.block4block.command;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.ClaimContestOverEvent;
-import hasjamon.block4block.events.ContestChunkClaimedEvent;
-import hasjamon.block4block.utils.utils;
+import hasjamon.block4block.events.ContestChunkClaimedEvent; // Ensure this event class exists and is correct
+import hasjamon.block4block.utils.utils; // Assuming this contains getClaimID
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.PluginManager;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.*;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
-public class ClaimContestCommand implements CommandExecutor, TabCompleter {
+public class ClaimContestCommand implements CommandExecutor, TabCompleter, Listener {
+
     private final Block4Block plugin;
-    private BukkitTask contestTask;
-    private final int SECONDS_PER_HOUR = 60 * 60;
-    private final int SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;
+    private final FileConfiguration claimContestConfig;
+    private final FileConfiguration claimDataConfig;
+    private final ScoreboardManager scoreboardManager;
+    private final BukkitScheduler scheduler;
+    private final PluginManager pluginManager;
+
+    // --- Task Handles ---
+    private BukkitTask mainTask; // Handles PreReveal countdown OR Standard Contest Timer OR Active Phase checks
+
+    // --- Contest State ---
+    // Made Phase enum public so other classes can reference it
+    public enum Phase { PENDING, PRE_REVEAL, ACTIVE, HOLD, FINISHED }
+    private Phase currentPhase = Phase.PENDING;
+    private String currentContestClaimId = null; // Claim ID of the running contest
+    private String currentHolderName = NO_CLAIMANT; // Player currently holding in HOLD phase
+    private long contestStartTimeMillis = -1;
+    private long contestEndTimeMillis = -1;   // Used for standard timer OR pre-reveal end
+    private final AtomicLong holdEndTimeMillis = new AtomicLong(-1); // Used for HOLD phase timer
+    private boolean contestEnded = false; // Flag to prevent double-ending
+
+    // --- Configuration Flags (read at start) ---
+    private boolean modePreReveal = false;
+    private boolean modeHold = false;
+    private long preRevealDurationMillis = 0;
+    private long holdDurationMillis = 0;
+    private long contestDurationMillis = 0; // Standard duration if not HOLD mode
+
+    // --- Constants ---
+    private static final String DATA_SECTION = "data";
+    private static final String HISTORY_SECTION = "history";
+    private static final String CHUNK_LOC_KEY = "chunkLoc";
+    private static final String CLAIM_ID_KEY = "claimID";
+    private static final String DURATION_KEY = "duration"; // Standard duration (milliseconds)
+    private static final String PRIZE_KEY = "prize";
+    private static final String START_TIMESTAMP_KEY = "start-timestamp"; // Actual contest start (after pre-reveal if any)
+    private static final String CONFIG_SAVE_TIMESTAMP_KEY = "config-save-timestamp"; // When config was last set before start
+    private static final String CURRENT_CLAIMANT_KEY = "current-claimant"; // Persisted claimant during standard/active
+    private static final String CURRENT_HOLDER_KEY = "current-holder"; // Persisted holder during HOLD phase
+    private static final String PHASE_KEY = "current-phase";
+    private static final String PRE_REVEAL_END_TIMESTAMP_KEY = "pre-reveal-end-timestamp";
+    private static final String CONTEST_END_TIMESTAMP_KEY = "contest-end-timestamp"; // For standard timer persistence
+    private static final String HOLD_END_TIMESTAMP_KEY = "hold-end-timestamp";
+
+    // Mode configuration keys
+    private static final String MODE_PRE_REVEAL_KEY = "mode.pre-reveal.enabled";
+    private static final String MODE_HOLD_KEY = "mode.hold.enabled";
+    private static final String DURATION_PRE_REVEAL_KEY = "mode.pre-reveal.duration"; // milliseconds
+    private static final String DURATION_HOLD_KEY = "mode.hold.duration"; // milliseconds
+
+    // Default values
+    private static final long DEFAULT_PRE_REVEAL_MINUTES = 2;
+    private static final long DEFAULT_HOLD_MINUTES = 5;
+
+    private static final String NO_CLAIMANT = "No one"; // Represents no one holding the claim
+    private static final String SCOREBOARD_OBJECTIVE_NAME = "b4bcontest";
+    private static final String SCOREBOARD_TITLE = ChatColor.GOLD + "Claim Contest";
+    private static final String SCOREBOARD_CLAIMANT_BELOWNAME_OBJ = "b4bclaimant";
+    private static final String SCOREBOARD_CLAIMANT_BELOWNAME_TITLE = ChatColor.GOLD + "Claimant";
+
+    private static final DateTimeFormatter HISTORY_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MMM-dd_HH-mm-ss");
+
+    private static final long TICKS_PER_SECOND = 20L;
+    private static final long MILLIS_PER_MINUTE = 60000L;
+
+    // Time constants in seconds for clarity
+    private static final long SECONDS_PER_MINUTE = 60;
+    private static final long SECONDS_PER_HOUR = SECONDS_PER_MINUTE * 60;
+    private static final long SECONDS_PER_DAY = SECONDS_PER_HOUR * 24;
 
 
     public ClaimContestCommand(Block4Block plugin) {
-        this.plugin = plugin;
+        this.plugin = Objects.requireNonNull(plugin, "Plugin cannot be null");
+        this.claimContestConfig = plugin.cfg.getClaimContest(); // Assuming plugin.cfg handles loading/saving
+        this.claimDataConfig = plugin.cfg.getClaimData();       // Assuming plugin.cfg handles loading/saving
+        this.scoreboardManager = Bukkit.getScoreboardManager();
+        this.scheduler = Bukkit.getScheduler();
+        this.pluginManager = Bukkit.getPluginManager();
 
-        // In case the server restarted while a contest was underway:
-        if(plugin.cfg.getClaimContest().contains("data.start-timestamp"))
-            this.contestTask = startContest();
+        Objects.requireNonNull(this.claimContestConfig, "ClaimContest config cannot be null");
+        Objects.requireNonNull(this.claimDataConfig, "ClaimData config cannot be null");
+        Objects.requireNonNull(this.scoreboardManager, "ScoreboardManager cannot be null");
+        Objects.requireNonNull(this.scheduler, "Scheduler cannot be null");
+        Objects.requireNonNull(this.pluginManager, "PluginManager cannot be null");
+
+        // Register listener for scoreboard cleanup and claim events
+        this.pluginManager.registerEvents(this, plugin);
+
+        // Resume contest if server restarted mid-contest
+        loadAndResumeContest();
     }
 
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
-        if(args.length > 0 && sender instanceof Player) {
-            Player p = (Player) sender;
-            FileConfiguration claimContest = plugin.cfg.getClaimContest();
+    // Added public getter for the current contest claim ID
+    public String getCurrentContestClaimId() {
+        return currentContestClaimId;
+    }
 
-            try {
-                switch (args[0].toLowerCase()) {
-                    case "help":
-                        p.sendMessage(ChatColor.GOLD + "To create a claim contest, use a combination of:");
-                        p.sendMessage(ChatColor.GRAY + "/claimcontest chunk [overworld | nether | end] x z");
-                        p.sendMessage(ChatColor.GRAY + "/claimcontest duration minutes [hours] [days]");
-                        p.sendMessage(ChatColor.GRAY + "/claimcontest prize amount");
-                        p.sendMessage(ChatColor.GRAY + "/claimcontest start");
-                        p.sendMessage(ChatColor.GRAY + "/claimcontest cancel");
-                        break;
+    // Added public getter for the current phase
+    public Phase getCurrentPhase() {
+        return currentPhase;
+    }
 
-                    case "chunk":
-                    case "loc":
-                    case "at":
-                    case "xyz":
-                        if (args.length >= 4) {
-                            int x = Integer.parseInt(args[2]);
-                            int z = Integer.parseInt(args.length >= 5 ? args[4] : args[3]);
-                            World.Environment environment;
-                            String dimension = args[1].toLowerCase();
+    // Added public getter for modeHold flag
+    public boolean isModeHold() {
+        return modeHold;
+    }
 
-                            switch (dimension) {
-                                case "overworld":
-                                    environment = World.Environment.NORMAL;
-                                    break;
 
-                                case "nether":
-                                    environment = World.Environment.NETHER;
-                                    break;
+    // --- Command Handling ---
 
-                                case "end":
-                                    environment = World.Environment.THE_END;
-                                    break;
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(ChatColor.RED + "This command can only be run by a player.");
+            return true;
+        }
+        Player player = (Player) sender;
 
-                                default:
-                                    return false;
-                            }
+        if (args.length == 0) {
+            sendCurrentContestStatus(player); // Show status if no args
+            return true;
+        }
 
-                            claimContest.set("data.chunkLoc", StringUtils.capitalize(dimension) + " (X: " + x + ", Z: " + z + ")");
-                            claimContest.set("data.claimID", utils.getClaimID(x, z, environment));
-                            plugin.cfg.saveClaimContest();
-                        }else{
-                            return false;
-                        }
-                        break;
+        String subCommand = args[0].toLowerCase();
 
-                    case "duration":
-                    case "time":
-                        long minutes = 0;
+        // Prevent config changes while *any* phase is active
+        boolean configLocked = currentPhase != Phase.PENDING && currentPhase != Phase.FINISHED;
+        List<String> configCommands = Arrays.asList("chunk", "loc", "at", "xyz", "duration", "time", "prize", "mode");
 
-                        if (args.length >= 2) {
-                            minutes += Long.parseLong(args[1]);
-                            if (args.length >= 3) {
-                                minutes += Long.parseLong(args[2]) * 60;
-                                if (args.length >= 4)
-                                    minutes += Long.parseLong(args[3]) * 24 * 60;
-                            }
-                        } else {
-                            return false;
-                        }
+        if (configLocked && configCommands.contains(subCommand)) {
+            player.sendMessage(ChatColor.RED + "Cannot change configuration while a contest is active (" + currentPhase + "). Use /claimcontest cancel first.");
+            return true;
+        }
 
-                        claimContest.set("data.duration", minutes * (long) 6e4);
-                        plugin.cfg.saveClaimContest();
-                        break;
+        try {
+            boolean success = false;
+            switch (subCommand) {
+                case "help":
+                    success = handleHelpCommand(player);
+                    break;
+                case "chunk": // Aliases handled in main switch
+                case "loc":
+                case "at":
+                case "xyz":
+                    success = handleChunkCommand(player, args);
+                    break;
+                case "duration": // Standard duration
+                case "time":
+                    success = handleDurationCommand(player, args);
+                    break;
+                case "prize":
+                    success = handlePrizeCommand(player, args);
+                    break;
+                case "mode": // Handle mode flags and their specific durations
+                    success = handleModeCommand(player, args);
+                    break;
+                case "start":
+                    success = handleStartCommand(player);
+                    break;
+                case "cancel":
+                    success = handleCancelCommand(player);
+                    break;
+                case "status":
+                    success = sendCurrentContestStatus(player);
+                    break;
+                default:
+                    player.sendMessage(ChatColor.RED + "Unknown subcommand. Use '/" + label + " help'.");
+                    return false; // Return false to show usage message from plugin.yml
+            }
 
-                    case "prize":
-                        if(args.length > 1) {
-                            claimContest.set("data.prize", String.join(" ", args).substring(6));
-                            plugin.cfg.saveClaimContest();
-                        }else {
-                            return false;
-                        }
-                        break;
+            // If a configuration command was successful, show the current pending state
+            if (success && !subCommand.equals("start") && !subCommand.equals("cancel") && !subCommand.equals("status")) {
+                setDataValue(CONFIG_SAVE_TIMESTAMP_KEY, System.currentTimeMillis()); // Mark config change time
+                plugin.cfg.saveClaimContest(); // Save immediately after any config change
+                sendCurrentContestStatus(player);
+            }
+            return success;
 
-                    case "start":
-                        if (this.contestTask == null)
-                            this.contestTask = startContest();
-                        else
-                            p.sendMessage(ChatColor.RED + "A contest is already running!");
-                        break;
+        } catch (NumberFormatException e) {
+            player.sendMessage(ChatColor.RED + "Invalid number provided: " + e.getMessage());
+            return false;
+        } catch (IllegalArgumentException e) {
+            player.sendMessage(ChatColor.RED + "Invalid argument: " + e.getMessage());
+            return false;
+        } catch (Exception e) {
+            player.sendMessage(ChatColor.RED + "An unexpected error occurred. Check server logs.");
+            plugin.getLogger().severe("Error executing ClaimContestCommand: " + e.getMessage());
+            e.printStackTrace();
+            return true;
+        }
+    }
 
-                    case "cancel":
-                        this.cancelContest();
-                        break;
+    // --- Subcommand Handlers ---
 
-                    default:
-                        return false;
-                }
-                sendContestData(p);
+    private boolean handleHelpCommand(Player player) {
+        player.sendMessage(ChatColor.GOLD + "--- Claim Contest Help ---");
+        player.sendMessage(ChatColor.GRAY + "/claimcontest chunk <world> <x> <z> " + ChatColor.WHITE + "- Set location.");
+        player.sendMessage(ChatColor.GRAY + "/claimcontest duration <time> " + ChatColor.WHITE + "- Set overall duration (if not using hold mode, e.g., 1h 30m).");
+        player.sendMessage(ChatColor.GRAY + "/claimcontest prize <text> " + ChatColor.WHITE + "- Set prize.");
+        player.sendMessage(ChatColor.GRAY + "/claimcontest mode <flag> [value] " + ChatColor.WHITE + "- Toggle/set modes:");
+        player.sendMessage(ChatColor.GRAY + "  pre_reveal [time] " + ChatColor.WHITE + "- Enable/set pre-reveal phase (e.g., 5m).");
+        player.sendMessage(ChatColor.GRAY + "  hold [time] " + ChatColor.WHITE + "- Enable/set hold phase (e.g., 10m).");
+        player.sendMessage(ChatColor.GRAY + "  standard " + ChatColor.WHITE + "- Disable special modes (uses main duration).");
+        player.sendMessage(ChatColor.GRAY + "/claimcontest start " + ChatColor.WHITE + "- Start the contest.");
+        player.sendMessage(ChatColor.GRAY + "/claimcontest cancel " + ChatColor.WHITE + "- Cancel the current contest.");
+        player.sendMessage(ChatColor.GRAY + "/claimcontest status " + ChatColor.WHITE + "- Show current status/config.");
+        return true;
+    }
+
+    private boolean handleChunkCommand(Player player, String[] args) {
+        // Usage: /claimcontest chunk <dimension> <x> <z>
+        if (args.length < 4) {
+            player.sendMessage(ChatColor.RED + "Usage: /claimcontest chunk <overworld|nether|end> <x> <z>");
+            return false;
+        }
+        // Config change check happens in onCommand
+
+        String dimensionName = args[1].toLowerCase();
+        World.Environment environment;
+        switch (dimensionName) {
+            case "overworld": environment = World.Environment.NORMAL; break;
+            case "nether": environment = World.Environment.NETHER; break;
+            case "end": environment = World.Environment.THE_END; break;
+            default:
+                player.sendMessage(ChatColor.RED + "Invalid dimension: " + args[1] + ". Use overworld, nether, or end.");
+                return false;
+        }
+
+        try {
+            int x = Integer.parseInt(args[2]);
+            int z = Integer.parseInt(args[3]);
+            String chunkLocString = StringUtils.capitalize(dimensionName) + " (X: " + x + ", Z: " + z + ")";
+            String claimId = utils.getClaimID(x, z, environment);
+
+            if (claimId == null) {
+                player.sendMessage(ChatColor.RED + "Failed to generate claim ID for the specified location.");
                 return true;
-            }catch(Exception e){
-                e.printStackTrace();
+            }
+
+            setDataValue(CHUNK_LOC_KEY, chunkLocString);
+            setDataValue(CLAIM_ID_KEY, claimId);
+            player.sendMessage(ChatColor.GREEN + "Contest location set to: " + chunkLocString);
+            return true; // Save happens in onCommand wrapper
+
+        } catch (NumberFormatException e) {
+            player.sendMessage(ChatColor.RED + "Invalid coordinates: X and Z must be numbers.");
+            return false;
+        }
+    }
+
+    // Handles standard contest duration (used if modeHold is false)
+    private boolean handleDurationCommand(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(ChatColor.RED + "Usage: /claimcontest duration <time> (e.g., 1d 2h 30m)");
+            return false;
+        }
+
+        long durationMillis = parseTimeArgument(Arrays.copyOfRange(args, 1, args.length));
+        if (durationMillis < 0) {
+            player.sendMessage(ChatColor.RED + "Invalid time format. Use #d, #h, #m (e.g., 1d 2h 30m).");
+            return false;
+        }
+        if (durationMillis == 0) {
+            player.sendMessage(ChatColor.RED + "Standard duration must be positive.");
+            return true;
+        }
+
+        setDataValue(DURATION_KEY, durationMillis);
+        player.sendMessage(ChatColor.GREEN + "Contest standard duration set to: " + formatDuration(durationMillis));
+        return true;
+    }
+
+    private boolean handlePrizeCommand(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(ChatColor.RED + "Usage: /claimcontest prize <description...>");
+            return false;
+        }
+        String prizeDescription = Arrays.stream(args).skip(1).collect(Collectors.joining(" "));
+        prizeDescription = ChatColor.translateAlternateColorCodes('&', prizeDescription);
+
+        setDataValue(PRIZE_KEY, prizeDescription);
+        player.sendMessage(ChatColor.GREEN + "Contest prize set to: " + prizeDescription);
+        return true;
+    }
+
+    private boolean handleModeCommand(Player player, String[] args) {
+        // Usage: /claimcontest mode <flag> [value]
+        // Flags: pre_reveal [time], hold [time], standard
+        if (args.length < 2) {
+            player.sendMessage(ChatColor.RED + "Usage: /claimcontest mode <pre_reveal|hold|standard> [time]");
+            return false;
+        }
+
+        String flag = args[1].toLowerCase();
+        long timeValueMillis = -1;
+
+        // Check for optional time value
+        if (args.length > 2) {
+            timeValueMillis = parseTimeArgument(Arrays.copyOfRange(args, 2, args.length));
+            if (timeValueMillis < 0) {
+                player.sendMessage(ChatColor.RED + "Invalid time format for mode duration. Use #d, #h, #m.");
                 return false;
             }
+            if (timeValueMillis == 0 && !flag.equals("standard")) { // Allow 0 only implicitly for standard/disabling
+                player.sendMessage(ChatColor.RED + "Mode duration must be positive.");
+                return true;
+            }
         }
-        return false;
+
+
+        switch(flag) {
+            case "pre_reveal":
+                boolean enabledPre = timeValueMillis != 0; // Enable if time > 0 or if no time specified (use default)
+                if (enabledPre && timeValueMillis <= 0) { // Use default if enabling without specific time
+                    timeValueMillis = DEFAULT_PRE_REVEAL_MINUTES * MILLIS_PER_MINUTE;
+                }
+                setDataValue(MODE_PRE_REVEAL_KEY, enabledPre);
+                setDataValue(DURATION_PRE_REVEAL_KEY, enabledPre ? timeValueMillis : 0);
+                player.sendMessage(ChatColor.GREEN + "Pre-Reveal mode " + (enabledPre ? "enabled (" + formatDuration(timeValueMillis) + ")" : "disabled."));
+                break;
+
+            case "hold":
+                boolean enabledHold = timeValueMillis != 0;
+                if (enabledHold && timeValueMillis <= 0) {
+                    timeValueMillis = DEFAULT_HOLD_MINUTES * MILLIS_PER_MINUTE;
+                }
+                setDataValue(MODE_HOLD_KEY, enabledHold);
+                setDataValue(DURATION_HOLD_KEY, enabledHold ? timeValueMillis : 0);
+                // Automatically disable standard duration if hold is enabled
+                if (enabledHold) {
+                    setDataValue(DURATION_KEY, 0L);
+                    player.sendMessage(ChatColor.YELLOW + "Standard duration disabled as Hold mode is active.");
+                }
+                player.sendMessage(ChatColor.GREEN + "Hold mode " + (enabledHold ? "enabled (" + formatDuration(timeValueMillis) + ")" : "disabled."));
+                break;
+
+            case "standard":
+                // Explicitly disable other modes
+                setDataValue(MODE_PRE_REVEAL_KEY, false);
+                setDataValue(MODE_HOLD_KEY, false);
+                setDataValue(DURATION_PRE_REVEAL_KEY, 0L);
+                setDataValue(DURATION_HOLD_KEY, 0L);
+                // Ensure standard duration exists if switching to standard
+                if (getDataLong(DURATION_KEY) <= 0) {
+                    setDataValue(DURATION_KEY, 30 * MILLIS_PER_MINUTE); // Default to 30 mins if none set
+                    player.sendMessage(ChatColor.YELLOW + "Set default standard duration (30m). Use /claimcontest duration to change.");
+                }
+                player.sendMessage(ChatColor.GREEN + "Switched to Standard mode.");
+                break;
+
+            default:
+                player.sendMessage(ChatColor.RED + "Unknown mode flag: " + flag + ". Use pre_reveal, hold, or standard.");
+                return false;
+        }
+        return true; // Save happens in onCommand
     }
 
-    private void sendContestData(Player p){
-        FileConfiguration claimContest = plugin.cfg.getClaimContest();
-        long durationMs = claimContest.getLong("data.duration", 0);
-        long endTime = System.currentTimeMillis() + durationMs;
 
-        String chunkLoc = claimContest.getString("data.chunkLoc", "none");
-        String duration = getTimeLeft(endTime, System.currentTimeMillis());
-        String prize = claimContest.getString("data.prize", "none");
+    private boolean handleStartCommand(Player player) {
+        if (currentPhase != Phase.PENDING && currentPhase != Phase.FINISHED) {
+            player.sendMessage(ChatColor.RED + "A contest is already active ("+ currentPhase + ")!");
+            return true;
+        }
 
-        p.sendMessage("Location: " + chunkLoc);
-        p.sendMessage("Duration: " + duration);
-        p.sendMessage("Prize: " + prize);
+        // --- Validate required settings ---
+        currentContestClaimId = getDataString(CLAIM_ID_KEY); // Load claim ID for the contest
+        contestDurationMillis = getDataLong(DURATION_KEY); // Standard duration
+        modePreReveal = getDataBoolean(MODE_PRE_REVEAL_KEY);
+        modeHold = getDataBoolean(MODE_HOLD_KEY);
+        preRevealDurationMillis = getDataLong(DURATION_PRE_REVEAL_KEY);
+        holdDurationMillis = getDataLong(DURATION_HOLD_KEY);
+        String chunkLoc = getDataString(CHUNK_LOC_KEY);
+        String prize = getDataString(PRIZE_KEY, "None");
+
+        if (currentContestClaimId == null || currentContestClaimId.isEmpty()) {
+            player.sendMessage(ChatColor.RED + "Contest location is not set! Use '/claimcontest chunk'.");
+            return true;
+        }
+        // Validate durations based on mode
+        if (modeHold && holdDurationMillis <= 0) {
+            player.sendMessage(ChatColor.RED + "Hold mode duration is not set or invalid! Use '/claimcontest mode hold <time>'.");
+            return true;
+        }
+        if (!modeHold && contestDurationMillis <= 0) { // Standard duration required if not hold mode
+            player.sendMessage(ChatColor.RED + "Contest standard duration is not set or invalid! Use '/claimcontest duration <time>'.");
+            return true;
+        }
+        if (modePreReveal && preRevealDurationMillis <= 0) {
+            player.sendMessage(ChatColor.RED + "Pre-Reveal mode duration is not set or invalid! Use '/claimcontest mode pre_reveal <time>'.");
+            return true;
+        }
+
+
+        // --- Start the contest workflow ---
+        player.sendMessage(ChatColor.GREEN + "Starting claim contest...");
+        startContestWorkflow();
+        return true;
     }
 
-    private BukkitTask startContest() {
-        FileConfiguration claimData = plugin.cfg.getClaimData();
-        FileConfiguration claimContest = plugin.cfg.getClaimContest();
+    private boolean handleCancelCommand(Player player) {
+        if (currentPhase == Phase.PENDING || currentPhase == Phase.FINISHED) {
+            player.sendMessage(ChatColor.RED + "No contest is currently active.");
+            return true;
+        }
 
-        String claimID = claimContest.getString("data.claimID");
-        long duration = claimContest.getLong("data.duration", 0);
+        cancelContest(player.getName()); // Pass canceller name
+        player.sendMessage(ChatColor.YELLOW + "Claim contest cancelled.");
+        return true;
+    }
 
-        if(duration > 0 && claimID != null) {
-            final long endTime;
+    // --- Contest Workflow & Phase Management ---
 
-            if(claimContest.contains("data.start-timestamp")) {
-                endTime = claimContest.getLong("data.start-timestamp") + duration;
-            } else {
-                long now = System.currentTimeMillis();
-                endTime = now + duration;
-                claimContest.set("data.start-timestamp", now);
+    private void startContestWorkflow() {
+        // Clear previous runtime data but keep configuration
+        clearRuntimeContestData();
+
+        // Set initial state based on modes
+        if (modePreReveal) {
+            transitionToPhase(Phase.PRE_REVEAL);
+        } else {
+            transitionToPhase(Phase.ACTIVE); // Start directly into active phase
+        }
+    }
+
+    private void transitionToPhase(Phase nextPhase) {
+        plugin.getLogger().info("Contest transitioning from " + currentPhase + " to " + nextPhase);
+        Phase previousPhase = currentPhase;
+        currentPhase = nextPhase;
+
+        // Persist phase change
+        setDataValue(PHASE_KEY, currentPhase.name());
+        plugin.cfg.saveClaimContest();
+
+        // Stop tasks from previous phase (if any)
+        if (mainTask != null) {
+            plugin.getLogger().info("Cancelling previous mainTask.");
+            mainTask.cancel();
+            mainTask = null;
+        }
+
+        // --- Start logic for the new phase ---
+        long now = System.currentTimeMillis();
+        switch (currentPhase) {
+            case PRE_REVEAL:
+                contestEndTimeMillis = now + preRevealDurationMillis; // Use this for pre-reveal end time
+                setDataValue(PRE_REVEAL_END_TIMESTAMP_KEY, contestEndTimeMillis);
                 plugin.cfg.saveClaimContest();
+
+                Bukkit.broadcastMessage(ChatColor.GOLD + "A CLAIM CONTEST IS STARTING SOON!");
+                Bukkit.broadcastMessage(ChatColor.YELLOW + "The exact location will be revealed in " + formatDuration(preRevealDurationMillis));
+                // Start the pre-reveal ticker task
+                plugin.getLogger().info("Scheduling tickPreReveal task.");
+                mainTask = scheduler.runTaskTimer(plugin, this::tickPreReveal, 0L, TICKS_PER_SECOND);
+                break;
+
+            case ACTIVE:
+                contestStartTimeMillis = now; // Mark the official contest start time
+                setDataValue(START_TIMESTAMP_KEY, contestStartTimeMillis);
+                currentHolderName = NO_CLAIMANT; // Reset holder when entering active phase
+                setDataValue(CURRENT_HOLDER_KEY, NO_CLAIMANT);
+                setDataValue(CURRENT_CLAIMANT_KEY, NO_CLAIMANT); // Also reset standard claimant tracker
+
+                // Announce start (or reveal if coming from pre-reveal)
+                if (previousPhase == Phase.PRE_REVEAL) {
+                    broadcastExactArea(); // Reveal location
+                    Bukkit.broadcastMessage(ChatColor.GOLD + "THE CLAIM CONTEST HAS OFFICIALLY BEGUN!");
+                } else {
+                    // Starting directly into ACTIVE
+                    Bukkit.broadcastMessage(ChatColor.GOLD + "A new Claim Contest has started!");
+                    broadcastExactArea(); // Show location immediately
+                }
+                String prize = getDataString(PRIZE_KEY, "None");
+                if (!prize.equals("None")) {
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize);
+                }
+
+                // Start appropriate ticker based on mode
+                if (modeHold) {
+                    // In Hold mode, ACTIVE phase just waits for a claim. Ticker checks for claimant changes.
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "Mode: Claim and Hold! First to claim must hold it for " + formatDuration(holdDurationMillis) + ".");
+                    plugin.getLogger().info("Scheduling tickActiveHoldMode task.");
+                    mainTask = scheduler.runTaskTimer(plugin, this::tickActiveHoldMode, 0L, TICKS_PER_SECOND);
+                    // Immediately update the scoreboard to show the initial claimant status
+                    plugin.getLogger().info("Updating Active Hold Mode scoreboards immediately after phase transition.");
+                    updateActiveHoldModeScoreboards();
+                } else {
+                    // Standard mode: Fixed duration timer
+                    contestEndTimeMillis = contestStartTimeMillis + contestDurationMillis;
+                    setDataValue(CONTEST_END_TIMESTAMP_KEY, contestEndTimeMillis);
+                    Bukkit.broadcastMessage(ChatColor.YELLOW + "Mode: Standard! Contest ends in " + formatDuration(contestDurationMillis) + ".");
+                    plugin.getLogger().info("Scheduling tickStandard task.");
+                    mainTask = scheduler.runTaskTimer(plugin, this::tickStandard, 0L, TICKS_PER_SECOND);
+                }
+                plugin.cfg.saveClaimContest();
+                break;
+
+            case HOLD: // Transition to HOLD happens via onContestChunkClaimed event handler
+                plugin.getLogger().info("Transitioning to HOLD phase.");
+                // Logic is handled there and in tickHold
+                // Ensure holder name is set before entering this phase
+                long holdEnds = now + holdDurationMillis;
+                holdEndTimeMillis.set(holdEnds);
+                setDataValue(HOLD_END_TIMESTAMP_KEY, holdEnds);
+                setDataValue(CURRENT_HOLDER_KEY, currentHolderName); // Persist holder
+                plugin.cfg.saveClaimContest();
+
+                Bukkit.broadcastMessage(ChatColor.GOLD + currentHolderName + " has claimed the Contest Area!");
+                Bukkit.broadcastMessage(ChatColor.YELLOW + "They must hold it for " + formatDuration(holdDurationMillis) + " to win!");
+                // Start the hold timer task
+                plugin.getLogger().info("Scheduling tickHold task for holder: " + currentHolderName);
+                mainTask = scheduler.runTaskTimer(plugin, this::tickHold, 0L, TICKS_PER_SECOND);
+                // The updateHoldScoreboards is called by tickHold, so no immediate call needed here.
+                break;
+
+            case FINISHED:
+                plugin.getLogger().info("Transitioning to FINISHED phase. Cancelling contest.");
+                // Clean up tasks, clear runtime data, handle winner announcement (done in handleContestEnd)
+                cancelContest(null); // Use null for natural finish
+                break;
+
+            case PENDING:
+                // Should not transition *to* pending during runtime, only on init/cancel
+                plugin.getLogger().warning("Attempted to transition to PENDING phase during runtime.");
+                break;
+        }
+    }
+
+    // --- Ticker Methods (Called every second by mainTask) ---
+
+    private void tickPreReveal() {
+        long now = System.currentTimeMillis();
+        if (now >= contestEndTimeMillis) { // contestEndTimeMillis stores pre-reveal end time here
+            // Pre-reveal finished, transition to Active
+            transitionToPhase(Phase.ACTIVE);
+        } else {
+            // Update pre-reveal scoreboards
+            updatePreRevealScoreboards(contestEndTimeMillis - now);
+        }
+    }
+
+    private void tickStandard() {
+        long now = System.currentTimeMillis();
+        if (now >= contestEndTimeMillis) { // contestEndTimeMillis stores standard contest end time here
+            // Standard contest finished
+            String finalClaimant = getCurrentClaimantName(currentContestClaimId); // Check who holds it at the end
+            handleContestEnd(finalClaimant);
+            // transitionToPhase(Phase.FINISHED); // Called within handleContestEnd -> cancelContest
+        } else {
+            // Update standard scoreboards and check for claimant changes
+            updateStandardScoreboards(contestEndTimeMillis - now);
+            checkStandardClaimantChange(); // Handles broadcast/event for standard mode claim changes
+        }
+    }
+
+    // Ticks during ACTIVE phase *when in Hold mode*. Just updates scoreboard and waits for claim.
+    private void tickActiveHoldMode() {
+        updateActiveHoldModeScoreboards();
+        // No timer, just waits for the ContestChunkClaimedEvent
+        // Could add a check here for an overall contest timeout if desired
+    }
+
+    private void tickHold() {
+        if (contestEnded) {
+            return; // contest already ended, don't do anything
+        }
+
+        long now = System.currentTimeMillis();
+        long holdEnds = holdEndTimeMillis.get();
+        long millisLeft = holdEnds - now;
+
+        plugin.getLogger().info("tickHold running. Time left: " + formatTimeLeft(millisLeft));
+
+        if (now >= holdEnds) {
+            plugin.getLogger().info("Hold time completed. Ending contest for holder: " + currentHolderName);
+            handleContestEnd(currentHolderName);
+            return;
+        }
+
+        // Check if the current holder STILL holds the claim
+        String actualClaimant = getCurrentClaimantName(currentContestClaimId);
+        if (!actualClaimant.equalsIgnoreCase(currentHolderName)) {
+            // Holder lost the claim!
+            plugin.getLogger().info(currentHolderName + " lost the claim (" + currentContestClaimId + "). Actual claimant is now: " + actualClaimant + ". Resetting hold timer.");
+            Bukkit.broadcastMessage(ChatColor.YELLOW + currentHolderName + " lost the claim! The hold timer has reset.");
+            currentHolderName = NO_CLAIMANT; // Reset holder
+            setDataValue(CURRENT_HOLDER_KEY, NO_CLAIMANT);
+            holdEndTimeMillis.set(-1);
+            setDataValue(HOLD_END_TIMESTAMP_KEY, -1);
+            plugin.cfg.saveClaimContest();
+            // Go back to ACTIVE phase to wait for a new claim
+            transitionToPhase(Phase.ACTIVE); // This will cancel the current tickHold task and start tickActiveHoldMode
+        } else {
+            // Still holding, update scoreboard with remaining time
+            updateHoldScoreboards(millisLeft); // This is called every second to update the timer
+        }
+    }
+
+    // --- Event Handlers ---
+
+    @EventHandler
+    public void onContestChunkClaimed(ContestChunkClaimedEvent event) {
+        // --- START DEBUG LOGS ---
+        plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Event received for claimant: " + event.claimant); //
+        plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Current Phase (instance var): " + currentPhase); //
+        plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Mode Hold (instance var): " + modeHold); //
+        // --- END DEBUG LOGS ---
+
+        if (currentPhase == Phase.ACTIVE && modeHold) { //
+            String activeContestClaimId = getDataString(CLAIM_ID_KEY); //
+            if (activeContestClaimId == null || activeContestClaimId.isEmpty()) { //
+                plugin.getLogger().warning("ContestChunkClaimedEvent fired in ACTIVE/HOLD but CLAIM_ID_KEY is missing!"); //
+                return; //
             }
 
-            return Bukkit.getScheduler().runTaskTimer(plugin,
-                    () -> {
-                        if (System.currentTimeMillis() >= endTime) {
-                            String chunkLoc = claimContest.getString("data.chunkLoc", "none");
-                            String claimant = claimData.getString(claimID + ".members", "No one");
-                            String prize = claimContest.getString("data.prize", "none");
+            // --- START DEBUG LOGS ---
+            plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Checking Contest Claim ID: " + activeContestClaimId); //
+            String ownerInfoRaw = claimDataConfig.getString(activeContestClaimId + ".members"); //
+            plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Raw members string from config: '" + ownerInfoRaw + "'"); //
+            // --- END DEBUG LOGS ---
 
-                            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MMM-dd_HH-mm");
-                            LocalDateTime dateTimeNow = LocalDateTime.now();
-                            String endDate = dtf.format(dateTimeNow);
+            String actualCurrentClaimant = getCurrentClaimantName(activeContestClaimId); //
+            plugin.getLogger().info("Actual current claimant of contest chunk " + activeContestClaimId + ": " + actualCurrentClaimant); //
 
-                            claimContest.set(endDate + ".location", chunkLoc);
-                            claimContest.set(endDate + ".winner", claimant);
-                            claimContest.set(endDate + ".prize", prize);
-                            plugin.cfg.saveClaimContest();
+            // --- START DEBUG LOGS ---
+            plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Current Holder Name (before check): " + currentHolderName); //
+            // --- END DEBUG LOGS ---
 
-                            Bukkit.broadcastMessage(ChatColor.GOLD + "THE CONTEST HAS ENDED!");
-                            if(!claimant.equals("No one")) {
-                                Player player = Bukkit.getServer().getPlayerExact(claimant);
-                                String name = claimant;
+            if (!actualCurrentClaimant.equals(NO_CLAIMANT) && !actualCurrentClaimant.equalsIgnoreCase(currentHolderName)) { //
+                // --- START DEBUG LOGS ---
+                plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Condition PASSED. Transitioning to HOLD."); //
+                // --- END DEBUG LOGS ---
+                currentHolderName = actualCurrentClaimant; //
+                transitionToPhase(Phase.HOLD); //
+            } else {
+                // --- START DEBUG LOGS ---
+                plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Condition FAILED. No transition."); //
+                if (actualCurrentClaimant.equals(NO_CLAIMANT)) { //
+                    plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Reason: actualCurrentClaimant is NO_CLAIMANT."); //
+                } else if (actualCurrentClaimant.equalsIgnoreCase(currentHolderName)) { //
+                    plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Reason: actualCurrentClaimant matches currentHolderName."); //
+                }
+                // --- END DEBUG LOGS ---
+                // Existing fine logging based on specific failure reason
+                if (actualCurrentClaimant.equals(NO_CLAIMANT)) { //
+                    plugin.getLogger().fine("ContestChunkClaimedEvent fired, but contest chunk " + activeContestClaimId + " is still unclaimed according to claim data."); //
+                } else { // Must be actualCurrentClaimant.equalsIgnoreCase(currentHolderName) //
+                    plugin.getLogger().fine("ContestChunkClaimedEvent fired, but " + actualCurrentClaimant + " is already the current holder."); //
+                }
+            }
+        } else {
+            // --- START DEBUG LOGS ---
+            plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Event ignored. Phase (" + currentPhase + ") not ACTIVE or not Hold mode ("+ modeHold +")."); //
+            // --- END DEBUG LOGS ---
+        }
+    }
 
-                                if(player != null) {
-                                    name = player.getName();
-                                    plugin.pluginManager.callEvent(new ClaimContestOverEvent(player));
-                                }
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        // Clean up scoreboard for quitting player
+        clearPlayerScoreboard(event.getPlayer());
+        plugin.getLogger().info("Cleared scoreboard for quitting player: " + event.getPlayer().getName());
 
-                                Bukkit.broadcastMessage("And the winner is... " + ChatColor.GREEN + name + "!");
-                            }else {
-                                Bukkit.broadcastMessage("No one won this round! Better luck next time!");
-                            }
-                            this.cancelContest();
-                        } else {
-                            String timeLeft = getTimeLeft(endTime, System.currentTimeMillis());
+        // If the player quitting was the holder in HOLD phase, reset the timer
+        if (currentPhase == Phase.HOLD && event.getPlayer().getName().equalsIgnoreCase(currentHolderName)) {
+            plugin.getLogger().info(currentHolderName + " quit while holding the claim. Resetting hold timer.");
+            Bukkit.broadcastMessage(ChatColor.YELLOW + currentHolderName + " logged out and lost the claim! The hold timer has reset.");
+            currentHolderName = NO_CLAIMANT; // Reset holder
+            setDataValue(CURRENT_HOLDER_KEY, NO_CLAIMANT);
+            holdEndTimeMillis.set(-1);
+            setDataValue(HOLD_END_TIMESTAMP_KEY, -1);
+            plugin.cfg.saveClaimContest();
+            // Go back to ACTIVE phase to wait for a new claim
+            transitionToPhase(Phase.ACTIVE);
+        }
+    }
 
-                            String claimant = claimData.getString(claimID + ".members", "No one");
-                            claimant = claimant.split("\\n")[0];
+    // --- Contest End/Cancel Logic ---
 
-                            String prize = claimContest.getString("data.prize", "none");
+    private void handleContestEnd(String winnerName) {
+        if (contestEnded) return; // avoid double ending
+        contestEnded = true;
+        Phase phaseEnded = currentPhase; // Store phase before cancelling
+        plugin.getLogger().info("Contest ending. Winner: " + winnerName + " (Ended from Phase: " + phaseEnded + ")");
 
-                            String chunkLoc = claimContest.getString("data.chunkLoc", "none");
+        // --- Record history ---
+        String chunkLoc = getDataString(CHUNK_LOC_KEY, "Unknown");
+        String prize = getDataString(PRIZE_KEY, "None");
+        String endDate = HISTORY_DATE_FORMAT.format(LocalDateTime.now());
+        String historyPath = HISTORY_SECTION + "." + endDate;
 
-                            // Information shown to/on the current claimant
-                            Scoreboard claimantBoard = createClaimantScoreboard(timeLeft, prize, claimant, chunkLoc);
+        claimContestConfig.set(historyPath + ".location", chunkLoc);
+        claimContestConfig.set(historyPath + ".winner", winnerName);
+        claimContestConfig.set(historyPath + ".prize", prize);
+        claimContestConfig.set(historyPath + ".mode.pre-reveal", getDataBoolean(MODE_PRE_REVEAL_KEY));
+        claimContestConfig.set(historyPath + ".mode.hold", getDataBoolean(MODE_HOLD_KEY));
+        claimContestConfig.set(historyPath + ".duration.standard", formatDuration(getDataLong(DURATION_KEY)));
+        claimContestConfig.set(historyPath + ".duration.pre-reveal", formatDuration(getDataLong(DURATION_PRE_REVEAL_KEY)));
+        claimContestConfig.set(historyPath + ".duration.hold", formatDuration(getDataLong(DURATION_HOLD_KEY)));
+        claimContestConfig.set(historyPath + ".ended_phase", phaseEnded.name());
+        // Save happens in cancelContest
 
-                            // Information shown to everyone else
-                            Scoreboard playerBoard = createPlayerScoreboard(timeLeft, prize, claimant, chunkLoc);
+        // --- Announce Winner ---
+        Bukkit.broadcastMessage(ChatColor.GOLD + "THE CONTEST HAS ENDED!");
+        if (!winnerName.equals(NO_CLAIMANT)) {
+            Player winnerPlayer = Bukkit.getPlayerExact(winnerName);
+            String finalWinnerName = (winnerPlayer != null) ? winnerPlayer.getName() : winnerName; // Use correct case if online
 
-                            for(Player p : Bukkit.getOnlinePlayers())
-                                if(p.getName().equalsIgnoreCase(claimant) && claimantBoard != null)
-                                    p.setScoreboard(claimantBoard);
-                                else if(playerBoard != null)
-                                    p.setScoreboard(playerBoard);
+            Bukkit.broadcastMessage("Location: " + ChatColor.AQUA + chunkLoc);
+            Bukkit.broadcastMessage("And the winner is... " + ChatColor.GREEN + finalWinnerName + "!");
+            if (!prize.equals("None")) {
+                Bukkit.broadcastMessage("Prize: " + ChatColor.YELLOW + prize);
+            }
 
-                            // Inform the players if the claimant has changed
-                            String prevClaimant = claimContest.getString("data.claimant", "No one");
-                            if(!claimant.equalsIgnoreCase(prevClaimant)){
-                                claimContest.set("data.claimant", claimant);
-                                plugin.cfg.saveClaimContest();
+            // Call custom event for the winner
+            if (winnerPlayer != null) {
+                pluginManager.callEvent(new ClaimContestOverEvent(winnerPlayer)); // Assuming this event exists
+            } else {
+                plugin.getLogger().info("Contest winner " + finalWinnerName + " is offline. Prize: " + prize);
+            }
 
-                                if(!claimant.equals("No one")) {
-                                    Bukkit.broadcastMessage(ChatColor.GOLD + claimant + " has claimed the Contest Area!");
-                                    plugin.pluginManager.callEvent(new ContestChunkClaimedEvent(claimant));
-                                }
-                            }
+        } else {
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "No one secured the claim when the contest ended!");
+        }
+
+        // --- Cleanup ---
+        cancelContest(null); // Final cleanup, null signifies natural end
+    }
+
+
+    private void cancelContest(String cancelledBy) {
+        contestEnded = false; // Reset flag for next contest
+        if (currentPhase == Phase.PENDING || currentPhase == Phase.FINISHED) return; // Already stopped
+
+        Phase phaseCancelled = currentPhase;
+        plugin.getLogger().info("Cancelling contest. Current phase: " + phaseCancelled + (cancelledBy != null ? " by " + cancelledBy : ""));
+
+        if (mainTask != null) {
+            mainTask.cancel();
+            mainTask = null;
+        }
+
+        // Reset state variables
+        currentPhase = Phase.FINISHED; // Mark as finished immediately
+        currentContestClaimId = null;
+        currentHolderName = NO_CLAIMANT;
+        contestStartTimeMillis = -1;
+        contestEndTimeMillis = -1;
+        holdEndTimeMillis.set(-1);
+
+        // Clear runtime data from config, keeping setup config and history
+        clearRuntimeContestData();
+        plugin.cfg.saveClaimContest(); // Save cleared data and any history written
+
+        // Clear scoreboards
+        clearAllScoreboards();
+
+        if (cancelledBy != null) {
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "The claim contest was cancelled by " + cancelledBy + ".");
+        }
+    }
+
+    // --- Scoreboard Management ---
+
+    // Update scoreboard during Pre-Reveal phase
+    private void updatePreRevealScoreboards(long millisLeft) {
+        String timeLeftFormatted = formatTimeLeft(millisLeft);
+        String approxLocation = getApproximateLocationString(); // Get obfuscated location
+
+        Scoreboard board = scoreboardManager.getNewScoreboard();
+        Objective sidebar = board.registerNewObjective(SCOREBOARD_OBJECTIVE_NAME, "dummy", SCOREBOARD_TITLE);
+        sidebar.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+        sidebar.getScore(ChatColor.WHITE + "Contest starting soon!").setScore(5);
+        sidebar.getScore(" ").setScore(4);
+        sidebar.getScore(ChatColor.YELLOW + "Approx. Location:").setScore(3);
+        sidebar.getScore(ChatColor.WHITE + approxLocation).setScore(2);
+        sidebar.getScore("  ").setScore(1);
+        sidebar.getScore(ChatColor.YELLOW + "Revealing in: " + ChatColor.WHITE + timeLeftFormatted).setScore(0);
+
+        setBoardForAllPlayers(board);
+    }
+
+    // Update scoreboard during standard fixed-duration contest
+    private void updateStandardScoreboards(long millisLeft) {
+        String timeLeftFormatted = formatTimeLeft(millisLeft);
+        String chunkLoc = getDataString(CHUNK_LOC_KEY, "Unknown");
+        String prize = getDataString(PRIZE_KEY, "None");
+        String currentClaimant = getCurrentClaimantName(currentContestClaimId);
+
+        // Board for claimant
+        Scoreboard claimantBoard = createScoreboardBase(SCOREBOARD_TITLE);
+        Objective claimantSidebar = claimantBoard.getObjective(DisplaySlot.SIDEBAR);
+        claimantSidebar.getScore(ChatColor.WHITE + "Location: " + chunkLoc).setScore(5);
+        claimantSidebar.getScore(" ").setScore(4);
+        claimantSidebar.getScore(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + timeLeftFormatted).setScore(3);
+        claimantSidebar.getScore("  ").setScore(2);
+        claimantSidebar.getScore(ChatColor.GREEN + "You are the claimant!").setScore(1);
+        claimantSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
+
+        // Board for others
+        Scoreboard otherBoard = createScoreboardBase(SCOREBOARD_TITLE);
+        Objective otherSidebar = otherBoard.getObjective(DisplaySlot.SIDEBAR);
+        otherSidebar.getScore(ChatColor.WHITE + "Location: " + chunkLoc).setScore(5);
+        otherSidebar.getScore(" ").setScore(4);
+        otherSidebar.getScore(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + timeLeftFormatted).setScore(3);
+        otherSidebar.getScore("  ").setScore(2);
+        otherSidebar.getScore(ChatColor.YELLOW + "Claimant: " + ChatColor.WHITE + currentClaimant).setScore(1);
+        otherSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
+        addBelowNameObjective(otherBoard, currentClaimant); // Add name tag for claimant
+
+        setScoreboardsByType(claimantBoard, otherBoard, currentClaimant);
+    }
+
+    // Update scoreboard during ACTIVE phase when in HOLD mode (waiting for claim)
+    private void updateActiveHoldModeScoreboards() {
+        String chunkLoc = getDataString(CHUNK_LOC_KEY, "Unknown");
+        String prize = getDataString(PRIZE_KEY, "None");
+        String holdDurationFormatted = formatDuration(holdDurationMillis);
+        // Fetch the current claimant for the contested chunk
+        String currentClaimant = getCurrentClaimantName(currentContestClaimId);
+        // Determine the text to display based on whether the chunk is claimed
+        String claimantStatus = currentClaimant.equals(NO_CLAIMANT) ? ChatColor.WHITE + "Claimant: " + ChatColor.GRAY + "Unclaimed" : ChatColor.YELLOW + "Claimant: " + ChatColor.GREEN + currentClaimant;
+
+
+        Scoreboard board = createScoreboardBase(SCOREBOARD_TITLE);
+        Objective sidebar = board.getObjective(DisplaySlot.SIDEBAR);
+
+        // This scoreboard is shown when the claim is UNCLAIMED in Hold mode
+        sidebar.getScore(ChatColor.WHITE + "Location: " + chunkLoc).setScore(5);
+        sidebar.getScore(" ").setScore(4);
+        sidebar.getScore(ChatColor.YELLOW + "Mode: " + ChatColor.AQUA + "Claim and Hold").setScore(3);
+        sidebar.getScore(claimantStatus).setScore(2); // Display claimant status (claimed or unclaimed)
+        sidebar.getScore("  ").setScore(1);
+        sidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
+
+        setBoardForAllPlayers(board);
+    }
+
+    // Update scoreboard during HOLD phase (someone has claimed)
+    private void updateHoldScoreboards(long millisLeft) {
+        String timeLeftFormatted = formatTimeLeft(millisLeft); // This formats the remaining time
+        String chunkLoc = getDataString(CHUNK_LOC_KEY, "Unknown");
+        String prize = getDataString(PRIZE_KEY, "None");
+        // currentHolderName should be set when entering HOLD phase
+
+        // Board for Holder
+        Scoreboard holderBoard = createScoreboardBase(ChatColor.GOLD + "Hold the Claim!");
+        Objective holderSidebar = holderBoard.getObjective(DisplaySlot.SIDEBAR);
+        holderSidebar.getScore(" ").setScore(5);
+        holderSidebar.getScore(ChatColor.WHITE + "Location: " + chunkLoc).setScore(4);
+        holderSidebar.getScore(ChatColor.GREEN + "You are Holding the Claim!").setScore(3);
+        holderSidebar.getScore(ChatColor.YELLOW + "Hold for: " + ChatColor.GREEN + timeLeftFormatted).setScore(2); // Displays the ticking timer for the holder
+        holderSidebar.getScore("  ").setScore(1);
+        holderSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
+
+
+        // Board for others
+        Scoreboard otherBoard = createScoreboardBase(SCOREBOARD_TITLE);
+        Objective otherSidebar = otherBoard.getObjective(DisplaySlot.SIDEBAR);
+        otherSidebar.getScore(ChatColor.WHITE + "Location: " + chunkLoc).setScore(5);
+        otherSidebar.getScore(" ").setScore(4);
+        otherSidebar.getScore(ChatColor.YELLOW + "Holder: " + ChatColor.RED + currentHolderName).setScore(3); // Shows who is holding
+        otherSidebar.getScore(ChatColor.WHITE + "Time left: " + timeLeftFormatted).setScore(2); // Displays the ticking timer for others
+        otherSidebar.getScore("  ").setScore(1);
+        otherSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
+        addBelowNameObjective(otherBoard, currentHolderName); // Add name tag for holder
+
+        // Added logging to confirm boards are created and passed
+        plugin.getLogger().info("updateHoldScoreboards: Created holderBoard and otherBoard. Assigning scoreboards.");
+        setScoreboardsByType(holderBoard, otherBoard, currentHolderName); // Assigns the correct board to players
+    }
+
+
+    private Scoreboard createScoreboardBase(String title) {
+        Scoreboard board = scoreboardManager.getNewScoreboard();
+        Objective sidebar = board.registerNewObjective(SCOREBOARD_OBJECTIVE_NAME, "dummy", title);
+        sidebar.setDisplaySlot(DisplaySlot.SIDEBAR);
+        return board;
+    }
+
+    private void addBelowNameObjective(Scoreboard board, String playerName) {
+        if (playerName.equals(NO_CLAIMANT)) return;
+
+        Player player = Bukkit.getPlayerExact(playerName);
+        if (player != null) {
+            try {
+                Objective belowName = board.getObjective(SCOREBOARD_CLAIMANT_BELOWNAME_OBJ);
+                if (belowName == null) {
+                    belowName = board.registerNewObjective(SCOREBOARD_CLAIMANT_BELOWNAME_OBJ, "dummy", SCOREBOARD_CLAIMANT_BELOWNAME_TITLE);
+                    belowName.setDisplaySlot(DisplaySlot.BELOW_NAME);
+                }
+                // Ensure only the target player gets the score marker
+                // Reset others if objective already existed? Can be complex. Safest is often new boards.
+                Score score = belowName.getScore(player.getName());
+                score.setScore(1);
+
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Could not register/update below_name objective: " + e.getMessage());
+            }
+        }
+    }
+
+    // Sets board universally
+    private void setBoardForAllPlayers(Scoreboard board) {
+        if (board == null) return;
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            // Simple check - might cause flicker if board content is identical frame to frame
+            // A more complex check could compare objective scores if performance is an issue
+            // if (p.getScoreboard() != board) {
+            p.setScoreboard(board);
+            // }
+        }
+    }
+
+    // Sets specific boards for the target player vs others
+    private void setScoreboardsByType(Scoreboard targetPlayerBoard, Scoreboard otherPlayersBoard, String targetPlayerName) {
+        if (targetPlayerBoard == null || otherPlayersBoard == null) return;
+
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getName().equalsIgnoreCase(targetPlayerName)) {
+                // Added logging for board assignment
+                plugin.getLogger().info("setScoreboardsByType: Assigning holderBoard to " + p.getName());
+                //if (p.getScoreboard() != targetPlayerBoard) {
+                p.setScoreboard(targetPlayerBoard);
+                //}
+            } else {
+                // Added logging for board assignment
+                plugin.getLogger().info("setScoreboardsByType: Assigning otherBoard to " + p.getName());
+                //if (p.getScoreboard() != otherPlayersBoard) {
+                p.setScoreboard(otherPlayersBoard);
+                //}
+            }
+        }
+    }
+
+
+    private void clearPlayerScoreboard(Player player) {
+        if (player.getScoreboard() != null && player.getScoreboard().getObjective(SCOREBOARD_OBJECTIVE_NAME) != null) {
+            player.setScoreboard(scoreboardManager.getMainScoreboard());
+        }
+    }
+
+    private void clearAllScoreboards() {
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            clearPlayerScoreboard(p);
+        }
+    }
+
+    // --- Utility / Helper Methods ---
+
+    // Parses time strings like "1d 2h 30m" into milliseconds. Returns -1 on error.
+    private long parseTimeArgument(String[] args) {
+        long totalSeconds = 0;
+        boolean valid = false;
+        for (String part : args) {
+            part = part.toLowerCase();
+            try {
+                long value = Long.parseLong(part.substring(0, part.length() - 1));
+                if (part.endsWith("d")) totalSeconds += value * SECONDS_PER_DAY;
+                else if (part.endsWith("h")) totalSeconds += value * SECONDS_PER_HOUR;
+                else if (part.endsWith("m")) totalSeconds += value * SECONDS_PER_MINUTE;
+                else if (part.endsWith("s")) totalSeconds += value;
+                else return -1; // Invalid suffix
+                valid = true;
+            } catch (NumberFormatException | IndexOutOfBoundsException e) {
+                return -1; // Not a valid number or format
+            }
+        }
+        return valid ? totalSeconds * 1000L : -1; // Return milliseconds or -1 if no valid parts found
+    }
+
+
+    private String getCurrentClaimantName(String claimId) {
+        if (claimId == null || claimId.isEmpty()) return NO_CLAIMANT;
+        String ownerInfo = claimDataConfig.getString(claimId + ".members"); // Adjust path if needed
+        if (ownerInfo == null || ownerInfo.isEmpty() || ownerInfo.equalsIgnoreCase(NO_CLAIMANT)) {
+            return NO_CLAIMANT;
+        }
+        return ownerInfo.split("\\n")[0].trim(); // Assumes first line is primary owner/holder
+    }
+
+    // Checks for claimant change in standard mode and fires event/broadcast
+    private void checkStandardClaimantChange() {
+        String actualClaimant = getCurrentClaimantName(currentContestClaimId);
+        String previousClaimant = getDataString(CURRENT_CLAIMANT_KEY, NO_CLAIMANT);
+
+        if (!actualClaimant.equalsIgnoreCase(previousClaimant)) {
+            setDataValue(CURRENT_CLAIMANT_KEY, actualClaimant);
+            plugin.cfg.saveClaimContest();
+
+            if (!actualClaimant.equals(NO_CLAIMANT)) {
+                Bukkit.broadcastMessage(ChatColor.GOLD + actualClaimant + " has claimed the Contest Area!");
+                // Call custom event IF NEEDED for standard mode claims (might be noisy)
+                // pluginManager.callEvent(new ContestChunkClaimedEvent(actualClaimant));
+            } else if (!previousClaimant.equals(NO_CLAIMANT)) {
+                Bukkit.broadcastMessage(ChatColor.YELLOW + previousClaimant + " no longer holds the Contest Area!");
+            }
+        }
+    }
+
+    private void broadcastExactArea() {
+        String chunkLoc = getDataString(CHUNK_LOC_KEY, "Unknown");
+        Bukkit.broadcastMessage(ChatColor.GREEN + "Contest Location: " + ChatColor.AQUA + chunkLoc);
+    }
+
+    private String getApproximateLocationString() {
+        String chunkLoc = getDataString(CHUNK_LOC_KEY, "Unknown Location");
+        try {
+            // Simple obfuscation: Show dimension, hide exact coords
+            String dimension = chunkLoc.split(" ")[0];
+            if (dimension.isEmpty() || dimension.contains("(")) dimension = "Unknown"; // Basic sanity check
+
+            // More advanced: Generate randomish coords nearby like the example?
+            // Example: Random offset within ~100 blocks, consistent per contest start
+            int x = getDataInt(CLAIM_ID_KEY.hashCode() + "_approx_x_offset", 0); // Use hash for pseudo-randomness
+            int z = getDataInt(CLAIM_ID_KEY.hashCode() + "_approx_z_offset", 0);
+            if (x == 0 && z == 0) { // Generate once if not set
+                Random random = new Random(getDataString(CLAIM_ID_KEY, "").hashCode()); // Seed with claim ID
+                int offsetX = (random.nextBoolean() ? 1 : -1) * (64 + random.nextInt(64));
+                int offsetZ = (random.nextBoolean() ? 1 : -1) * (64 + random.nextInt(64));
+
+                String[] parts = chunkLoc.split("\\(")[1].split(",");
+                int actualX = Integer.parseInt(parts[0].replaceAll("[^\\d-]", ""));
+                int actualZ = Integer.parseInt(parts[1].replaceAll("[^\\d-]", ""));
+                x = actualX + offsetX;
+                z = actualZ + offsetZ;
+                // Store for consistency during pre-reveal
+                setDataValue(CLAIM_ID_KEY.hashCode() + "_approx_x_offset", x);
+                setDataValue(CLAIM_ID_KEY.hashCode() + "_approx_z_offset", z);
+                plugin.cfg.saveClaimContest(); // Save generated offsets
+            }
+
+            return dimension + " near X:" + x + ", Z:" + z;
+
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to parse chunkLoc for approximate location: " + chunkLoc);
+            return "An Unknown Area";
+        }
+    }
+
+
+    private boolean sendCurrentContestStatus(Player player) {
+        ConfigurationSection data = claimContestConfig.getConfigurationSection(DATA_SECTION);
+        boolean configExists = (data != null && !data.getKeys(false).isEmpty());
+
+        player.sendMessage(ChatColor.GOLD + "--- Contest Status ---");
+
+        if (currentPhase != Phase.PENDING && currentPhase != Phase.FINISHED) {
+            player.sendMessage(ChatColor.GREEN + "Status: ACTIVE (" + currentPhase + ")");
+        } else if (configExists && getDataLong(CONFIG_SAVE_TIMESTAMP_KEY) > 0) {
+            player.sendMessage(ChatColor.YELLOW + "Status: Configured (Pending Start)");
+        } else {
+            player.sendMessage(ChatColor.GRAY + "Status: No contest configured.");
+            return true;
+        }
+
+        // Display configuration details (even if running, show what it was set to)
+        String chunkLoc = getDataString(CHUNK_LOC_KEY, ChatColor.RED + "Not Set");
+        String prize = getDataString(PRIZE_KEY, ChatColor.GRAY + "None");
+        boolean preReveal = getDataBoolean(MODE_PRE_REVEAL_KEY);
+        boolean hold = getDataBoolean(MODE_HOLD_KEY);
+        long stdDur = getDataLong(DURATION_KEY);
+        long preRevDur = getDataLong(DURATION_PRE_REVEAL_KEY);
+        long holdDur = getDataLong(DURATION_HOLD_KEY);
+
+        player.sendMessage(ChatColor.YELLOW + "Location: " + ChatColor.WHITE + chunkLoc);
+        player.sendMessage(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize);
+
+        // Mode details
+        if (hold) {
+            player.sendMessage(ChatColor.YELLOW + "Mode: " + ChatColor.AQUA + "Claim and Hold (" + formatDuration(holdDur) + ")");
+        } else {
+            player.sendMessage(ChatColor.YELLOW + "Mode: " + ChatColor.AQUA + "Standard (" + formatDuration(stdDur) + ")");
+        }
+        if (preReveal) {
+            player.sendMessage(ChatColor.YELLOW + "Pre-Reveal: " + ChatColor.GREEN + "Enabled (" + formatDuration(preRevDur) + ")");
+        }
+
+        // Runtime details if active
+        if (currentPhase != Phase.PENDING && currentPhase != Phase.FINISHED) {
+            player.sendMessage(ChatColor.GOLD + "--- Runtime Info ---");
+            long now = System.currentTimeMillis();
+            switch (currentPhase) {
+                case PRE_REVEAL:
+                    player.sendMessage(ChatColor.YELLOW + "Revealing in: " + ChatColor.WHITE + formatTimeLeft(contestEndTimeMillis - now));
+                    break;
+                case ACTIVE:
+                    if (modeHold) {
+                        // In Active Hold mode, show current claimant status
+                        String currentClaimant = getCurrentClaimantName(currentContestClaimId);
+                        player.sendMessage(ChatColor.YELLOW + "Claimant: " + (currentClaimant.equals(NO_CLAIMANT) ? ChatColor.GRAY + "Unclaimed" : ChatColor.GREEN + currentClaimant));
+                        player.sendMessage(ChatColor.YELLOW + "Hold for " + formatDuration(holdDurationMillis) + " to win!"); // Show the goal duration
+                    } else {
+                        player.sendMessage(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + formatTimeLeft(contestEndTimeMillis - now));
+                        player.sendMessage(ChatColor.YELLOW + "Current Claimant: " + ChatColor.WHITE + getCurrentClaimantName(currentContestClaimId));
+                    }
+                    break;
+                case HOLD:
+                    player.sendMessage(ChatColor.YELLOW + "Current Holder: " + ChatColor.GREEN + currentHolderName);
+                    player.sendMessage(ChatColor.YELLOW + "Hold Time Left: " + ChatColor.WHITE + formatTimeLeft(holdEndTimeMillis.get() - now));
+                    break;
+            }
+        } else if (currentPhase == Phase.PENDING && configExists){
+            player.sendMessage(ChatColor.GRAY + "Use '/claimcontest start' to begin.");
+        }
+
+        return true;
+    }
+
+    // Format duration in a human-readable way (e.g., "1d 2h 30m 5s")
+    private String formatDuration(long millis) {
+        if (millis <= 0) return "0s";
+        long days = TimeUnit.MILLISECONDS.toDays(millis); millis -= TimeUnit.DAYS.toMillis(days);
+        long hours = TimeUnit.MILLISECONDS.toHours(millis); millis -= TimeUnit.HOURS.toMillis(hours);
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis); millis -= TimeUnit.MINUTES.toMillis(minutes);
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+        StringBuilder sb = new StringBuilder();
+        if (days > 0) sb.append(days).append("d ");
+        if (hours > 0) sb.append(hours).append("h ");
+        if (minutes > 0) sb.append(minutes).append("m ");
+        if (seconds > 0 || sb.length() == 0) sb.append(seconds).append("s");
+        return sb.toString().trim();
+    }
+
+    // Format time left specifically for scoreboard (DD:HH:MM:SS)
+    private String formatTimeLeft(long millis) {
+        if (millis <= 0) return "00:00:00:00";
+        long secondsTotal = Math.max(0, millis / 1000);
+        long days = secondsTotal / SECONDS_PER_DAY;
+        long hours = (secondsTotal % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
+        long minutes = (secondsTotal % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+        long seconds = secondsTotal % SECONDS_PER_MINUTE;
+        return String.format("%02d:%02d:%02d:%02d", days, hours, minutes, seconds);
+    }
+
+    // --- Config Helpers ---
+    private void setDataValue(String key, Object value) {
+        claimContestConfig.set(DATA_SECTION + "." + key, value);
+    }
+    private String getDataString(String key, String def) {
+        return claimContestConfig.getString(DATA_SECTION + "." + key, def);
+    }
+    private String getDataString(String key) { return getDataString(key, null); }
+    private long getDataLong(String key) { return claimContestConfig.getLong(DATA_SECTION + "." + key, 0L); }
+    private boolean getDataBoolean(String key){ return claimContestConfig.getBoolean(DATA_SECTION + "." + key, false); }
+    private int getDataInt(String key, int def) { return claimContestConfig.getInt(DATA_SECTION + "." + key, def); }
+
+    // Clears only runtime state data from config, keeping setup config and history
+    private void clearRuntimeContestData() {
+        ConfigurationSection dataSection = claimContestConfig.getConfigurationSection(DATA_SECTION);
+        if (dataSection != null) {
+            dataSection.set(START_TIMESTAMP_KEY, null);
+            dataSection.set(CURRENT_CLAIMANT_KEY, null);
+            dataSection.set(CURRENT_HOLDER_KEY, null);
+            dataSection.set(PHASE_KEY, null);
+            dataSection.set(PRE_REVEAL_END_TIMESTAMP_KEY, null);
+            dataSection.set(CONTEST_END_TIMESTAMP_KEY, null);
+            dataSection.set(HOLD_END_TIMESTAMP_KEY, null);
+            // Clear approx location cache if used
+            dataSection.set(CLAIM_ID_KEY.hashCode() + "_approx_x_offset", null);
+            dataSection.set(CLAIM_ID_KEY.hashCode() + "_approx_z_offset", null);
+        }
+        // Keep: chunkLoc, claimID, duration, prize, mode settings, config-save-timestamp
+    }
+
+    // Completely clears the data section (use with caution, maybe for full reset?)
+    private void clearFullContestData() {
+        claimContestConfig.set(DATA_SECTION, null);
+    }
+
+    // --- Load and Resume Logic ---
+    private void loadAndResumeContest() {
+        ConfigurationSection data = claimContestConfig.getConfigurationSection(DATA_SECTION);
+        if (data == null || !data.contains(PHASE_KEY)) {
+            currentPhase = Phase.PENDING; // No contest running or invalid data
+            return;
+        }
+
+        try {
+            currentPhase = Phase.valueOf(data.getString(PHASE_KEY, Phase.PENDING.name()));
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid phase found in contest config: " + data.getString(PHASE_KEY) + ". Resetting.");
+            clearFullContestData(); // Clear everything if phase is corrupt
+            plugin.cfg.saveClaimContest();
+            currentPhase = Phase.PENDING;
+            return;
+        }
+
+        if (currentPhase == Phase.PENDING || currentPhase == Phase.FINISHED) {
+            // Contest wasn't active on shutdown, no need to resume task
+            // We might want to clear runtime data here if it's FINISHED but wasn't cleared properly
+            if(currentPhase == Phase.FINISHED) clearRuntimeContestData();
+            return;
+        }
+
+        plugin.getLogger().info("Resuming claim contest from Phase: " + currentPhase);
+
+        // Load common state needed for resume
+        currentContestClaimId = data.getString(CLAIM_ID_KEY);
+        modeHold = data.getBoolean(MODE_HOLD_KEY); // Load mode flags
+        holdDurationMillis = data.getLong(DURATION_HOLD_KEY); // Need hold duration for HOLD phase
+
+        if (currentContestClaimId == null || currentContestClaimId.isEmpty()) {
+            plugin.getLogger().severe("Cannot resume contest: Claim ID missing from config!");
+            clearFullContestData(); // Clear config if critical info missing
+            plugin.cfg.saveClaimContest();
+            currentPhase = Phase.PENDING;
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+
+        // Resume logic based on persisted phase
+        switch (currentPhase) {
+            case PRE_REVEAL:
+                contestEndTimeMillis = data.getLong(PRE_REVEAL_END_TIMESTAMP_KEY, -1);
+                if (now >= contestEndTimeMillis) { // Should have ended
+                    plugin.getLogger().warning("Pre-Reveal phase ended while server was down. Advancing...");
+                    // Load necessary config for ACTIVE phase before transitioning
+                    modePreReveal = data.getBoolean(MODE_PRE_REVEAL_KEY);
+                    preRevealDurationMillis = data.getLong(DURATION_PRE_REVEAL_KEY);
+                    contestDurationMillis = getDataLong(DURATION_KEY); // Standard duration needed if applicable
+                    // Manually trigger transition post-load
+                    scheduler.runTask(plugin, () -> transitionToPhase(Phase.ACTIVE));
+                } else {
+                    // Resume pre-reveal task
+                    mainTask = scheduler.runTaskTimer(plugin, this::tickPreReveal, 0L, TICKS_PER_SECOND);
+                    plugin.getLogger().info("Pre-Reveal phase resumed. Ends in " + formatDuration(contestEndTimeMillis - now));
+                }
+                break;
+
+            case ACTIVE:
+                contestStartTimeMillis = data.getLong(START_TIMESTAMP_KEY, -1); // Load start time
+                if (modeHold) {
+                    // Just resume the ActiveHold ticker, no end time needed here
+                    mainTask = scheduler.runTaskTimer(plugin, this::tickActiveHoldMode, 0L, TICKS_PER_SECOND);
+                    plugin.getLogger().info("Active (Hold Mode) phase resumed. Waiting for claim.");
+                } else {
+                    // Resume standard timer
+                    contestEndTimeMillis = data.getLong(CONTEST_END_TIMESTAMP_KEY, -1);
+                    if (now >= contestEndTimeMillis) { // Should have ended
+                        plugin.getLogger().warning("Standard contest phase ended while server was down. Finalizing...");
+                        String finalClaimant = data.getString(CURRENT_CLAIMANT_KEY, NO_CLAIMANT); // Get last known claimant
+                        scheduler.runTask(plugin, () -> handleContestEnd(finalClaimant));
+                    } else {
+                        mainTask = scheduler.runTaskTimer(plugin, this::tickStandard, 0L, TICKS_PER_SECOND);
+                        plugin.getLogger().info("Standard contest phase resumed. Ends in " + formatDuration(contestEndTimeMillis - now));
+                    }
+                }
+                break;
+
+            case HOLD:
+                currentHolderName = data.getString(CURRENT_HOLDER_KEY, NO_CLAIMANT);
+                long holdEnds = data.getLong(HOLD_END_TIMESTAMP_KEY, -1);
+                holdEndTimeMillis.set(holdEnds);
+
+                if (currentHolderName.equals(NO_CLAIMANT) || holdEnds <= 0) {
+                    plugin.getLogger().warning("Inconsistent HOLD phase state found. Resetting to ACTIVE.");
+                    scheduler.runTask(plugin, () -> transitionToPhase(Phase.ACTIVE)); // Go back to active
+                    return;
+                }
+
+                if (now >= holdEnds) { // Hold should have finished
+                    plugin.getLogger().warning("Hold phase ended while server was down. Finalizing for holder: " + currentHolderName);
+                    scheduler.runTask(plugin, () -> handleContestEnd(currentHolderName));
+                } else {
+                    // Resume hold task
+                    mainTask = scheduler.runTaskTimer(plugin, this::tickHold, 0L, TICKS_PER_SECOND);
+                    plugin.getLogger().info("Hold phase resumed for " + currentHolderName + ". Ends in " + formatDuration(holdEnds - now));
+                }
+                break;
+        }
+    }
+
+
+    // --- Tab Completion ---
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        List<String> completions = new ArrayList<>();
+        List<String> possibilities = new ArrayList<>();
+        String currentArg = args[args.length - 1].toLowerCase();
+        boolean configLocked = currentPhase != Phase.PENDING && currentPhase != Phase.FINISHED;
+
+
+        if (args.length == 1) {
+            possibilities.addAll(Arrays.asList("help", "start", "cancel", "status"));
+            if (!configLocked) { // Only show config commands if not active
+                possibilities.addAll(Arrays.asList("chunk", "duration", "prize", "mode"));
+            }
+        } else if (args.length >= 2) {
+            String subCommand = args[0].toLowerCase();
+            if (!configLocked) { // Config sub-args only allowed if not active
+                switch (subCommand) {
+                    case "chunk":
+                    case "loc": case "at": case "xyz":
+                        if (args.length == 2) possibilities.addAll(Arrays.asList("overworld", "nether", "end"));
+                        else if (args.length == 3 && sender instanceof Player) {
+                            possibilities.add(String.valueOf(((Player) sender).getLocation().getBlockX())); possibilities.add("<X>");
+                        } else if (args.length == 4 && sender instanceof Player) {
+                            possibilities.add(String.valueOf(((Player) sender).getLocation().getBlockZ())); possibilities.add("<Z>");
                         }
-                    }, 0, 20);
-        }
-        return null;
-    }
-
-    private String getTimeLeft(long endTime, long now) {
-        long secondsTotal = (endTime - now) / (long) 1e3;
-        long daysLeft = secondsTotal / SECONDS_PER_DAY;
-        long hoursLeft = (secondsTotal % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
-        long minutesLeft = (secondsTotal % SECONDS_PER_HOUR) / 60;
-        long secondsLeft = secondsTotal % 60;
-
-        return daysLeft + ":" +
-                (hoursLeft < 10 ? "0" + hoursLeft : hoursLeft) +  ":" +
-                (minutesLeft < 10 ? "0" + minutesLeft : minutesLeft) + ":" +
-                (secondsLeft < 10 ? "0" + secondsLeft : secondsLeft);
-    }
-
-    private void cancelContest() {
-        this.contestTask.cancel();
-        this.contestTask = null;
-        plugin.cfg.clearClaimContest();
-
-        if(Bukkit.getScoreboardManager() != null)
-            for(Player p : Bukkit.getOnlinePlayers())
-                p.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
-    }
-
-    private Scoreboard createPlayerScoreboard(String timeLeft, String prize, String claimant, String chunkLoc){
-        if(Bukkit.getScoreboardManager() != null) {
-            Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-            Objective sidebarObj = scoreboard.registerNewObjective("contest", "dummy", "Claim Contest");
-
-            sidebarObj.setDisplaySlot(DisplaySlot.SIDEBAR);
-            sidebarObj.getScore("Location: " + chunkLoc).setScore(-1);
-            sidebarObj.getScore("Countdown: " + timeLeft).setScore(-2);
-            sidebarObj.getScore("Prize: " + prize).setScore(-3);
-            sidebarObj.getScore("Claimant: " + claimant).setScore(-4);
-
-            if(Bukkit.getServer().getPlayerExact(claimant) != null) {
-                Objective claimantObj = scoreboard.registerNewObjective("claimant", "dummy", ChatColor.GOLD + "Claimant");
-                claimantObj.setDisplaySlot(DisplaySlot.BELOW_NAME);
-                claimantObj.getScore(claimant).setScore(0);
-                claimantObj.setDisplayName(ChatColor.GOLD + "Claim Contest Leader");
+                        break;
+                    case "duration": // Standard duration
+                    case "time":
+                        if (args.length == 2) possibilities.add("<e.g., 1h 30m>");
+                        else possibilities.addAll(Arrays.asList("d", "h", "m", "s"));
+                        break;
+                    case "prize":
+                        if (args.length == 2) possibilities.add("<description>");
+                        break;
+                    case "mode":
+                        if (args.length == 2) {
+                            possibilities.addAll(Arrays.asList("pre_reveal", "hold", "standard"));
+                        } else if (args.length == 3 && (args[1].equalsIgnoreCase("pre_reveal") || args[1].equalsIgnoreCase("hold"))) {
+                            possibilities.add("<e.g., 5m>"); // Suggest format for time value
+                        } else if (args.length > 3 && (args[1].equalsIgnoreCase("pre_reveal") || args[1].equalsIgnoreCase("hold"))) {
+                            possibilities.addAll(Arrays.asList("d", "h", "m", "s")); // Suggest suffixes
+                        }
+                        break;
+                }
             }
-
-            return scoreboard;
-        }
-        return null;
-    }
-
-    private Scoreboard createClaimantScoreboard(String timeLeft, String prize, String claimant, String chunkLoc){
-        if(Bukkit.getScoreboardManager() != null) {
-            Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-            Objective sidebarObj = scoreboard.registerNewObjective("contest", "dummy", "Claim Contest");
-
-            sidebarObj.setDisplaySlot(DisplaySlot.SIDEBAR);
-            sidebarObj.getScore("Location: " + chunkLoc).setScore(-1);
-            sidebarObj.getScore("Countdown: " + timeLeft).setScore(-2);
-            sidebarObj.getScore("Prize: " + prize).setScore(-3);
-            sidebarObj.getScore("Claimant: " + claimant).setScore(-4);
-
-            return scoreboard;
-        }
-        return null;
-    }
-
-    public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args){
-        List<String> suggestions = new ArrayList<>();
-        Player p = sender instanceof Player ? (Player) sender : null;
-
-        if(args.length == 1){
-            suggestions.add("help");
-            suggestions.add("chunk");
-            suggestions.add("duration");
-            suggestions.add("prize");
-            suggestions.add("start");
-            suggestions.add("cancel");
+            // No further args for start, cancel, status, help
         }
 
-        if(args.length == 2) {
-            if(args[0].equalsIgnoreCase("chunk")) {
-                suggestions.add("overworld");
-                suggestions.add("nether");
-                suggestions.add("end");
-            }else if (args[0].equalsIgnoreCase("duration")){
-                suggestions.add("<minutes>");
-            }else if (args[0].equalsIgnoreCase("prize")){
-                suggestions.add("<amount>");
+        // Filter possibilities
+        for (String p : possibilities) {
+            if (p.toLowerCase().startsWith(currentArg)) {
+                completions.add(p);
             }
         }
-
-        if(args.length == 3) {
-            if(args[0].equalsIgnoreCase("chunk")) {
-                if(p != null)
-                    suggestions.add(String.valueOf(p.getLocation().getBlockX()));
-                suggestions.add("<X>");
-            }else if (args[0].equalsIgnoreCase("duration")){
-                suggestions.add("<hours>");
-            }
-        }
-
-        if(args.length == 4) {
-            if(args[0].equalsIgnoreCase("chunk")) {
-                if(p != null)
-                    suggestions.add(String.valueOf(p.getLocation().getBlockZ()));
-                suggestions.add("<Z>");
-            }else if (args[0].equalsIgnoreCase("duration")){
-                suggestions.add("<days>");
-            }
-        }
-
-        return suggestions;
+        return completions;
     }
 }

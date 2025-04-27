@@ -1,8 +1,10 @@
 package hasjamon.block4block.listener;
 
 import hasjamon.block4block.Block4Block;
+import hasjamon.block4block.command.ClaimContestCommand; // Import the ClaimContestCommand
 import hasjamon.block4block.events.ClaimBookPlacedEvent;
 import hasjamon.block4block.events.ClaimRemovedEvent;
+import hasjamon.block4block.events.ContestChunkClaimedEvent; // Import the ContestChunkClaimedEvent
 import hasjamon.block4block.utils.utils;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -25,9 +27,12 @@ import java.util.List;
 
 public class BookPlaceTake implements Listener {
     private final Block4Block plugin;
+    private final ClaimContestCommand claimContestCommand;
 
-    public BookPlaceTake(Block4Block plugin) {
+    // Modify the constructor to accept ClaimContestCommand
+    public BookPlaceTake(Block4Block plugin, ClaimContestCommand claimContestCommand) {
         this.plugin = plugin;
+        this.claimContestCommand = claimContestCommand;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -67,7 +72,31 @@ public class BookPlaceTake implements Listener {
                             canPlace = false;
                             p.sendMessage(utils.chat("&cThis chunk is already claimed! Find the claim book or remove \"claim\" from your book to place it."));
                         } else {
+                            // Attempt to claim the chunk
                             canPlace = utils.claimChunk(b, utils.findMembersInBook(meta), p::sendMessage);
+
+                            // --- Check if claiming was successful and if it's the contest chunk in Hold mode ---
+                            if (canPlace) {
+                                // Get the latest state directly from the ClaimContestCommand instance
+                                ClaimContestCommand.Phase currentContestPhase = claimContestCommand.getCurrentPhase();
+                                boolean isContestModeHold = claimContestCommand.isModeHold();
+                                String contestClaimId = claimContestCommand.getCurrentContestClaimId();
+
+                                // Added detailed logging of state from ClaimContestCommand instance
+                                plugin.getLogger().info("BookPlaceTake: Checking contest conditions for claim " + claimID +
+                                        ". Contest State (Live): Phase=" + currentContestPhase + ", ModeHold=" + isContestModeHold +
+                                        ", ContestClaimID=" + contestClaimId);
+
+                                // Check if the contest is active in Hold mode and this is the contest chunk
+                                if (currentContestPhase == ClaimContestCommand.Phase.ACTIVE &&
+                                        isContestModeHold &&
+                                        contestClaimId != null && claimID.equals(contestClaimId)) {
+                                    plugin.pluginManager.callEvent(new ContestChunkClaimedEvent(p.getName()));
+                                    plugin.getLogger().info("BookPlaceTake: ContestChunkClaimedEvent fired for player " + p.getName() + " claiming contest chunk " + claimID);
+                                } else {
+                                    plugin.getLogger().info("BookPlaceTake: Claimed chunk " + claimID + " does not meet contest transition conditions. Live State: Phase=" + currentContestPhase + ", ModeHold=" + isContestModeHold + ", ContestClaimID=" + contestClaimId);
+                                }
+                            }
                         }
                     }
                 }
@@ -195,6 +224,13 @@ public class BookPlaceTake implements Listener {
                 if (isMember || numProtectedSides == 0 && !isInvulnerable) {
                     utils.unclaimChunk(lecternBlock, true, player::sendMessage);
                     plugin.pluginManager.callEvent(new ClaimRemovedEvent(player, lecternBlock, isMember));
+                    String contestClaimId = claimContestCommand.getCurrentContestClaimId();
+                    // If the contest chunk is unclaimed, and the contest was in HOLD mode,
+                    // the tickHold logic will detect the holder lost the claim and transition to ACTIVE.
+                    // No need to explicitly call a contest event here, as tickHold handles the state change.
+                    if (contestClaimId != null && claimID.equals(contestClaimId)) {
+                        plugin.getLogger().info("BookPlaceTake: Contest chunk " + claimID + " was unclaimed.");
+                    }
                 } else {
                     if (!isInvulnerable) {
                         String msg = utils.chat("&aLectern is still protected from &c" + numProtectedSides + " &asides");

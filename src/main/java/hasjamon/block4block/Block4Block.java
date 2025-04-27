@@ -27,6 +27,10 @@ public class Block4Block extends JavaPlugin {
     private List<?> hints;
     private int nextHint = 0;
 
+    // --- Field for the single ClaimContestCommand instance ---
+    private ClaimContestCommand claimContestCommandInstance;
+    // ---
+
     public static Block4Block getInstance() {
         return instance;
     }
@@ -45,6 +49,7 @@ public class Block4Block extends JavaPlugin {
         // TODO: @bahm cache more config constants
         populateConfigConstants();
         claimVisual = new ClaimVisual(this);
+        claimContestCommandInstance = new ClaimContestCommand(this);
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
         setupHints(); // Prepares hints and starts broadcasting them
@@ -54,6 +59,7 @@ public class Block4Block extends JavaPlugin {
             getCommand("claimvisual").setExecutor(new ClaimVisualCommand(this, claimVisual.getVisualEnabledPlayers()));
         }
 
+        // --- Start repeating tasks ---
         if (this.getConfig().getBoolean("golems-guard-claims"))
             getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateGolemHostility, 0, 20);
         getServer().getScheduler().scheduleSyncRepeatingTask(this, utils::updateCurrentTick, 0, 1);
@@ -125,7 +131,13 @@ public class Block4Block extends JavaPlugin {
             ignoreCmd.setExecutor(cmd);
             unignoreCmd.setExecutor(cmd);
         }
-        if (claimContestCmd != null) claimContestCmd.setExecutor(new ClaimContestCommand(this));
+        // --- Use the single instance for the command executor ---
+        if (claimContestCmd != null) {
+            claimContestCmd.setExecutor(claimContestCommandInstance); // Use the single instance
+        } else {
+            this.getLogger().severe("Command 'claimcontest' not found in plugin.yml! ClaimContest command executor will not work.");
+        }
+        // ---
         if (welcomeCmd != null) welcomeCmd.setExecutor(new WelcomeCommand());
         if (claimLocCmd != null) claimLocCmd.setExecutor(new ClaimLocCommand(this));
         if (claimFixCmd != null) claimFixCmd.setExecutor(new ClaimFixCommand(this));
@@ -135,14 +147,14 @@ public class Block4Block extends JavaPlugin {
     }
 
     private void registerEvents() {
+        pluginManager.registerEvents(claimContestCommandInstance, this);
+        pluginManager.registerEvents(new BookPlaceTake(this, claimContestCommandInstance), this);
         pluginManager.registerEvents(new BlockBreak(this), this);
-        pluginManager.registerEvents(new BookPlaceTake(this), this);
         pluginManager.registerEvents(new LecternBreak(this), this);
         // Register BookReadLectern only if ProtocolLib is enabled
         if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
             pluginManager.registerEvents(new BookReadLectern(this), this);
         } else {
-            // Using `this` instead of `plugin` to refer to the current class instance
             this.getLogger().info("ProtocolLib not found - skipping BookReadLectern.");
         }
         pluginManager.registerEvents(new BookEdit(this), this);
