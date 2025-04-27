@@ -165,6 +165,8 @@ public class Block4Block extends JavaPlugin {
             pluginManager.registerEvents(new EggLay(this), this);
         if (this.getConfig().getBoolean("destroy-fishing-rods"))
             pluginManager.registerEvents(new PlayerFish(this), this);
+        if (this.getConfig().getBoolean("block-stonecutter"))
+            pluginManager.registerEvents(new PlayerStonecutter(this), this);
         pluginManager.registerEvents(new EntityDropItem(), this);
         pluginManager.registerEvents(new CreatureSpawn(), this);
         pluginManager.registerEvents(new PlayerChat(this), this);
