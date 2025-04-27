@@ -515,6 +515,23 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                     // Immediately update the scoreboard to show the initial claimant status
                     plugin.getLogger().info("Updating Active Hold Mode scoreboards immediately after phase transition.");
                     updateActiveHoldModeScoreboards();
+
+                    // --- ADDED EDGE CASE CHECK FOR ALREADY CLAIMED CHUNK ---
+                    String initialClaimant = getCurrentClaimantName(currentContestClaimId);
+                    if (!initialClaimant.equals(NO_CLAIMANT)) {
+                        plugin.getLogger().info("Contest started in ACTIVE (Hold Mode) with chunk already claimed by: " + initialClaimant + ". Directly transitioning to HOLD.");
+                        currentHolderName = initialClaimant;
+                        // Manually trigger the logic to start the hold timer, similar to onContestChunkClaimed
+                        long holdEnds = System.currentTimeMillis() + holdDurationMillis;
+                        holdEndTimeMillis.set(holdEnds);
+                        setDataValue(HOLD_END_TIMESTAMP_KEY, holdEnds);
+                        setDataValue(CURRENT_HOLDER_KEY, currentHolderName);
+                        plugin.cfg.saveClaimContest();
+                        // Transition to HOLD phase - this will cancel tickActiveHoldMode and start tickHold
+                        transitionToPhase(Phase.HOLD);
+                    }
+                    // --- END ADDED EDGE CASE CHECK ---
+
                 } else {
                     // Standard mode: Fixed duration timer
                     contestEndTimeMillis = contestStartTimeMillis + contestDurationMillis;
