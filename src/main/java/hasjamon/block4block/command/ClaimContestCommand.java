@@ -27,6 +27,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.time.Instant;
+import java.time.ZoneId;
 
 public class ClaimContestCommand implements CommandExecutor, TabCompleter, Listener {
 
@@ -46,7 +48,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     private Phase currentPhase = Phase.PENDING;
     private String currentContestClaimId = null; // Claim ID of the running contest
     private String currentHolderName = NO_CLAIMANT; // Player currently holding in HOLD phase
-    private long contestStartTimeMillis = -1;
+    private long contestStartTimeMillis = -1; // This is the start of the ACTIVE phase
     private long contestEndTimeMillis = -1;   // Used for standard timer OR pre-reveal end
     private final AtomicLong holdEndTimeMillis = new AtomicLong(-1); // Used for HOLD phase timer
     private boolean contestEnded = false; // Flag to prevent double-ending
@@ -65,7 +67,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     private static final String CLAIM_ID_KEY = "claimID";
     private static final String DURATION_KEY = "duration"; // Standard duration (milliseconds)
     private static final String PRIZE_KEY = "prize";
-    private static final String START_TIMESTAMP_KEY = "start-timestamp"; // Actual contest start (after pre-reveal if any)
+    private static final String COMMAND_START_TIMESTAMP_KEY = "command-start-timestamp"; // Timestamp when /claimcontest start was issued
+    private static final String START_TIMESTAMP_KEY = "active-phase-start-timestamp"; // Timestamp when ACTIVE phase began
     private static final String CONFIG_SAVE_TIMESTAMP_KEY = "config-save-timestamp"; // When config was last set before start
     private static final String CURRENT_CLAIMANT_KEY = "current-claimant"; // Persisted claimant during standard/active
     private static final String CURRENT_HOLDER_KEY = "current-holder"; // Persisted holder during HOLD phase
@@ -91,6 +94,12 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     private static final String SCOREBOARD_CLAIMANT_BELOWNAME_TITLE = ChatColor.GOLD + "Claimant";
 
     private static final DateTimeFormatter HISTORY_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MMM-dd_HH-mm-ss");
+
+    // New constants for history keys
+    private static final String HISTORY_START_DATE_KEY = "start-date";
+    private static final String HISTORY_END_DATE_KEY = "end-date";
+    private static final String HISTORY_CALCULATED_DURATION_KEY = "calculated-duration";
+
 
     private static final long TICKS_PER_SECOND = 20L;
     private static final long MILLIS_PER_MINUTE = 60000L;
@@ -422,6 +431,9 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
             return true;
         }
 
+        // --- Save the timestamp when the command was issued ---
+        setDataValue(COMMAND_START_TIMESTAMP_KEY, System.currentTimeMillis());
+        plugin.cfg.saveClaimContest(); // Save immediately
 
         // --- Start the contest workflow ---
         player.sendMessage(ChatColor.GREEN + "Starting claim contest...");
@@ -486,8 +498,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                 break;
 
             case ACTIVE:
-                contestStartTimeMillis = now; // Mark the official contest start time
-                setDataValue(START_TIMESTAMP_KEY, contestStartTimeMillis);
+                contestStartTimeMillis = now; // Mark the official contest start time (Active phase start)
+                setDataValue(START_TIMESTAMP_KEY, contestStartTimeMillis); // Save Active phase start time
                 currentHolderName = NO_CLAIMANT; // Reset holder when entering active phase
                 setDataValue(CURRENT_HOLDER_KEY, NO_CLAIMANT);
                 setDataValue(CURRENT_CLAIMANT_KEY, NO_CLAIMANT); // Also reset standard claimant tracker
@@ -734,18 +746,45 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         // --- Record history ---
         String chunkLoc = getDataString(CHUNK_LOC_KEY, "Unknown");
         String prize = getDataString(PRIZE_KEY, "None");
-        String endDate = HISTORY_DATE_FORMAT.format(LocalDateTime.now());
-        String historyPath = HISTORY_SECTION + "." + endDate;
+        // Use the timestamp from when handleContestEnd is called as the end time
+        long contestEndTimeMillisActual = System.currentTimeMillis();
+        String endDateFormatted = HISTORY_DATE_FORMAT.format(LocalDateTime.now());
+        String historyPath = HISTORY_SECTION + "." + endDateFormatted;
+
+        // Retrieve the command start time from config
+        long commandStartTimeMillis = getDataLong(COMMAND_START_TIMESTAMP_KEY);
+
+        // Calculate duration if command start time was recorded
+        String calculatedDuration = "N/A";
+        if (commandStartTimeMillis > 0) {
+            long durationMillis = contestEndTimeMillisActual - commandStartTimeMillis;
+            if (durationMillis >= 0) { // Ensure duration is not negative due to clock issues
+                calculatedDuration = formatDuration(durationMillis);
+            } else {
+                calculatedDuration = "Error: Negative Duration";
+                plugin.getLogger().warning("Calculated negative contest duration for history. Command start time: " + commandStartTimeMillis + ", End time: " + contestEndTimeMillisActual);
+            }
+        } else {
+            plugin.getLogger().warning("Contest command start time not found in config for history entry.");
+        }
+
 
         claimContestConfig.set(historyPath + ".location", chunkLoc);
         claimContestConfig.set(historyPath + ".winner", winnerName);
         claimContestConfig.set(historyPath + ".prize", prize);
         claimContestConfig.set(historyPath + ".mode.pre-reveal", getDataBoolean(MODE_PRE_REVEAL_KEY));
         claimContestConfig.set(historyPath + ".mode.hold", getDataBoolean(MODE_HOLD_KEY));
-        claimContestConfig.set(historyPath + ".duration.standard", formatDuration(getDataLong(DURATION_KEY)));
-        claimContestConfig.set(historyPath + ".duration.pre-reveal", formatDuration(getDataLong(DURATION_PRE_REVEAL_KEY)));
-        claimContestConfig.set(historyPath + ".duration.hold", formatDuration(getDataLong(DURATION_HOLD_KEY)));
+        // Save the configured durations for context, not the actual elapsed time here (that's calculated_duration)
+        claimContestConfig.set(historyPath + ".config_duration.standard", formatDuration(getDataLong(DURATION_KEY)));
+        claimContestConfig.set(historyPath + ".config_duration.pre-reveal", formatDuration(getDataLong(DURATION_PRE_REVEAL_KEY)));
+        claimContestConfig.set(historyPath + ".config_duration.hold", formatDuration(getDataLong(DURATION_HOLD_KEY)));
         claimContestConfig.set(historyPath + ".ended_phase", phaseEnded.name());
+        // Save formatted start (from command time) and end dates, and calculated duration
+        claimContestConfig.set(historyPath + "." + HISTORY_START_DATE_KEY, commandStartTimeMillis > 0 ? HISTORY_DATE_FORMAT.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(commandStartTimeMillis), ZoneId.systemDefault())) : "N/A");
+        claimContestConfig.set(historyPath + "." + HISTORY_END_DATE_KEY, endDateFormatted); // Use the time this method was called
+        claimContestConfig.set(historyPath + "." + HISTORY_CALCULATED_DURATION_KEY, calculatedDuration);
+
+
         // Save happens in cancelContest
 
         // --- Announce Winner ---
@@ -757,18 +796,25 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
             Bukkit.broadcastMessage("Location: " + ChatColor.AQUA + chunkLoc);
             Bukkit.broadcastMessage("And the winner is... " + ChatColor.GREEN + finalWinnerName + "!");
             if (!prize.equals("None")) {
-                Bukkit.broadcastMessage("Prize: " + ChatColor.YELLOW + prize);
+                Bukkit.broadcastMessage(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize);
             }
+            if (!calculatedDuration.equals("N/A") && !calculatedDuration.contains("Error")) {
+                Bukkit.broadcastMessage(ChatColor.YELLOW + "Duration: " + ChatColor.WHITE + calculatedDuration);
+            }
+
 
             // Call custom event for the winner
             if (winnerPlayer != null) {
                 pluginManager.callEvent(new ClaimContestOverEvent(winnerPlayer)); // Assuming this event exists
             } else {
-                plugin.getLogger().info("Contest winner " + finalWinnerName + " is offline. Prize: " + prize);
+                plugin.getLogger().info("Contest winner " + finalWinnerName + " is offline. Prize: " + prize + (calculatedDuration.equals("N/A") ? "" : ", Duration: " + calculatedDuration));
             }
 
         } else {
             Bukkit.broadcastMessage(ChatColor.YELLOW + "No one secured the claim when the contest ended!");
+            if (!calculatedDuration.equals("N/A") && !calculatedDuration.contains("Error")) {
+                Bukkit.broadcastMessage(ChatColor.YELLOW + "Duration: " + ChatColor.WHITE + calculatedDuration);
+            }
         }
 
         // --- Cleanup ---
@@ -792,9 +838,9 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         currentPhase = Phase.FINISHED; // Mark as finished immediately
         currentContestClaimId = null;
         currentHolderName = NO_CLAIMANT;
-        contestStartTimeMillis = -1;
-        contestEndTimeMillis = -1;
-        holdEndTimeMillis.set(-1);
+        contestStartTimeMillis = -1; // Active phase start time
+        contestEndTimeMillis = -1; // Standard or pre-reveal end time
+        holdEndTimeMillis.set(-1); // Hold phase end time
 
         // Clear runtime data from config, keeping setup config and history
         clearRuntimeContestData();
@@ -1149,9 +1195,21 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                     player.sendMessage(ChatColor.YELLOW + "Hold Time Left: " + ChatColor.WHITE + formatTimeLeft(holdEndTimeMillis.get() - now));
                     break;
             }
+            // Also show the command start time if available
+            long commandStartTime = getDataLong(COMMAND_START_TIMESTAMP_KEY);
+            if (commandStartTime > 0) {
+                player.sendMessage(ChatColor.YELLOW + "Started At: " + ChatColor.WHITE + HISTORY_DATE_FORMAT.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(commandStartTime), ZoneId.systemDefault())));
+            }
+
         } else if (currentPhase == Phase.PENDING && configExists){
             player.sendMessage(ChatColor.GRAY + "Use '/claimcontest start' to begin.");
+            // Show the configured command start time if available (e.g. from previous unfinished contest config)
+            long commandStartTime = getDataLong(COMMAND_START_TIMESTAMP_KEY);
+            if (commandStartTime > 0) {
+                player.sendMessage(ChatColor.YELLOW + "Last Configured Start At: " + ChatColor.WHITE + HISTORY_DATE_FORMAT.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(commandStartTime), ZoneId.systemDefault())));
+            }
         }
+
 
         return true;
     }
@@ -1198,7 +1256,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     private void clearRuntimeContestData() {
         ConfigurationSection dataSection = claimContestConfig.getConfigurationSection(DATA_SECTION);
         if (dataSection != null) {
-            dataSection.set(START_TIMESTAMP_KEY, null);
+            // Keep COMMAND_START_TIMESTAMP_KEY for history calculation, clear others
+            dataSection.set(START_TIMESTAMP_KEY, null); // Clear Active phase start time
             dataSection.set(CURRENT_CLAIMANT_KEY, null);
             dataSection.set(CURRENT_HOLDER_KEY, null);
             dataSection.set(PHASE_KEY, null);
@@ -1209,7 +1268,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
             dataSection.set(CLAIM_ID_KEY.hashCode() + "_approx_x_offset", null);
             dataSection.set(CLAIM_ID_KEY.hashCode() + "_approx_z_offset", null);
         }
-        // Keep: chunkLoc, claimID, duration, prize, mode settings, config-save-timestamp
+        // Keep: chunkLoc, claimID, duration, prize, mode settings, config-save-timestamp, COMMAND_START_TIMESTAMP_KEY
     }
 
     // Completely clears the data section (use with caution, maybe for full reset?)
@@ -1239,6 +1298,11 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
             // Contest wasn't active on shutdown, no need to resume task
             // We might want to clear runtime data here if it's FINISHED but wasn't cleared properly
             if(currentPhase == Phase.FINISHED) clearRuntimeContestData();
+            // If finished, clear the COMMAND_START_TIMESTAMP_KEY as well so it doesn't show for a new pending contest
+            if (currentPhase == Phase.FINISHED) {
+                setDataValue(COMMAND_START_TIMESTAMP_KEY, null);
+                plugin.cfg.saveClaimContest();
+            }
             return;
         }
 
@@ -1248,6 +1312,9 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         currentContestClaimId = data.getString(CLAIM_ID_KEY);
         modeHold = data.getBoolean(MODE_HOLD_KEY); // Load mode flags
         holdDurationMillis = data.getLong(DURATION_HOLD_KEY); // Need hold duration for HOLD phase
+        // Load command start time if available (needed for history calculation on end)
+        long commandStartTimeLoaded = data.getLong(COMMAND_START_TIMESTAMP_KEY, -1);
+
 
         if (currentContestClaimId == null || currentContestClaimId.isEmpty()) {
             plugin.getLogger().severe("Cannot resume contest: Claim ID missing from config!");
@@ -1279,7 +1346,12 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                 break;
 
             case ACTIVE:
-                contestStartTimeMillis = data.getLong(START_TIMESTAMP_KEY, -1); // Load start time
+                contestStartTimeMillis = data.getLong(START_TIMESTAMP_KEY, -1); // Load Active phase start time
+                // Ensure COMMAND_START_TIMESTAMP_KEY is present if resuming ACTIVE
+                if (commandStartTimeLoaded <= 0) {
+                    plugin.getLogger().warning("COMMAND_START_TIMESTAMP_KEY missing when resuming ACTIVE phase. Cannot calculate full duration on end.");
+                }
+
                 if (modeHold) {
                     // Just resume the ActiveHold ticker, no end time needed here
                     mainTask = scheduler.runTaskTimer(plugin, this::tickActiveHoldMode, 0L, TICKS_PER_SECOND);
@@ -1302,6 +1374,11 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                 currentHolderName = data.getString(CURRENT_HOLDER_KEY, NO_CLAIMANT);
                 long holdEnds = data.getLong(HOLD_END_TIMESTAMP_KEY, -1);
                 holdEndTimeMillis.set(holdEnds);
+                // Ensure COMMAND_START_TIMESTAMP_KEY is present if resuming HOLD
+                if (commandStartTimeLoaded <= 0) {
+                    plugin.getLogger().warning("COMMAND_START_TIMESTAMP_KEY missing when resuming HOLD phase. Cannot calculate full duration on end.");
+                }
+
 
                 if (currentHolderName.equals(NO_CLAIMANT) || holdEnds <= 0) {
                     plugin.getLogger().warning("Inconsistent HOLD phase state found. Resetting to ACTIVE.");
