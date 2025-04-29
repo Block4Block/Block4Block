@@ -26,17 +26,28 @@ public class ComplimentaryBed implements Listener {
     private void giveComplimentaryBed(Player player) {
         String pID = player.getUniqueId().toString();
         FileConfiguration bedUsage = plugin.cfg.getComplimentaryBedUsage();
+
+        // 🛠 Migrate old format if necessary
+        Object existing = bedUsage.get(pID);
+        if (existing instanceof Number) {
+            long legacyNextAvailable = ((Number) existing).longValue();
+            bedUsage.set(pID, null); // Remove old flat value
+            bedUsage.set(pID + ".nextAvailable", legacyNextAvailable);
+            bedUsage.set(pID + ".bedCount", 0); // Assume 0 if unknown
+            bedUsage.set(pID + ".name", player.getName());
+            plugin.getLogger().info("Migrated old complimentary bed data for " + player.getName());
+        }
+
         long now = System.currentTimeMillis();
-        long nextAvailable = bedUsage.getLong(pID, 0);
+        long nextAvailable = bedUsage.getLong(pID + ".nextAvailable", 0);
 
         int limit = plugin.getConfig().getInt("complimentary-bed.limit", 1);
         Object intervalConfig = plugin.getConfig().get("complimentary-bed.interval");
         long cooldownDuration = getCooldownDuration(intervalConfig);
 
+        int bedCount = bedUsage.getInt(pID + ".bedCount", 0) + 1;
         int bedsInInventory = player.getInventory().all(Material.WHITE_BED).size();
-        int bedCount = bedsInInventory + 1;
 
-        // Debugging bed count and cooldown
         plugin.getLogger().info("Bed count: " + bedCount + " | Next available: " + nextAvailable + " | Current time: " + now);
 
         if (now < nextAvailable || bedCount > limit) {
@@ -47,7 +58,6 @@ public class ComplimentaryBed implements Listener {
             return;
         }
 
-        // Create a bed item with custom name and lore that tracks the count.
         ItemStack bed = new ItemStack(Material.WHITE_BED, 1);
         ItemMeta meta = bed.getItemMeta();
         meta.setDisplayName(ChatColor.GREEN + "Complimentary Bed");
@@ -56,11 +66,12 @@ public class ComplimentaryBed implements Listener {
         meta.setLore(lore);
         bed.setItemMeta(meta);
 
-        // Add the bed to the player's inventory
         player.getInventory().addItem(bed);
         player.sendMessage(ChatColor.GRAY + "Complimentary Bed #" + bedCount + " collected.");
 
-        bedUsage.set(pID, now + cooldownDuration);
+        bedUsage.set(pID + ".name", player.getName());
+        bedUsage.set(pID + ".nextAvailable", now + cooldownDuration);
+        bedUsage.set(pID + ".bedCount", bedCount);
         plugin.cfg.saveComplimentaryBedUsage();
     }
 
@@ -98,7 +109,7 @@ public class ComplimentaryBed implements Listener {
             String pID = player.getUniqueId().toString();
             FileConfiguration bedUsage = plugin.cfg.getComplimentaryBedUsage();
             long now = System.currentTimeMillis();
-            long nextAvailable = bedUsage.getLong(pID, 0);
+            long nextAvailable = bedUsage.getLong(pID + ".nextAvailable", 0);
 
             int limit = plugin.getConfig().getInt("complimentary-bed.limit", 1);
             int count = player.getInventory().all(Material.WHITE_BED).size() + 1;
@@ -121,6 +132,10 @@ public class ComplimentaryBed implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        String pID = player.getUniqueId().toString();
+        FileConfiguration bedUsage = plugin.cfg.getComplimentaryBedUsage();
+        long nextAvailable = bedUsage.getLong(pID + ".nextAvailable", 0);
+
         if (!player.hasPlayedBefore()) {
             plugin.getLogger().info("Player joining for the first time: " + player.getName());
             if (player.getBedSpawnLocation() == null) {
