@@ -885,7 +885,14 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         // Board for claimant
         Scoreboard claimantBoard = createScoreboardBase(SCOREBOARD_TITLE);
         Objective claimantSidebar = claimantBoard.getObjective(DisplaySlot.SIDEBAR);
-        claimantSidebar.getScore(ChatColor.WHITE + "Location: " + chunkLoc).setScore(5);
+        // Split location into World and Coordinates
+        String[] locationParts = chunkLoc.split(" \\(X: ");
+        String worldName = locationParts[0];
+        String coords = "(X: " + locationParts[1];
+
+        claimantSidebar.getScore(ChatColor.WHITE + "Location:").setScore(5);
+        claimantSidebar.getScore(ChatColor.WHITE + worldName).setScore(4);
+        claimantSidebar.getScore(ChatColor.WHITE + coords).setScore(3);
         claimantSidebar.getScore(" ").setScore(4);
         claimantSidebar.getScore(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + timeLeftFormatted).setScore(3);
         claimantSidebar.getScore("  ").setScore(2);
@@ -895,7 +902,10 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         // Board for others
         Scoreboard otherBoard = createScoreboardBase(SCOREBOARD_TITLE);
         Objective otherSidebar = otherBoard.getObjective(DisplaySlot.SIDEBAR);
-        otherSidebar.getScore(ChatColor.WHITE + "Location: " + chunkLoc).setScore(5);
+        // Split location into World and Coordinates
+        otherSidebar.getScore(ChatColor.WHITE + "Location:").setScore(5);
+        otherSidebar.getScore(ChatColor.WHITE + worldName).setScore(4);
+        otherSidebar.getScore(ChatColor.WHITE + coords).setScore(3);
         otherSidebar.getScore(" ").setScore(4);
         otherSidebar.getScore(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + timeLeftFormatted).setScore(3);
         otherSidebar.getScore("  ").setScore(2);
@@ -921,11 +931,16 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         Objective sidebar = board.getObjective(DisplaySlot.SIDEBAR);
 
         // This scoreboard is shown when the claim is UNCLAIMED in Hold mode
-        sidebar.getScore(ChatColor.WHITE + "Location: " + chunkLoc).setScore(5);
-        sidebar.getScore(" ").setScore(4);
-        sidebar.getScore(ChatColor.YELLOW + "Mode: " + ChatColor.AQUA + "Claim and Hold").setScore(3);
-        sidebar.getScore(claimantStatus).setScore(2); // Display claimant status (claimed or unclaimed)
-        sidebar.getScore("  ").setScore(1);
+        String[] locationParts = chunkLoc.split(" \\(X: ");
+        String worldName = locationParts[0];
+        String coords = "(X: " + locationParts[1];
+
+        sidebar.getScore(ChatColor.WHITE + "Location:").setScore(6);
+        sidebar.getScore(ChatColor.WHITE + worldName).setScore(5);
+        sidebar.getScore(ChatColor.WHITE + coords).setScore(4);
+        sidebar.getScore(" ").setScore(3);
+        sidebar.getScore(ChatColor.YELLOW + "Mode: " + ChatColor.AQUA + "Claim and Hold").setScore(2);
+        sidebar.getScore(claimantStatus).setScore(1); // Display claimant status (claimed or unclaimed)
         sidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
 
         setBoardForAllPlayers(board);
@@ -942,22 +957,29 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         Scoreboard holderBoard = createScoreboardBase(ChatColor.GOLD + "Hold the Claim!");
         Objective holderSidebar = holderBoard.getObjective(DisplaySlot.SIDEBAR);
         holderSidebar.getScore(" ").setScore(5);
-        holderSidebar.getScore(ChatColor.WHITE + "Location: " + chunkLoc).setScore(4);
-        holderSidebar.getScore(ChatColor.GREEN + "You are Holding the Claim!").setScore(3);
-        holderSidebar.getScore(ChatColor.YELLOW + "Hold for: " + ChatColor.GREEN + timeLeftFormatted).setScore(2); // Displays the ticking timer for the holder
-        holderSidebar.getScore("  ").setScore(1);
-        holderSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
+        // Split location into World and Coordinates
+        String[] locationParts = chunkLoc.split(" \\(X: ");
+        String worldName = locationParts[0];
+        String coords = "(X: " + locationParts[1];
+        holderSidebar.getScore(ChatColor.WHITE + "Location:").setScore(7);
+        holderSidebar.getScore(ChatColor.WHITE + worldName).setScore(6);
+        holderSidebar.getScore(ChatColor.WHITE + coords).setScore(5);
+        holderSidebar.getScore(ChatColor.GREEN + "You are Holding the Claim!").setScore(4);
+        holderSidebar.getScore(ChatColor.YELLOW + "Hold for: " + ChatColor.GREEN + timeLeftFormatted).setScore(3);
+        holderSidebar.getScore(" ").setScore(2);
+        holderSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(1);
 
 
         // Board for others
         Scoreboard otherBoard = createScoreboardBase(SCOREBOARD_TITLE);
         Objective otherSidebar = otherBoard.getObjective(DisplaySlot.SIDEBAR);
-        otherSidebar.getScore(ChatColor.WHITE + "Location: " + chunkLoc).setScore(5);
-        otherSidebar.getScore(" ").setScore(4);
-        otherSidebar.getScore(ChatColor.YELLOW + "Holder: " + ChatColor.RED + currentHolderName).setScore(3); // Shows who is holding
-        otherSidebar.getScore(ChatColor.WHITE + "Time left: " + timeLeftFormatted).setScore(2); // Displays the ticking timer for others
-        otherSidebar.getScore("  ").setScore(1);
-        otherSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
+        otherSidebar.getScore(ChatColor.WHITE + "Location:").setScore(7);
+        otherSidebar.getScore(ChatColor.WHITE + worldName).setScore(6);
+        otherSidebar.getScore(ChatColor.WHITE + coords).setScore(5);
+        otherSidebar.getScore(ChatColor.YELLOW + "Holder: " + ChatColor.RED + currentHolderName).setScore(4); // Shows who is holding
+        otherSidebar.getScore(ChatColor.WHITE + "Time left: " + timeLeftFormatted).setScore(3); // Displays the ticking timer for others
+        otherSidebar.getScore(" ").setScore(2);
+        otherSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(1);
         addBelowNameObjective(otherBoard, currentHolderName); // Add name tag for holder
 
         // Added logging to confirm boards are created and passed
