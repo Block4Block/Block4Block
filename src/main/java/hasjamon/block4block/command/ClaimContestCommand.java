@@ -256,12 +256,23 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         }
         // Config change check happens in onCommand
 
-        String dimensionName = args[1].toLowerCase();
+        String dimensionNameInput = args[1].toLowerCase();
         World.Environment environment;
-        switch (dimensionName) {
-            case "overworld": environment = World.Environment.NORMAL; break;
-            case "nether": environment = World.Environment.NETHER; break;
-            case "end": environment = World.Environment.THE_END; break;
+        String chunkDisplayName; // The name to display in the scoreboard
+
+        switch (dimensionNameInput) {
+            case "overworld":
+                environment = World.Environment.NORMAL;
+                chunkDisplayName = "Overworld"; // Keep "Overworld" as is
+                break;
+            case "nether":
+                environment = World.Environment.NETHER;
+                chunkDisplayName = "The Nether"; // Use "The Nether"
+                break;
+            case "end":
+                environment = World.Environment.THE_END;
+                chunkDisplayName = "The End"; // Use "The End"
+                break;
             default:
                 player.sendMessage(ChatColor.RED + "Invalid dimension: " + args[1] + ". Use overworld, nether, or end.");
                 return false;
@@ -270,7 +281,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         try {
             int x = Integer.parseInt(args[2]);
             int z = Integer.parseInt(args[3]);
-            String chunkLocString = StringUtils.capitalize(dimensionName) + " (X: " + x + ", Z: " + z + ")";
+            // Use the prepared chunkDisplayName
+            String chunkLocString = chunkDisplayName + " (X: " + x + ", Z: " + z + ")";
             String claimId = utils.getClaimID(x, z, environment);
 
             if (claimId == null) {
@@ -891,7 +903,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         String coords = "(X: " + locationParts[1];
 
         claimantSidebar.getScore(ChatColor.WHITE + "Location:").setScore(5);
-        claimantSidebar.getScore(ChatColor.WHITE + worldName).setScore(4);
+        claimantSidebar.getScore(getWorldColor(worldName) + worldName).setScore(4);
         claimantSidebar.getScore(ChatColor.WHITE + coords).setScore(3);
         claimantSidebar.getScore(" ").setScore(4);
         claimantSidebar.getScore(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + timeLeftFormatted).setScore(3);
@@ -904,7 +916,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         Objective otherSidebar = otherBoard.getObjective(DisplaySlot.SIDEBAR);
         // Split location into World and Coordinates
         otherSidebar.getScore(ChatColor.WHITE + "Location:").setScore(5);
-        otherSidebar.getScore(ChatColor.WHITE + worldName).setScore(4);
+        otherSidebar.getScore(getWorldColor(worldName) + worldName).setScore(4);
         otherSidebar.getScore(ChatColor.WHITE + coords).setScore(3);
         otherSidebar.getScore(" ").setScore(4);
         otherSidebar.getScore(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + timeLeftFormatted).setScore(3);
@@ -936,7 +948,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         String coords = "(X: " + locationParts[1];
 
         sidebar.getScore(ChatColor.WHITE + "Location:").setScore(6);
-        sidebar.getScore(ChatColor.WHITE + worldName).setScore(5);
+        sidebar.getScore(getWorldColor(worldName) + worldName).setScore(5);
         sidebar.getScore(ChatColor.WHITE + coords).setScore(4);
         sidebar.getScore(" ").setScore(3);
         sidebar.getScore(ChatColor.YELLOW + "Mode: " + ChatColor.AQUA + "Claim and Hold").setScore(2);
@@ -962,7 +974,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         String worldName = locationParts[0];
         String coords = "(X: " + locationParts[1];
         holderSidebar.getScore(ChatColor.WHITE + "Location:").setScore(7);
-        holderSidebar.getScore(ChatColor.WHITE + worldName).setScore(6);
+        holderSidebar.getScore(getWorldColor(worldName) + worldName).setScore(6);
         holderSidebar.getScore(ChatColor.WHITE + coords).setScore(5);
         holderSidebar.getScore(ChatColor.GREEN + "You are Holding the Claim!").setScore(4);
         holderSidebar.getScore(ChatColor.YELLOW + "Hold for: " + ChatColor.GREEN + timeLeftFormatted).setScore(3);
@@ -974,7 +986,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         Scoreboard otherBoard = createScoreboardBase(SCOREBOARD_TITLE);
         Objective otherSidebar = otherBoard.getObjective(DisplaySlot.SIDEBAR);
         otherSidebar.getScore(ChatColor.WHITE + "Location:").setScore(7);
-        otherSidebar.getScore(ChatColor.WHITE + worldName).setScore(6);
+        otherSidebar.getScore(getWorldColor(worldName) + worldName).setScore(6);
         otherSidebar.getScore(ChatColor.WHITE + coords).setScore(5);
         otherSidebar.getScore(ChatColor.YELLOW + "Holder: " + ChatColor.RED + currentHolderName).setScore(4); // Shows who is holding
         otherSidebar.getScore(ChatColor.WHITE + "Time left: " + timeLeftFormatted).setScore(3); // Displays the ticking timer for others
@@ -985,6 +997,26 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         // Added logging to confirm boards are created and passed
         plugin.getLogger().info("updateHoldScoreboards: Created holderBoard and otherBoard. Assigning scoreboards.");
         setScoreboardsByType(holderBoard, otherBoard, currentHolderName); // Assigns the correct board to players
+    }
+
+    private ChatColor getWorldColor(String worldName) {
+        switch (worldName) { // Check for the stored display name
+            case "Overworld":
+                return ChatColor.GREEN;
+            case "The Nether":
+                return ChatColor.RED;
+            case "The End":
+                return ChatColor.AQUA;
+            // Fallback cases for environment names if needed elsewhere, though using the display name is preferred for consistency
+            case "world":
+            case "world_nether":
+            case "world_the_end":
+                // Log a warning if these unexpected values are being used here
+                plugin.getLogger().warning("getWorldColor received unexpected internal world name: " + worldName);
+                return ChatColor.WHITE;
+            default:
+                return ChatColor.WHITE;
+        }
     }
 
 
