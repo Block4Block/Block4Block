@@ -90,8 +90,14 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     private static final String NO_CLAIMANT = "No one"; // Represents no one holding the claim
     private static final String SCOREBOARD_OBJECTIVE_NAME = "b4bcontest";
     private static final String SCOREBOARD_TITLE = ChatColor.GOLD + "Claim Contest";
-    private static final String SCOREBOARD_CLAIMANT_BELOWNAME_OBJ = "b4bclaimant";
-    private static final String SCOREBOARD_CLAIMANT_BELOWNAME_TITLE = ChatColor.GOLD + "Claimant";
+    // private static final String SCOREBOARD_CLAIMANT_BELOWNAME_OBJ = "b4bclaimant"; // Commented out
+    // private static final String SCOREBOARD_CLAIMANT_BELOWNAME_TITLE = ChatColor.GOLD + "Claimant"; // Commented out
+
+    // New constants for Scoreboard Teams
+    private static final String TEAM_CLAIMANT = "b4bclaimant_team";
+    private static final String TEAM_DEFENDER = "b4bdefender_team";
+    private static final String TEAM_INTRUDER = "b4bintruder_team";
+
 
     private static final DateTimeFormatter HISTORY_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MMM-dd_HH-mm-ss");
 
@@ -536,12 +542,12 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                     Bukkit.broadcastMessage(ChatColor.YELLOW + "Mode: Claim and Hold! First to claim must hold it for " + formatDuration(holdDurationMillis) + ".");
                     plugin.getLogger().info("Scheduling tickActiveHoldMode task.");
                     mainTask = scheduler.runTaskTimer(plugin, this::tickActiveHoldMode, 0L, TICKS_PER_SECOND);
-                    // Immediately update the scoreboard to show the initial claimant status
+                    // Immediately update the scoreboard to show the initial claimant status and teams
                     plugin.getLogger().info("Updating Active Hold Mode scoreboards immediately after phase transition.");
                     updateActiveHoldModeScoreboards();
 
                     // --- ADDED EDGE CASE CHECK FOR ALREADY CLAIMED CHUNK ---
-                    String initialClaimant = getCurrentClaimantName(currentContestClaimId);
+                    String initialClaimant = getPrimaryClaimantName(currentContestClaimId);
                     if (!initialClaimant.equals(NO_CLAIMANT)) {
                         plugin.getLogger().info("Contest started in ACTIVE (Hold Mode) with chunk already claimed by: " + initialClaimant + ". Directly transitioning to HOLD.");
                         currentHolderName = initialClaimant;
@@ -615,7 +621,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         long now = System.currentTimeMillis();
         if (now >= contestEndTimeMillis) { // contestEndTimeMillis stores standard contest end time here
             // Standard contest finished
-            String finalClaimant = getCurrentClaimantName(currentContestClaimId); // Check who holds it at the end
+            String finalClaimant = getPrimaryClaimantName(currentContestClaimId); // Check who holds it at the end
             handleContestEnd(finalClaimant);
             // transitionToPhase(Phase.FINISHED); // Called within handleContestEnd -> cancelContest
         } else {
@@ -650,7 +656,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         }
 
         // Check if the current holder STILL holds the claim
-        String actualClaimant = getCurrentClaimantName(currentContestClaimId);
+        String actualClaimant = getPrimaryClaimantName(currentContestClaimId);
         if (!actualClaimant.equalsIgnoreCase(currentHolderName)) {
             // Holder lost the claim!
             plugin.getLogger().info(currentHolderName + " lost the claim (" + currentContestClaimId + "). Actual claimant is now: " + actualClaimant + ". Resetting hold timer.");
@@ -691,7 +697,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
             plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Raw members string from config: '" + ownerInfoRaw + "'"); //
             // --- END DEBUG LOGS ---
 
-            String actualCurrentClaimant = getCurrentClaimantName(activeContestClaimId); //
+            String actualCurrentClaimant = getPrimaryClaimantName(activeContestClaimId); // Modified to use primary claimant
             plugin.getLogger().info("Actual current claimant of contest chunk " + activeContestClaimId + ": " + actualCurrentClaimant); //
 
             // --- START DEBUG LOGS ---
@@ -732,6 +738,9 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         // Clean up scoreboard for quitting player
         clearPlayerScoreboard(event.getPlayer());
         plugin.getLogger().info("Cleared scoreboard for quitting player: " + event.getPlayer().getName());
+        // Also remove from any contest teams
+        removePlayerFromContestTeams(event.getPlayer());
+
 
         // If the player quitting was the holder in HOLD phase, reset the timer
         if (currentPhase == Phase.HOLD && event.getPlayer().getName().equalsIgnoreCase(currentHolderName)) {
@@ -747,6 +756,25 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         }
     }
 
+    private void removePlayerFromContestTeams(Player player) {
+        // When a player quits, attempt to remove them from all possible contest teams
+        // This helps prevent issues if the main contest scoreboard isn't the main server scoreboard
+        Scoreboard currentBoard = player.getScoreboard(); // Get the player's current scoreboard
+        if (currentBoard == null || currentBoard == scoreboardManager.getMainScoreboard()) {
+            // If they have the main scoreboard, attempt to clear from teams on the main board
+            currentBoard = scoreboardManager.getMainScoreboard();
+        }
+        // Attempt to get the teams from the current scoreboard
+        Team claimantTeam = currentBoard.getTeam(TEAM_CLAIMANT);
+        Team defenderTeam = currentBoard.getTeam(TEAM_DEFENDER);
+        Team intruderTeam = currentBoard.getTeam(TEAM_INTRUDER);
+
+        if (claimantTeam != null) claimantTeam.removeEntry(player.getName());
+        if (defenderTeam != null) defenderTeam.removeEntry(player.getName());
+        if (intruderTeam != null) intruderTeam.removeEntry(player.getName());
+    }
+
+
     // --- Contest End/Cancel Logic ---
 
     private void handleContestEnd(String winnerName) {
@@ -755,6 +783,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         Phase phaseEnded = currentPhase; // Store phase before cancelling
         plugin.getLogger().info("Contest ending. Winner: " + winnerName + " (Ended from Phase: " + phaseEnded + ")");
 
+        // Record history happens before cleanup
         // --- Record history ---
         String chunkLoc = getDataString(CHUNK_LOC_KEY, "Unknown");
         String prize = getDataString(PRIZE_KEY, "None");
@@ -829,6 +858,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
             }
         }
 
+        clearContestTeams(); // Clear teams before final cleanup
         // --- Cleanup ---
         cancelContest(null); // Final cleanup, null signifies natural end
     }
@@ -860,6 +890,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
 
         // Clear scoreboards
         clearAllScoreboards();
+        clearContestTeams(); // Clear teams
 
         if (cancelledBy != null) {
             Bukkit.broadcastMessage(ChatColor.YELLOW + "The claim contest was cancelled by " + cancelledBy + ".");
@@ -885,6 +916,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         sidebar.getScore(ChatColor.YELLOW + "Revealing in: " + ChatColor.WHITE + timeLeftFormatted).setScore(0);
 
         setBoardForAllPlayers(board);
+        // No teams needed during pre-reveal as claimant is unknown
     }
 
     // Update scoreboard during standard fixed-duration contest
@@ -892,57 +924,45 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         String timeLeftFormatted = formatTimeLeft(millisLeft);
         String chunkLoc = getDataString(CHUNK_LOC_KEY, "Unknown");
         String prize = getDataString(PRIZE_KEY, "None");
-        String currentClaimant = getCurrentClaimantName(currentContestClaimId);
+        // Use primary claimant here for display purposes if needed, teams handle below-name
+        // String currentClaimant = getPrimaryClaimantName(currentContestClaimId);
 
-        // Board for claimant
-        Scoreboard claimantBoard = createScoreboardBase(SCOREBOARD_TITLE);
-        Objective claimantSidebar = claimantBoard.getObjective(DisplaySlot.SIDEBAR);
+        // Scoreboard for all players (teams handle the distinction below name)
+        Scoreboard board = createScoreboardBase(SCOREBOARD_TITLE); // Create one board
+        Objective sidebar = board.getObjective(DisplaySlot.SIDEBAR);
         // Split location into World and Coordinates
         String[] locationParts = chunkLoc.split(" \\(X: ");
         String worldName = locationParts[0];
         String coords = "(X: " + locationParts[1];
 
-        claimantSidebar.getScore(ChatColor.WHITE + "Location:").setScore(5);
-        claimantSidebar.getScore(getWorldColor(worldName) + worldName).setScore(4);
-        claimantSidebar.getScore(ChatColor.WHITE + coords).setScore(3);
-        claimantSidebar.getScore(" ").setScore(4);
-        claimantSidebar.getScore(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + timeLeftFormatted).setScore(3);
-        claimantSidebar.getScore("  ").setScore(2);
-        claimantSidebar.getScore(ChatColor.GREEN + "You are the claimant!").setScore(1);
-        claimantSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
+        sidebar.getScore(ChatColor.WHITE + "Location:").setScore(5);
+        sidebar.getScore(getWorldColor(worldName) + worldName).setScore(4);
+        sidebar.getScore(ChatColor.WHITE + coords).setScore(3);
+        sidebar.getScore(" ").setScore(2);
+        sidebar.getScore(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + timeLeftFormatted).setScore(1);
+        sidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
 
-        // Board for others
-        Scoreboard otherBoard = createScoreboardBase(SCOREBOARD_TITLE);
-        Objective otherSidebar = otherBoard.getObjective(DisplaySlot.SIDEBAR);
-        // Split location into World and Coordinates
-        otherSidebar.getScore(ChatColor.WHITE + "Location:").setScore(5);
-        otherSidebar.getScore(getWorldColor(worldName) + worldName).setScore(4);
-        otherSidebar.getScore(ChatColor.WHITE + coords).setScore(3);
-        otherSidebar.getScore(" ").setScore(4);
-        otherSidebar.getScore(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + timeLeftFormatted).setScore(3);
-        otherSidebar.getScore("  ").setScore(2);
-        otherSidebar.getScore(ChatColor.YELLOW + "Claimant: " + ChatColor.WHITE + currentClaimant).setScore(1);
-        otherSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
-        addBelowNameObjective(otherBoard, currentClaimant); // Add name tag for claimant
+        // Update player teams based on who is claimant, defender, or intruder on THIS board
+        updatePlayerTeams(board, currentContestClaimId);
 
-        setScoreboardsByType(claimantBoard, otherBoard, currentClaimant);
+        // Assign the same board to all players, teams manage the below-name text
+        setBoardForAllPlayers(board);
     }
 
     // Update scoreboard during ACTIVE phase when in HOLD mode (waiting for claim)
     private void updateActiveHoldModeScoreboards() {
         String chunkLoc = getDataString(CHUNK_LOC_KEY, "Unknown");
         String prize = getDataString(PRIZE_KEY, "None");
-        String holdDurationFormatted = formatDuration(holdDurationMillis);
+        // String holdDurationFormatted = formatDuration(holdDurationMillis); // Not used in sidebar for this phase
         // Fetch the current claimant for the contested chunk
-        String currentClaimant = getCurrentClaimantName(currentContestClaimId);
-        // Determine the text to display based on whether the chunk is claimed
+        String currentClaimant = getPrimaryClaimantName(currentContestClaimId); // Use primary claimant
+        // Determine the text to display based on whether the chunk is claimed in the sidebar
         String claimantStatus = currentClaimant.equals(NO_CLAIMANT) ? ChatColor.WHITE + "Claimant: " + ChatColor.GRAY + "Unclaimed" : ChatColor.YELLOW + "Claimant: " + ChatColor.GREEN + currentClaimant;
 
 
         Scoreboard board = createScoreboardBase(SCOREBOARD_TITLE);
         Objective sidebar = board.getObjective(DisplaySlot.SIDEBAR);
 
-        // This scoreboard is shown when the claim is UNCLAIMED in Hold mode
         String[] locationParts = chunkLoc.split(" \\(X: ");
         String worldName = locationParts[0];
         String coords = "(X: " + locationParts[1];
@@ -955,6 +975,9 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         sidebar.getScore(claimantStatus).setScore(1); // Display claimant status (claimed or unclaimed)
         sidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(0);
 
+        // Update player teams based on who is claimant, defender, or intruder on THIS board
+        updatePlayerTeams(board, currentContestClaimId); // Pass currentClaimantId (or contestedClaimId)
+
         setBoardForAllPlayers(board);
     }
 
@@ -965,38 +988,30 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         String prize = getDataString(PRIZE_KEY, "None");
         // currentHolderName should be set when entering HOLD phase
 
-        // Board for Holder
-        Scoreboard holderBoard = createScoreboardBase(ChatColor.GOLD + "Hold the Claim!");
-        Objective holderSidebar = holderBoard.getObjective(DisplaySlot.SIDEBAR);
-        holderSidebar.getScore(" ").setScore(5);
+        // Scoreboard for all players (teams handle the distinction below name)
+        Scoreboard board = createScoreboardBase(ChatColor.GOLD + "Hold the Claim!"); // Create one board
+        Objective sidebar = board.getObjective(DisplaySlot.SIDEBAR);
+        sidebar.getScore(" ").setScore(6); // Adjusted scores
         // Split location into World and Coordinates
         String[] locationParts = chunkLoc.split(" \\(X: ");
         String worldName = locationParts[0];
         String coords = "(X: " + locationParts[1];
-        holderSidebar.getScore(ChatColor.WHITE + "Location:").setScore(7);
-        holderSidebar.getScore(getWorldColor(worldName) + worldName).setScore(6);
-        holderSidebar.getScore(ChatColor.WHITE + coords).setScore(5);
-        holderSidebar.getScore(ChatColor.GREEN + "You are Holding the Claim!").setScore(4);
-        holderSidebar.getScore(ChatColor.YELLOW + "Hold for: " + ChatColor.GREEN + timeLeftFormatted).setScore(3);
-        holderSidebar.getScore(" ").setScore(2);
-        holderSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(1);
+        sidebar.getScore(ChatColor.WHITE + "Location:").setScore(8);
+        sidebar.getScore(getWorldColor(worldName) + worldName).setScore(7);
+        sidebar.getScore(ChatColor.WHITE + coords).setScore(6);
+        sidebar.getScore(ChatColor.YELLOW + "Holder: " + ChatColor.GREEN + currentHolderName).setScore(5); // Shows who is holding in sidebar
+        sidebar.getScore(ChatColor.YELLOW + "Hold Time Left: " + ChatColor.WHITE + timeLeftFormatted).setScore(4); // Displays the ticking timer for others in sidebar
+        sidebar.getScore(" ").setScore(3);
+        sidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(2);
 
 
-        // Board for others
-        Scoreboard otherBoard = createScoreboardBase(SCOREBOARD_TITLE);
-        Objective otherSidebar = otherBoard.getObjective(DisplaySlot.SIDEBAR);
-        otherSidebar.getScore(ChatColor.WHITE + "Location:").setScore(7);
-        otherSidebar.getScore(getWorldColor(worldName) + worldName).setScore(6);
-        otherSidebar.getScore(ChatColor.WHITE + coords).setScore(5);
-        otherSidebar.getScore(ChatColor.YELLOW + "Holder: " + ChatColor.RED + currentHolderName).setScore(4); // Shows who is holding
-        otherSidebar.getScore(ChatColor.WHITE + "Time left: " + timeLeftFormatted).setScore(3); // Displays the ticking timer for others
-        otherSidebar.getScore(" ").setScore(2);
-        otherSidebar.getScore(ChatColor.YELLOW + "Prize: " + ChatColor.WHITE + prize).setScore(1);
-        addBelowNameObjective(otherBoard, currentHolderName); // Add name tag for holder
+        // Update player teams based on who is claimant, defender, or intruder on THIS board
+        updatePlayerTeams(board, currentContestClaimId);
 
-        // Added logging to confirm boards are created and passed
-        plugin.getLogger().info("updateHoldScoreboards: Created holderBoard and otherBoard. Assigning scoreboards.");
-        setScoreboardsByType(holderBoard, otherBoard, currentHolderName); // Assigns the correct board to players
+        // Assign the same board to all players, teams manage the below-name text
+        // Added logging for board assignment
+        plugin.getLogger().info("updateHoldScoreboards: Created board. Assigning scoreboards and updating teams.");
+        setBoardForAllPlayers(board);
     }
 
     private ChatColor getWorldColor(String worldName) {
@@ -1021,33 +1036,86 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
 
 
     private Scoreboard createScoreboardBase(String title) {
-        Scoreboard board = scoreboardManager.getNewScoreboard();
+        // Use the main scoreboard manager to get a scoreboard instance
+        Scoreboard board = scoreboardManager.getNewScoreboard(); // Get a new board for this contest instance
         Objective sidebar = board.registerNewObjective(SCOREBOARD_OBJECTIVE_NAME, "dummy", title);
         sidebar.setDisplaySlot(DisplaySlot.SIDEBAR);
         return board;
     }
 
-    private void addBelowNameObjective(Scoreboard board, String playerName) {
-        if (playerName.equals(NO_CLAIMANT)) return;
+    // Commented out addBelowNameObjective method
+    // private void addBelowNameObjective(Scoreboard board, String playerName) {
+    //     if (playerName.equals(NO_CLAIMANT)) return;
+    //
+    //     Player player = Bukkit.getPlayerExact(playerName);
+    //     if (player != null) {
+    //         try {
+    //             Objective belowName = board.getObjective(SCOREBOARD_CLAIMANT_BELOWNAME_OBJ);
+    //             if (belowName == null) {
+    //                 belowName = board.registerNewObjective(SCOREBOARD_CLAIMANT_BELOWNAME_OBJ, "dummy", SCOREBOARD_CLAIMANT_BELOWNAME_TITLE);
+    //                 belowName.setDisplaySlot(DisplaySlot.BELOW_NAME);
+    //             }
+    //             // Ensure only the target player gets the score marker
+    //             // Reset others if objective already existed? Can be complex. Safest is often new boards.
+    //             Score score = belowName.getScore(player.getName());
+    //             score.setScore(1);
+    //
+    //         } catch (IllegalArgumentException e) {
+    //             plugin.getLogger().warning("Could not register/update below_name objective: " + e.getMessage());
+    //         }
+    //     }
+    // }
 
-        Player player = Bukkit.getPlayerExact(playerName);
-        if (player != null) {
-            try {
-                Objective belowName = board.getObjective(SCOREBOARD_CLAIMANT_BELOWNAME_OBJ);
-                if (belowName == null) {
-                    belowName = board.registerNewObjective(SCOREBOARD_CLAIMANT_BELOWNAME_OBJ, "dummy", SCOREBOARD_CLAIMANT_BELOWNAME_TITLE);
-                    belowName.setDisplaySlot(DisplaySlot.BELOW_NAME);
+    // Helper method to get or create a team
+    private Team getOrCreateTeam(Scoreboard board, String teamName, String prefix, ChatColor color) {
+        Team team = board.getTeam(teamName);
+        if (team == null) {
+            team = board.registerNewTeam(teamName);
+            team.setPrefix(color + prefix + ChatColor.RESET + " "); // Added space for readability
+            team.setColor(color); // Can set name color too
+            team.setAllowFriendlyFire(true); // Adjust friendly fire as needed
+            team.setCanSeeFriendlyInvisibles(false); // Adjust visibility as needed
+        }
+        return team;
+    }
+
+    // Helper method to update player teams based on contest status
+    private void updatePlayerTeams(Scoreboard board, String contestedClaimId) {
+        String primaryClaimant = getPrimaryClaimantName(contestedClaimId);
+        List<String> claimMembers = getClaimMembers(contestedClaimId);
+
+        Team claimantTeam = getOrCreateTeam(board, TEAM_CLAIMANT, "Claimant", ChatColor.GOLD);
+        Team defenderTeam = getOrCreateTeam(board, TEAM_DEFENDER, "Defender", ChatColor.BLUE);
+        Team intruderTeam = getOrCreateTeam(board, TEAM_INTRUDER, "Intruder", ChatColor.RED);
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            String playerName = player.getName();
+            // Remove from all contest teams first
+            // Check if the team exists and the player is on it before attempting to remove
+            if (claimantTeam != null && claimantTeam.hasEntry(playerName)) claimantTeam.removeEntry(playerName);
+            if (defenderTeam != null && defenderTeam.hasEntry(playerName)) defenderTeam.removeEntry(playerName);
+            if (intruderTeam != null && intruderTeam.hasEntry(playerName)) intruderTeam.removeEntry(playerName);
+
+            // Assign to the correct team
+            if (playerName.equalsIgnoreCase(primaryClaimant)) {
+                if (claimantTeam != null) {
+                    claimantTeam.addEntry(playerName);
+                    plugin.getLogger().fine("Assigned " + playerName + " to Claimant team.");
                 }
-                // Ensure only the target player gets the score marker
-                // Reset others if objective already existed? Can be complex. Safest is often new boards.
-                Score score = belowName.getScore(player.getName());
-                score.setScore(1);
-
-            } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("Could not register/update below_name objective: " + e.getMessage());
+            } else if (claimMembers.stream().anyMatch(member -> member.equalsIgnoreCase(playerName))) {
+                if (defenderTeam != null) {
+                    defenderTeam.addEntry(playerName);
+                    plugin.getLogger().fine("Assigned " + playerName + " to Defender team.");
+                }
+            } else {
+                if (intruderTeam != null) {
+                    intruderTeam.addEntry(playerName);
+                    plugin.getLogger().fine("Assigned " + playerName + " to Intruder team.");
+                }
             }
         }
     }
+
 
     // Sets board universally
     private void setBoardForAllPlayers(Scoreboard board) {
@@ -1061,26 +1129,33 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         }
     }
 
-    // Sets specific boards for the target player vs others
-    private void setScoreboardsByType(Scoreboard targetPlayerBoard, Scoreboard otherPlayersBoard, String targetPlayerName) {
-        if (targetPlayerBoard == null || otherPlayersBoard == null) return;
-
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            if (p.getName().equalsIgnoreCase(targetPlayerName)) {
-                // Added logging for board assignment
-                plugin.getLogger().info("setScoreboardsByType: Assigning holderBoard to " + p.getName());
-                //if (p.getScoreboard() != targetPlayerBoard) {
-                p.setScoreboard(targetPlayerBoard);
-                //}
-            } else {
-                // Added logging for board assignment
-                plugin.getLogger().info("setScoreboardsByType: Assigning otherBoard to " + p.getName());
-                //if (p.getScoreboard() != otherPlayersBoard) {
-                p.setScoreboard(otherPlayersBoard);
-                //}
-            }
-        }
-    }
+    // Commented out setScoreboardsByType method (replaced by setBoardForAllPlayers with teams)
+    // private void setScoreboardsByType(Scoreboard targetPlayerBoard, Scoreboard otherPlayersBoard, String targetPlayerName) {
+    //      if (targetPlayerBoard == null || otherPlayersBoard == null) {
+    //           // If using a single board with teams, one of these might be null depending on the phase
+    //           // In the modified code, we mostly use a single board and set it universally
+    //           // So this method's logic needs careful consideration or replacement if using teams across phases
+    //           plugin.getLogger().warning("setScoreboardsByType called with null board(s). Check scoreboard logic.");
+    //           return;
+    //      }
+    //
+    //
+    //      for (Player p : Bukkit.getOnlinePlayers()) {
+    //           // With the team-based approach, all players often get the same board,
+    //           // and teams handle the below-name display.
+    //           // Re-evaluate if separate boards are truly needed per player status in team-based system.
+    //           // For now, using setBoardForAllPlayers seems more appropriate with the team approach.
+    //           // Keeping the method structure but acknowledging it might be simplified.
+    //
+    //          // Assuming 'otherPlayersBoard' is the board with the teams registered on it for all players
+    //          // and 'targetPlayerBoard' might be identical or unused in a pure team-based system.
+    //          // Let's simplify this - assign the board that has teams to all players.
+    //          // The updatePlayerTeams method, called before this, handles adding players to teams on that board.
+    //          plugin.getLogger().info("setScoreboardsByType: Assigning board with teams to " + p.getName());
+    //          p.setScoreboard(otherPlayersBoard); // Assign the board that has teams
+    //
+    //      }
+    //  }
 
 
     private void clearPlayerScoreboard(Player player) {
@@ -1094,6 +1169,33 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
             clearPlayerScoreboard(p);
         }
     }
+
+    // Method to clear players from contest teams
+    private void clearContestTeams() {
+        // Using the main scoreboard here to get the teams and clear entries
+        // Assuming teams were registered on the main scoreboard or a consistent contest board
+        Scoreboard mainBoard = scoreboardManager.getMainScoreboard(); // Get the main server scoreboard
+        // Attempt to get the teams from the main scoreboard
+        Team claimantTeam = mainBoard.getTeam(TEAM_CLAIMANT);
+        Team defenderTeam = mainBoard.getTeam(TEAM_DEFENDER);
+        Team intruderTeam = mainBoard.getTeam(TEAM_INTRUDER);
+
+        // Remove all players from the teams if the teams exist
+        if (claimantTeam != null) {
+            claimantTeam.getEntries().forEach(entry -> claimantTeam.removeEntry(entry));
+            // Optionally unregister teams after clearing if you don't need them permanently
+            // claimantTeam.unregister();
+        }
+        if (defenderTeam != null) {
+            defenderTeam.getEntries().forEach(entry -> defenderTeam.removeEntry(entry));
+            // defenderTeam.unregister();
+        }
+        if (intruderTeam != null) {
+            intruderTeam.getEntries().forEach(entry -> intruderTeam.removeEntry(entry));
+            // intruderTeam.unregister();
+        }
+    }
+
 
     // --- Utility / Helper Methods ---
 
@@ -1118,19 +1220,29 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         return valid ? totalSeconds * 1000L : -1; // Return milliseconds or -1 if no valid parts found
     }
 
-
-    private String getCurrentClaimantName(String claimId) {
-        if (claimId == null || claimId.isEmpty()) return NO_CLAIMANT;
-        String ownerInfo = claimDataConfig.getString(claimId + ".members"); // Adjust path if needed
-        if (ownerInfo == null || ownerInfo.isEmpty() || ownerInfo.equalsIgnoreCase(NO_CLAIMANT)) {
-            return NO_CLAIMANT;
+    // Helper method to get all members of a claim
+    private List<String> getClaimMembers(String claimId) {
+        if (claimId == null || claimId.isEmpty()) return Collections.emptyList();
+        String membersString = claimDataConfig.getString(claimId + ".members");
+        if (membersString == null || membersString.isEmpty()) {
+            return Collections.emptyList();
         }
-        return ownerInfo.split("\\n")[0].trim(); // Assumes first line is primary owner/holder
+        // Split by newline and filter out empty lines
+        return Arrays.stream(membersString.split("\\n")) // Assumes members are separated by newlines in the config
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    // Helper method to get the primary claimant (first member)
+    private String getPrimaryClaimantName(String claimId) {
+        List<String> members = getClaimMembers(claimId);
+        return members.isEmpty() ? NO_CLAIMANT : members.get(0);
     }
 
     // Checks for claimant change in standard mode and fires event/broadcast
     private void checkStandardClaimantChange() {
-        String actualClaimant = getCurrentClaimantName(currentContestClaimId);
+        String actualClaimant = getPrimaryClaimantName(currentContestClaimId); // Use primary claimant
         String previousClaimant = getDataString(CURRENT_CLAIMANT_KEY, NO_CLAIMANT);
 
         if (!actualClaimant.equalsIgnoreCase(previousClaimant)) {
@@ -1236,12 +1348,12 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                 case ACTIVE:
                     if (modeHold) {
                         // In Active Hold mode, show current claimant status
-                        String currentClaimant = getCurrentClaimantName(currentContestClaimId);
+                        String currentClaimant = getPrimaryClaimantName(currentContestClaimId); // Use primary claimant
                         player.sendMessage(ChatColor.YELLOW + "Claimant: " + (currentClaimant.equals(NO_CLAIMANT) ? ChatColor.GRAY + "Unclaimed" : ChatColor.GREEN + currentClaimant));
                         player.sendMessage(ChatColor.YELLOW + "Hold for " + formatDuration(holdDurationMillis) + " to win!"); // Show the goal duration
                     } else {
                         player.sendMessage(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + formatTimeLeft(contestEndTimeMillis - now));
-                        player.sendMessage(ChatColor.YELLOW + "Current Claimant: " + ChatColor.WHITE + getCurrentClaimantName(currentContestClaimId));
+                        player.sendMessage(ChatColor.YELLOW + "Current Claimant: " + ChatColor.WHITE + getPrimaryClaimantName(currentContestClaimId)); // Use primary claimant
                     }
                     break;
                 case HOLD:
@@ -1410,6 +1522,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                     // Just resume the ActiveHold ticker, no end time needed here
                     mainTask = scheduler.runTaskTimer(plugin, this::tickActiveHoldMode, 0L, TICKS_PER_SECOND);
                     plugin.getLogger().info("Active (Hold Mode) phase resumed. Waiting for claim.");
+                    // Update scoreboards and teams immediately on resume
+                    updateActiveHoldModeScoreboards();
                 } else {
                     // Resume standard timer
                     contestEndTimeMillis = data.getLong(CONTEST_END_TIMESTAMP_KEY, -1);
@@ -1420,6 +1534,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                     } else {
                         mainTask = scheduler.runTaskTimer(plugin, this::tickStandard, 0L, TICKS_PER_SECOND);
                         plugin.getLogger().info("Standard contest phase resumed. Ends in " + formatDuration(contestEndTimeMillis - now));
+                        // Update scoreboards and teams immediately on resume
+                        updateStandardScoreboards(contestEndTimeMillis - now);
                     }
                 }
                 break;
@@ -1447,6 +1563,8 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                     // Resume hold task
                     mainTask = scheduler.runTaskTimer(plugin, this::tickHold, 0L, TICKS_PER_SECOND);
                     plugin.getLogger().info("Hold phase resumed for " + currentHolderName + ". Ends in " + formatDuration(holdEnds - now));
+                    // Update scoreboards and teams immediately on resume
+                    updateHoldScoreboards(holdEnds - now);
                 }
                 break;
         }
