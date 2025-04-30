@@ -77,6 +77,9 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     private static final String CONTEST_END_TIMESTAMP_KEY = "contest-end-timestamp"; // For standard timer persistence
     private static final String HOLD_END_TIMESTAMP_KEY = "hold-end-timestamp";
 
+    // Proximity radius for displaying below-name titles (in chunks)
+    private static final int PROXIMITY_RADIUS_CHUNKS = 5; // Adjust this value (in chunks) as needed
+
     // Mode configuration keys
     private static final String MODE_PRE_REVEAL_KEY = "mode.pre-reveal.enabled";
     private static final String MODE_HOLD_KEY = "mode.hold.enabled";
@@ -1043,28 +1046,70 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         return board;
     }
 
-    // Commented out addBelowNameObjective method
-    // private void addBelowNameObjective(Scoreboard board, String playerName) {
-    //     if (playerName.equals(NO_CLAIMANT)) return;
-    //
-    //     Player player = Bukkit.getPlayerExact(playerName);
-    //     if (player != null) {
-    //         try {
-    //             Objective belowName = board.getObjective(SCOREBOARD_CLAIMANT_BELOWNAME_OBJ);
-    //             if (belowName == null) {
-    //                 belowName = board.registerNewObjective(SCOREBOARD_CLAIMANT_BELOWNAME_OBJ, "dummy", SCOREBOARD_CLAIMANT_BELOWNAME_TITLE);
-    //                 belowName.setDisplaySlot(DisplaySlot.BELOW_NAME);
-    //             }
-    //             // Ensure only the target player gets the score marker
-    //             // Reset others if objective already existed? Can be complex. Safest is often new boards.
-    //             Score score = belowName.getScore(player.getName());
-    //             score.setScore(1);
-    //
-    //         } catch (IllegalArgumentException e) {
-    //             plugin.getLogger().warning("Could not register/update below_name objective: " + e.getMessage());
-    //         }
-    //     }
-    // }
+    // Helper method to get the contest chunk's Location object
+    private Location getContestChunkLocation() {
+        String chunkLocString = getDataString(CHUNK_LOC_KEY);
+        if (chunkLocString == null || chunkLocString.isEmpty() || chunkLocString.equals(ChatColor.RED + "Not Set")) {
+            return null; // Location not set
+        }
+        try {
+            // Expected format: "Dimension (X: x, Z: z)"
+            String[] parts = chunkLocString.split(" \\(X: ");
+            if (parts.length != 2) throw new IllegalArgumentException("Invalid chunkLoc format");
+
+            String dimensionName = parts[0].trim();
+            String coordsPart = parts[1].replace("X: ", "").replace("Z: ", "").replace(")", "").trim();
+            String[] coords = coordsPart.split(", ");
+            if (coords.length != 2) throw new IllegalArgumentException("Invalid coords format");
+
+            // Map dimension name to actual world name
+            String worldName;
+            switch (dimensionName) {
+                case "Overworld":
+                    worldName = "world"; // Assuming default world name
+                    break;
+                case "The Nether":
+                    worldName = "world_nether"; // Assuming default nether name
+                    break;
+                case "The End":
+                    worldName = "world_the_end"; // Assuming default end name
+                    break;
+                default:
+                    plugin.getLogger().warning("Unknown dimension name in chunkLoc: " + dimensionName);
+                    return null; // Unknown dimension
+            }
+
+            // Get the World using the world name
+            World world = Bukkit.getWorld(worldName);
+            if (world == null) {
+                plugin.getLogger().warning("Could not find world with name: " + worldName);
+                return null; // World not found
+            }
+
+            // Chunk coordinates x, z are block coordinates x*16, z*16 for center/corner
+            // Let's use the block coordinates of the chunk corner for distance calculation
+            int chunkX = Integer.parseInt(coords[0]) * 16;
+            int chunkZ = Integer.parseInt(coords[1]) * 16;
+
+            // To get a rough center, add half a chunk size (8 blocks) and a middle Y
+            int blockX = chunkX + 8;
+            int blockZ = chunkZ + 8;
+            int blockY = world.getHighestBlockYAt(blockX, blockZ); // Use highest block at this x,z
+
+            return new Location(world, blockX, blockY, blockZ);
+
+        } catch (NumberFormatException e) {
+            plugin.getLogger().warning("Failed to parse chunk coordinates from chunkLoc: " + chunkLocString);
+            return null;
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid chunkLoc format: " + chunkLocString + " - " + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            plugin.getLogger().warning("An unexpected error occurred parsing chunkLoc: " + chunkLocString + " - " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     // Helper method to get or create a team
     private Team getOrCreateTeam(Scoreboard board, String teamName, String prefix, ChatColor color) {
@@ -1079,43 +1124,161 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         return team;
     }
 
-    // Helper method to update player teams based on contest status
+    // Helper method to update player teams based on contest status and proximity (with Claimant always visible, proximity in chunks)
     private void updatePlayerTeams(Scoreboard board, String contestedClaimId) {
+        plugin.getLogger().info("updatePlayerTeams: Starting team update.");
+        if (contestedClaimId == null || contestedClaimId.isEmpty()) {
+            plugin.getLogger().warning("updatePlayerTeams: contestedClaimId is null or empty. Cannot update teams.");
+            return;
+        }
+
         String primaryClaimant = getPrimaryClaimantName(contestedClaimId);
         List<String> claimMembers = getClaimMembers(contestedClaimId);
+        plugin.getLogger().info("updatePlayerTeams: Primary Claimant for " + contestedClaimId + ": " + primaryClaimant);
+        plugin.getLogger().info("updatePlayerTeams: Claim Members for " + contestedClaimId + ": " + claimMembers);
+
+
+        // Parse contested chunk location to get World and block coordinates
+        World contestWorld = null;
+        int contestBlockX = Integer.MAX_VALUE; // Initialize with invalid values
+        int contestBlockZ = Integer.MAX_VALUE;
+
+        String chunkLocString = getDataString(CHUNK_LOC_KEY);
+        if (chunkLocString != null && !chunkLocString.isEmpty() && !chunkLocString.equals(ChatColor.RED + "Not Set")) {
+            try {
+                // Expected format: "Dimension (X: x, Z: z)"
+                String[] parts = chunkLocString.split(" \\(X: ");
+                if (parts.length == 2) {
+                    String dimensionName = parts[0].trim();
+                    String coordsPart = parts[1].replace("X: ", "").replace("Z: ", "").replace(")", "").trim();
+                    String[] coords = coordsPart.split(", ");
+                    if (coords.length == 2) {
+                        // Map dimension name to actual world name string
+                        String worldName = null;
+                        switch (dimensionName) {
+                            case "Overworld":
+                                worldName = "world"; // Assuming default overworld name
+                                break;
+                            case "The Nether":
+                                worldName = "world_nether"; // Assuming default nether name
+                                break;
+                            case "The End":
+                                worldName = "world_the_end"; // Assuming default end name
+                                break;
+                            default:
+                                plugin.getLogger().warning("updatePlayerTeams: Unknown dimension name in chunkLoc for teams proximity: " + dimensionName);
+                                worldName = null; // Explicitly set to null if unknown
+                                break;
+                        }
+
+                        if(worldName != null) {
+                            // Get world by name
+                            contestWorld = Bukkit.getWorld(worldName);
+                            if (contestWorld == null) {
+                                plugin.getLogger().warning("updatePlayerTeams: Could not find world for name: " + worldName + " (from dimension: " + dimensionName + ") for teams proximity check.");
+                            } else {
+                                plugin.getLogger().info("updatePlayerTeams: Contest world identified: " + contestWorld.getName());
+                            }
+                        }
+
+                        // FIXED: These are now treated as block coordinates directly, not chunk coordinates
+                        contestBlockX = Integer.parseInt(coords[0]);
+                        contestBlockZ = Integer.parseInt(coords[1]);
+                        plugin.getLogger().info("updatePlayerTeams: Contest block coords (X, Z): " + contestBlockX + ", " + contestBlockZ);
+
+                    } else { plugin.getLogger().warning("updatePlayerTeams: Invalid coords format in chunkLoc for teams proximity: " + chunkLocString); }
+                } else { plugin.getLogger().warning("updatePlayerTeams: Invalid chunkLoc format for teams proximity: " + chunkLocString); }
+            } catch (NumberFormatException e) {
+                plugin.getLogger().warning("updatePlayerTeams: Failed to parse chunk coordinates from chunkLoc for teams proximity: " + chunkLocString);
+            } catch (Exception e) {
+                plugin.getLogger().warning("updatePlayerTeams: An unexpected error occurred parsing chunkLoc for teams proximity: " + chunkLocString + " - " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            plugin.getLogger().warning("updatePlayerTeams: chunkLocString is null, empty, or not set. Cannot perform proximity check.");
+        }
+
 
         Team claimantTeam = getOrCreateTeam(board, TEAM_CLAIMANT, "Claimant", ChatColor.GOLD);
         Team defenderTeam = getOrCreateTeam(board, TEAM_DEFENDER, "Defender", ChatColor.BLUE);
         Team intruderTeam = getOrCreateTeam(board, TEAM_INTRUDER, "Intruder", ChatColor.RED);
 
+        // Ensure teams were created successfully before proceeding
+        if (claimantTeam == null || defenderTeam == null || intruderTeam == null) {
+            plugin.getLogger().severe("updatePlayerTeams: Failed to get or create all required teams. Aborting team assignment.");
+            return;
+        }
+
+        plugin.getLogger().info("updatePlayerTeams: Iterating through online players.");
         for (Player player : Bukkit.getOnlinePlayers()) {
             String playerName = player.getName();
-            // Remove from all contest teams first
-            // Check if the team exists and the player is on it before attempting to remove
-            if (claimantTeam != null && claimantTeam.hasEntry(playerName)) claimantTeam.removeEntry(playerName);
-            if (defenderTeam != null && defenderTeam.hasEntry(playerName)) defenderTeam.removeEntry(playerName);
-            if (intruderTeam != null && intruderTeam.hasEntry(playerName)) intruderTeam.removeEntry(playerName);
+            plugin.getLogger().info("updatePlayerTeams: Processing player: " + playerName);
 
-            // Assign to the correct team
+            // Always remove from all contest teams first to ensure correct assignment
+            // This ensures players who move OUT of proximity lose their tag
+            plugin.getLogger().info("updatePlayerTeams: Attempting to remove " + playerName + " from all contest teams.");
+            if (claimantTeam.hasEntry(playerName)) { claimantTeam.removeEntry(playerName); plugin.getLogger().info(playerName + " removed from " + TEAM_CLAIMANT); }
+            if (defenderTeam.hasEntry(playerName)) { defenderTeam.removeEntry(playerName); plugin.getLogger().info(playerName + " removed from " + TEAM_DEFENDER); }
+            if (intruderTeam.hasEntry(playerName)) { intruderTeam.removeEntry(playerName); plugin.getLogger().info(playerName + " removed from " + TEAM_INTRUDER); }
+
+            // --- Claimant Exception: Always assign Claimant team if they are the primary claimant ---
             if (playerName.equalsIgnoreCase(primaryClaimant)) {
-                if (claimantTeam != null) {
-                    claimantTeam.addEntry(playerName);
-                    plugin.getLogger().fine("Assigned " + playerName + " to Claimant team.");
-                }
-            } else if (claimMembers.stream().anyMatch(member -> member.equalsIgnoreCase(playerName))) {
-                if (defenderTeam != null) {
-                    defenderTeam.addEntry(playerName);
-                    plugin.getLogger().fine("Assigned " + playerName + " to Defender team.");
+                plugin.getLogger().info("updatePlayerTeams: " + playerName + " is the primary claimant. Assigning to Claimant team.");
+                claimantTeam.addEntry(playerName);
+                continue; // Move to the next player after assigning Claimant team
+            }
+            // --- End Claimant Exception ---
+
+
+            // --- Proximity Check (for non-claimants) ---
+            boolean isInProximity = false;
+            // Only perform proximity check if the contest world was successfully identified and contest block coords are valid
+            if (contestWorld != null && player.getWorld().equals(contestWorld) && contestBlockX != Integer.MAX_VALUE && contestBlockZ != Integer.MAX_VALUE) {
+                plugin.getLogger().info("updatePlayerTeams: " + playerName + " is in the contest world (" + contestWorld.getName() + "). Checking proximity.");
+
+                // FIXED: Get the player's block coordinates directly
+                int playerBlockX = player.getLocation().getBlockX();
+                int playerBlockZ = player.getLocation().getBlockZ();
+                plugin.getLogger().info("updatePlayerTeams: " + playerName + "'s block coords (X, Z): " + playerBlockX + ", " + playerBlockZ);
+
+                // Calculate distance in blocks (using absolute difference)
+                int deltaX = Math.abs(playerBlockX - contestBlockX);
+                int deltaZ = Math.abs(playerBlockZ - contestBlockZ);
+
+                // Convert chunk radius to block radius (16 blocks per chunk)
+                int proximityRadiusBlocks = PROXIMITY_RADIUS_CHUNKS * 16;
+                plugin.getLogger().info("updatePlayerTeams: Proximity check for " + playerName + ". Delta X: " + deltaX + ", Delta Z: " + deltaZ + ", Radius in blocks: " + proximityRadiusBlocks);
+
+                if (deltaX <= proximityRadiusBlocks && deltaZ <= proximityRadiusBlocks) {
+                    isInProximity = true;
+                    plugin.getLogger().info("updatePlayerTeams: " + playerName + " IS within proximity radius.");
+                } else {
+                    plugin.getLogger().info("updatePlayerTeams: " + playerName + " is NOT within proximity radius.");
                 }
             } else {
-                if (intruderTeam != null) {
+                plugin.getLogger().info("updatePlayerTeams: " + playerName + " is not in the contest world or contest location is invalid. Skipping proximity check.");
+            }
+            // --- End Proximity Check ---
+
+
+            if (isInProximity) {
+                // Assign Defender or Intruder team only if the player is within proximity
+                plugin.getLogger().info("updatePlayerTeams: " + playerName + " is in proximity. Checking claim membership.");
+                if (claimMembers.stream().anyMatch(member -> member.equalsIgnoreCase(playerName))) {
+                    plugin.getLogger().info("updatePlayerTeams: " + playerName + " is a claim member. Assigning to Defender team.");
+                    defenderTeam.addEntry(playerName);
+                } else {
+                    plugin.getLogger().info("updatePlayerTeams: " + playerName + " is NOT a claim member. Assigning to Intruder team.");
                     intruderTeam.addEntry(playerName);
-                    plugin.getLogger().fine("Assigned " + playerName + " to Intruder team.");
                 }
+            } else {
+                // Player is outside proximity and not the Claimant, they should not be on any contest team.
+                // The removal at the start of the loop ensures this.
+                plugin.getLogger().info("updatePlayerTeams: " + playerName + " is outside proximity and not the claimant. Not assigning to Defender/Intruder teams.");
             }
         }
+        plugin.getLogger().info("updatePlayerTeams: Finished team update iteration.");
     }
-
 
     // Sets board universally
     private void setBoardForAllPlayers(Scoreboard board) {
@@ -1128,34 +1291,6 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
             // }
         }
     }
-
-    // Commented out setScoreboardsByType method (replaced by setBoardForAllPlayers with teams)
-    // private void setScoreboardsByType(Scoreboard targetPlayerBoard, Scoreboard otherPlayersBoard, String targetPlayerName) {
-    //      if (targetPlayerBoard == null || otherPlayersBoard == null) {
-    //           // If using a single board with teams, one of these might be null depending on the phase
-    //           // In the modified code, we mostly use a single board and set it universally
-    //           // So this method's logic needs careful consideration or replacement if using teams across phases
-    //           plugin.getLogger().warning("setScoreboardsByType called with null board(s). Check scoreboard logic.");
-    //           return;
-    //      }
-    //
-    //
-    //      for (Player p : Bukkit.getOnlinePlayers()) {
-    //           // With the team-based approach, all players often get the same board,
-    //           // and teams handle the below-name display.
-    //           // Re-evaluate if separate boards are truly needed per player status in team-based system.
-    //           // For now, using setBoardForAllPlayers seems more appropriate with the team approach.
-    //           // Keeping the method structure but acknowledging it might be simplified.
-    //
-    //          // Assuming 'otherPlayersBoard' is the board with the teams registered on it for all players
-    //          // and 'targetPlayerBoard' might be identical or unused in a pure team-based system.
-    //          // Let's simplify this - assign the board that has teams to all players.
-    //          // The updatePlayerTeams method, called before this, handles adding players to teams on that board.
-    //          plugin.getLogger().info("setScoreboardsByType: Assigning board with teams to " + p.getName());
-    //          p.setScoreboard(otherPlayersBoard); // Assign the board that has teams
-    //
-    //      }
-    //  }
 
 
     private void clearPlayerScoreboard(Player player) {
