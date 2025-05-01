@@ -15,6 +15,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -736,6 +739,23 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     }
 
     @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        if (!event.getFrom().getChunk().equals(event.getTo().getChunk())) {
+            updatePlayerTeamIfNeeded(event.getPlayer());
+        }
+    }
+
+    @EventHandler
+    public void onWorldChange(PlayerChangedWorldEvent event) {
+        updatePlayerTeamIfNeeded(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        updatePlayerTeamIfNeeded(event.getPlayer());
+    }
+
+    @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         // Clean up scoreboard for quitting player
         clearPlayerScoreboard(event.getPlayer());
@@ -1030,6 +1050,9 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         sidebar.setDisplaySlot(DisplaySlot.SIDEBAR);
         return board;
     }
+    // cooldown map and helper constant
+    private final Map<UUID, Long> teamUpdateCooldowns = new HashMap<>();
+    private static final long TEAM_UPDATE_COOLDOWN_MILLIS = 2000;
 
     // Helper method to get the contest chunk's Location object
     private Location getContestChunkLocation() {
@@ -1265,6 +1288,61 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         plugin.getLogger().info("updatePlayerTeams: Finished team update iteration.");
     }
 
+    private void updatePlayerTeamIfNeeded(Player player) {
+        long now = System.currentTimeMillis();
+        UUID uuid = player.getUniqueId();
+        long lastUpdate = teamUpdateCooldowns.getOrDefault(uuid, 0L);
+
+        if (now - lastUpdate < TEAM_UPDATE_COOLDOWN_MILLIS)
+            return; // skip if on cooldown
+
+        teamUpdateCooldowns.put(uuid, now);
+
+        if (currentContestClaimId == null || currentContestClaimId.isEmpty() || currentPhase == Phase.PENDING || currentPhase == Phase.FINISHED)
+            return;
+
+        Scoreboard board = player.getScoreboard();
+        if (board == null || board == scoreboardManager.getMainScoreboard()) {
+            board = scoreboardManager.getNewScoreboard(); // fallback
+            player.setScoreboard(board);
+        }
+
+        // Minimal version of updatePlayerTeams(), only for this player:
+        String playerName = player.getName();
+        String primaryClaimant = getPrimaryClaimantName(currentContestClaimId);
+        List<String> claimMembers = getClaimMembers(currentContestClaimId);
+
+        Team claimantTeam = getOrCreateTeam(board, TEAM_CLAIMANT, "Claimant", ChatColor.GOLD);
+        Team defenderTeam = getOrCreateTeam(board, TEAM_DEFENDER, "Defender", ChatColor.BLUE);
+        Team intruderTeam = getOrCreateTeam(board, TEAM_INTRUDER, "Intruder", ChatColor.RED);
+
+        // Remove from all teams
+        claimantTeam.removeEntry(playerName);
+        defenderTeam.removeEntry(playerName);
+        intruderTeam.removeEntry(playerName);
+
+        if (playerName.equalsIgnoreCase(primaryClaimant)) {
+            claimantTeam.addEntry(playerName);
+            return;
+        }
+
+        Location loc = player.getLocation();
+        Location contestLoc = getContestChunkLocation();
+        if (loc.getWorld() != null && contestLoc != null && loc.getWorld().equals(contestLoc.getWorld())) {
+            int dx = Math.abs(loc.getBlockX() - contestLoc.getBlockX());
+            int dz = Math.abs(loc.getBlockZ() - contestLoc.getBlockZ());
+            int radiusBlocks = PROXIMITY_RADIUS_CHUNKS * 16;
+
+            if (dx <= radiusBlocks && dz <= radiusBlocks) {
+                if (claimMembers.stream().anyMatch(m -> m.equalsIgnoreCase(playerName))) {
+                    defenderTeam.addEntry(playerName);
+                } else {
+                    intruderTeam.addEntry(playerName);
+                }
+            }
+        }
+    }
+
     // Sets board universally
     private void setBoardForAllPlayers(Scoreboard board) {
         if (board == null) return;
@@ -1362,6 +1440,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
 
     // Checks for claimant change in standard mode and fires event/broadcast
     private void checkStandardClaimantChange() {
+        Bukkit.getOnlinePlayers().forEach(this::updatePlayerTeamIfNeeded);
         String actualClaimant = getPrimaryClaimantName(currentContestClaimId); // Use primary claimant
         String previousClaimant = getDataString(CURRENT_CLAIMANT_KEY, NO_CLAIMANT);
 
