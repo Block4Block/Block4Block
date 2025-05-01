@@ -743,20 +743,6 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         plugin.getLogger().info("Cleared scoreboard for quitting player: " + event.getPlayer().getName());
         // Also remove from any contest teams
         removePlayerFromContestTeams(event.getPlayer());
-
-
-        // If the player quitting was the holder in HOLD phase, reset the timer
-        if (currentPhase == Phase.HOLD && event.getPlayer().getName().equalsIgnoreCase(currentHolderName)) {
-            plugin.getLogger().info(currentHolderName + " quit while holding the claim. Resetting hold timer.");
-            Bukkit.broadcastMessage(ChatColor.YELLOW + currentHolderName + " logged out and lost the claim! The hold timer has reset.");
-            currentHolderName = NO_CLAIMANT; // Reset holder
-            setDataValue(CURRENT_HOLDER_KEY, NO_CLAIMANT);
-            holdEndTimeMillis.set(-1);
-            setDataValue(HOLD_END_TIMESTAMP_KEY, -1);
-            plugin.cfg.saveClaimContest();
-            // Go back to ACTIVE phase to wait for a new claim
-            transitionToPhase(Phase.ACTIVE);
-        }
     }
 
     private void removePlayerFromContestTeams(Player player) {
