@@ -38,6 +38,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     private final ScoreboardManager scoreboardManager;
     private final BukkitScheduler scheduler;
     private final PluginManager pluginManager;
+    private final int PROXIMITY_RADIUS_CHUNKS;
 
     // --- Task Handles ---
     private BukkitTask mainTask; // Handles PreReveal countdown OR Standard Contest Timer OR Active Phase checks
@@ -77,9 +78,6 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     private static final String CONTEST_END_TIMESTAMP_KEY = "contest-end-timestamp"; // For standard timer persistence
     private static final String HOLD_END_TIMESTAMP_KEY = "hold-end-timestamp";
 
-    // Proximity radius for displaying below-name titles (in chunks)
-    private static final int PROXIMITY_RADIUS_CHUNKS = 5; // Adjust this value (in chunks) as needed
-
     // Mode configuration keys
     private static final String MODE_PRE_REVEAL_KEY = "mode.pre-reveal.enabled";
     private static final String MODE_HOLD_KEY = "mode.hold.enabled";
@@ -93,8 +91,6 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     private static final String NO_CLAIMANT = "No one"; // Represents no one holding the claim
     private static final String SCOREBOARD_OBJECTIVE_NAME = "b4bcontest";
     private static final String SCOREBOARD_TITLE = ChatColor.GOLD + "Claim Contest";
-    // private static final String SCOREBOARD_CLAIMANT_BELOWNAME_OBJ = "b4bclaimant"; // Commented out
-    // private static final String SCOREBOARD_CLAIMANT_BELOWNAME_TITLE = ChatColor.GOLD + "Claimant"; // Commented out
 
     // New constants for Scoreboard Teams
     private static final String TEAM_CLAIMANT = "b4bclaimant_team";
@@ -121,11 +117,14 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
 
     public ClaimContestCommand(Block4Block plugin) {
         this.plugin = Objects.requireNonNull(plugin, "Plugin cannot be null");
-        this.claimContestConfig = plugin.cfg.getClaimContest(); // Assuming plugin.cfg handles loading/saving
-        this.claimDataConfig = plugin.cfg.getClaimData();       // Assuming plugin.cfg handles loading/saving
+        this.claimContestConfig = plugin.cfg.getClaimContest();
+        this.claimDataConfig = plugin.cfg.getClaimData();
         this.scoreboardManager = Bukkit.getScoreboardManager();
         this.scheduler = Bukkit.getScheduler();
         this.pluginManager = Bukkit.getPluginManager();
+
+        // Initialize the variable in the constructor after plugin is initialized
+        this.PROXIMITY_RADIUS_CHUNKS = plugin.getConfig().getInt("claim-width") + plugin.getConfig().getInt("claim-contest-radius");
 
         Objects.requireNonNull(this.claimContestConfig, "ClaimContest config cannot be null");
         Objects.requireNonNull(this.claimDataConfig, "ClaimData config cannot be null");

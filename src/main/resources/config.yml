@@ -62,6 +62,8 @@ enable-claim-maps: true
 # NOTE: Changing this will hugely impact existing claims, which will likely invalidate many claims and move borders.
 # You should run /claimfix to check all claims.
 claim-width: 3 # 3x3 chunk
+# How much more than the claim-width should the claim contest area for showing Defenders and Intruders be.
+claim-contest-radius: 1
 # At what height should lava sources stop flowing/spreading outside the Nether
 lava-flow-max-y: 72
 # Limit the number of complimentary beds a player can receive per day at spawn
