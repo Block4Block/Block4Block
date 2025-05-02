@@ -2,9 +2,8 @@ package hasjamon.block4block.command;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.ClaimContestOverEvent;
-import hasjamon.block4block.events.ContestChunkClaimedEvent; // Ensure this event class exists and is correct
-import hasjamon.block4block.utils.utils; // Assuming this contains getClaimID
-import org.apache.commons.lang.StringUtils;
+import hasjamon.block4block.events.ContestChunkClaimedEvent;
+import hasjamon.block4block.utils.utils;
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
