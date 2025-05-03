@@ -90,7 +90,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     private static final long DEFAULT_PRE_REVEAL_MINUTES = 2;
     private static final long DEFAULT_HOLD_MINUTES = 5;
 
-    private static final String NO_CLAIMANT = "No one"; // Represents no one holding the claim
+    private static final String NO_CLAIMANT = "None";
     private static final String SCOREBOARD_OBJECTIVE_NAME = "b4bcontest";
     private static final String SCOREBOARD_TITLE = ChatColor.GOLD + "Claim Contest";
 
@@ -679,61 +679,33 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     }
 
     // --- Event Handlers ---
-
     @EventHandler
     public void onContestChunkClaimed(ContestChunkClaimedEvent event) {
-        // --- START DEBUG LOGS ---
-        plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Event received for claimant: " + event.claimant); //
-        plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Current Phase (instance var): " + currentPhase); //
-        plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Mode Hold (instance var): " + modeHold); //
-        // --- END DEBUG LOGS ---
-
-        if (currentPhase == Phase.ACTIVE && modeHold) { //
-            String activeContestClaimId = getDataString(CLAIM_ID_KEY); //
-            if (activeContestClaimId == null || activeContestClaimId.isEmpty()) { //
-                plugin.getLogger().warning("ContestChunkClaimedEvent fired in ACTIVE/HOLD but CLAIM_ID_KEY is missing!"); //
-                return; //
+        if (currentPhase == Phase.ACTIVE && modeHold) {
+            String activeContestClaimId = getDataString(CLAIM_ID_KEY);
+            if (activeContestClaimId == null || activeContestClaimId.isEmpty()) {
+                plugin.getLogger().warning("CLAIM_ID_KEY is missing!");
+                return;
             }
 
-            // --- START DEBUG LOGS ---
-            plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Checking Contest Claim ID: " + activeContestClaimId); //
-            String ownerInfoRaw = claimDataConfig.getString(activeContestClaimId + ".members"); //
-            plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Raw members string from config: '" + ownerInfoRaw + "'"); //
-            // --- END DEBUG LOGS ---
+            String actualCurrentClaimant = getPrimaryClaimantName(activeContestClaimId);
 
-            String actualCurrentClaimant = getPrimaryClaimantName(activeContestClaimId); // Modified to use primary claimant
-            plugin.getLogger().info("Actual current claimant of contest chunk " + activeContestClaimId + ": " + actualCurrentClaimant); //
-
-            // --- START DEBUG LOGS ---
-            plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Current Holder Name (before check): " + currentHolderName); //
-            // --- END DEBUG LOGS ---
-
-            if (!actualCurrentClaimant.equals(NO_CLAIMANT) && !actualCurrentClaimant.equalsIgnoreCase(currentHolderName)) { //
-                // --- START DEBUG LOGS ---
-                plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Condition PASSED. Transitioning to HOLD."); //
-                // --- END DEBUG LOGS ---
-                currentHolderName = actualCurrentClaimant; //
-                transitionToPhase(Phase.HOLD); //
-            } else {
-                // --- START DEBUG LOGS ---
-                plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Condition FAILED. No transition."); //
-                if (actualCurrentClaimant.equals(NO_CLAIMANT)) { //
-                    plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Reason: actualCurrentClaimant is NO_CLAIMANT."); //
-                } else if (actualCurrentClaimant.equalsIgnoreCase(currentHolderName)) { //
-                    plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Reason: actualCurrentClaimant matches currentHolderName."); //
+            if (!actualCurrentClaimant.equalsIgnoreCase(currentHolderName)) {
+                if (actualCurrentClaimant.equals(NO_CLAIMANT)) {
+                    plugin.getLogger().fine("Chunk is unclaimed.");
+                } else {
+                    currentHolderName = actualCurrentClaimant;
+                    transitionToPhase(Phase.HOLD);
                 }
-                // --- END DEBUG LOGS ---
-                // Existing fine logging based on specific failure reason
-                if (actualCurrentClaimant.equals(NO_CLAIMANT)) { //
-                    plugin.getLogger().fine("ContestChunkClaimedEvent fired, but contest chunk " + activeContestClaimId + " is still unclaimed according to claim data."); //
-                } else { // Must be actualCurrentClaimant.equalsIgnoreCase(currentHolderName) //
-                    plugin.getLogger().fine("ContestChunkClaimedEvent fired, but " + actualCurrentClaimant + " is already the current holder."); //
+            } else {
+                if (actualCurrentClaimant.equals(NO_CLAIMANT)) {
+                    plugin.getLogger().fine("Chunk is unclaimed.");
+                } else {
+                    plugin.getLogger().fine("Claimant is already the current holder.");
                 }
             }
         } else {
-            // --- START DEBUG LOGS ---
-            plugin.getLogger().info("[DEBUG] onContestChunkClaimed: Event ignored. Phase (" + currentPhase + ") not ACTIVE or not Hold mode ("+ modeHold +")."); //
-            // --- END DEBUG LOGS ---
+            plugin.getLogger().fine("Event ignored. Incorrect phase or mode.");
         }
     }
 
@@ -964,7 +936,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         // Fetch the current claimant for the contested chunk
         String currentClaimant = getPrimaryClaimantName(currentContestClaimId); // Use primary claimant
         // Determine the text to display based on whether the chunk is claimed in the sidebar
-        String claimantStatus = currentClaimant.equals(NO_CLAIMANT) ? ChatColor.WHITE + "Claimant: " + ChatColor.GRAY + "Unclaimed" : ChatColor.YELLOW + "Claimant: " + ChatColor.GREEN + currentClaimant;
+        String claimantStatus = currentClaimant.equals(NO_CLAIMANT) ? ChatColor.WHITE + "Claimant: " + ChatColor.GRAY + "None" : ChatColor.YELLOW + "Claimant: " + ChatColor.GREEN + currentClaimant;
 
 
         Scoreboard board = createScoreboardBase(SCOREBOARD_TITLE);
@@ -1547,7 +1519,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
                     if (modeHold) {
                         // In Active Hold mode, show current claimant status
                         String currentClaimant = getPrimaryClaimantName(currentContestClaimId); // Use primary claimant
-                        player.sendMessage(ChatColor.YELLOW + "Claimant: " + (currentClaimant.equals(NO_CLAIMANT) ? ChatColor.GRAY + "Unclaimed" : ChatColor.GREEN + currentClaimant));
+                        player.sendMessage(ChatColor.YELLOW + "Claimant: " + (currentClaimant.equals(NO_CLAIMANT) ? ChatColor.GRAY + "None" : ChatColor.GREEN + currentClaimant));
                         player.sendMessage(ChatColor.YELLOW + "Hold for " + formatDuration(holdDurationMillis) + " to win!"); // Show the goal duration
                     } else {
                         player.sendMessage(ChatColor.YELLOW + "Time Left: " + ChatColor.WHITE + formatTimeLeft(contestEndTimeMillis - now));
