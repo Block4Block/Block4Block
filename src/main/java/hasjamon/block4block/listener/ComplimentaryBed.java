@@ -41,15 +41,16 @@ public class ComplimentaryBed implements Listener {
         long now = System.currentTimeMillis();
         long nextAvailable = bedUsage.getLong(pID + ".nextAvailable", 0);
 
-        int limit = plugin.getConfig().getInt("complimentary-bed.limit", 1);
         Object intervalConfig = plugin.getConfig().get("complimentary-bed.interval");
         long cooldownDuration = getCooldownDuration(intervalConfig);
 
-        int bedCount = bedUsage.getInt(pID + ".bedCount", 0) + 1;
+        int currentBedCount = bedUsage.getInt(pID + ".bedCount", 0);
+        int newBedCount = currentBedCount + 1;
 
-        plugin.getLogger().info("Bed count: " + bedCount + " | Next available: " + nextAvailable + " | Current time: " + now);
+        plugin.getLogger().info("Current bed count: " + currentBedCount + " | Giving bed #" + newBedCount + " | Next available: " + nextAvailable + " | Current time: " + now);
 
-        if (now < nextAvailable || bedCount > limit) {
+        // Check cooldown only (no limit check)
+        if (now < nextAvailable) {
             double diff = (nextAvailable - now) / (60.0 * 60 * 1000);
             DecimalFormat decimals = new DecimalFormat("#.#");
             player.sendMessage(ChatColor.YELLOW + "Next Complimentary Bed available in "
@@ -61,16 +62,16 @@ public class ComplimentaryBed implements Listener {
         ItemMeta meta = bed.getItemMeta();
         meta.setDisplayName(ChatColor.GREEN + "Complimentary Bed");
         List<String> lore = new ArrayList<>();
-        lore.add(ChatColor.GRAY + "Received " + bedCount + " times");
+        lore.add(ChatColor.GRAY + "Received " + newBedCount + " times");
         meta.setLore(lore);
         bed.setItemMeta(meta);
 
         player.getInventory().addItem(bed);
-        player.sendMessage(ChatColor.GRAY + "Complimentary Bed #" + bedCount + " collected.");
+        player.sendMessage(ChatColor.GRAY + "Complimentary Bed #" + newBedCount + " collected.");
 
         bedUsage.set(pID + ".name", player.getName());
         bedUsage.set(pID + ".nextAvailable", now + cooldownDuration);
-        bedUsage.set(pID + ".bedCount", bedCount);
+        bedUsage.set(pID + ".bedCount", newBedCount);
         plugin.cfg.saveComplimentaryBedUsage();
     }
 
@@ -110,18 +111,17 @@ public class ComplimentaryBed implements Listener {
             long now = System.currentTimeMillis();
             long nextAvailable = bedUsage.getLong(pID + ".nextAvailable", 0);
 
-            int limit = plugin.getConfig().getInt("complimentary-bed.limit", 1);
-            // Fixed: Use stored bed count + 1 (for the next bed they would receive)
-            int nextBedCount = bedUsage.getInt(pID + ".bedCount", 0) + 1;
+            int currentBedCount = bedUsage.getInt(pID + ".bedCount", 0);
 
-            plugin.getLogger().info("Checking conditions for Complimentary Bed: nextBedCount=" + nextBedCount
+            plugin.getLogger().info("Checking conditions for Complimentary Bed: currentBedCount=" + currentBedCount
                     + ", nextAvailable=" + nextAvailable + ", now=" + now);
 
-            if (now < nextAvailable || nextBedCount > limit) {
+            // Check cooldown only (no limit check)
+            if (now < nextAvailable) {
                 double diff = (nextAvailable - now) / (60.0 * 60 * 1000);
                 DecimalFormat decimals = new DecimalFormat("#.#");
                 player.sendMessage(ChatColor.GRAY + "You did not receive a Complimentary Bed. Next (Bed #"
-                        + nextBedCount + ") available in " + decimals.format(diff) + " hours.");
+                        + (currentBedCount + 1) + ") available in " + decimals.format(diff) + " hours.");
             } else {
                 giveComplimentaryBed(player);
             }
