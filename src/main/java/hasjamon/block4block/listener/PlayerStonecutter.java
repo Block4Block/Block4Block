@@ -4,6 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,6 +26,9 @@ public class PlayerStonecutter implements Listener {
         if (event.getClickedBlock() == null) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (event.getClickedBlock().getType() != Material.STONECUTTER) return;
+
+        // Only block right-click interactions (opening the GUI)
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
         Player player = event.getPlayer();
         event.setCancelled(true);
