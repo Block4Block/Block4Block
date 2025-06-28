@@ -6,7 +6,7 @@
 
     <groupId>hasjamon.block4block</groupId>
     <artifactId>Block4Block</artifactId>
-    <version>4.2</version>
+    <version>4.3</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -32,9 +32,9 @@
             <version>33.0.0-jre</version>
         </dependency>
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.21.1-R0.1-SNAPSHOT</version>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>1.21.6-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
