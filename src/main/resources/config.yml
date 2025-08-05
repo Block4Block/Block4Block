@@ -346,6 +346,7 @@ blacklisted-claim-blocks:
   - CAMPFIRE
   - SOUL_CAMPFIRE
   - CAULDRON
+  - WATER_CAULDRON
   - BREWING_STAND
   - COMPOSTER
   - GRINDSTONE
@@ -893,6 +894,7 @@ no-loot-on-break:
   - CANDLE
   - CARTOGRAPHY_TABLE
   - CAULDRON
+  - WATER_CAULDRON
   - CAVE_VINES
   - CAVE_VINES_PLANT
   - CHAIN
@@ -1583,6 +1585,7 @@ no-loot-on-break:
 
 # Blocks that require different blocks to break (BlockToBreak: BlockToSpend)
 b4b-substitutions:
+  WATER_CAULDRON: CAULDRON
   ROOTED_DIRT: DIRT
   CAVE_VINES: GLOW_BERRIES
   STRIPPED_ACACIA_WOOD: ACACIA_WOOD
