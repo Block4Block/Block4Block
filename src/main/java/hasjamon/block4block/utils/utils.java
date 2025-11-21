@@ -630,7 +630,6 @@ public class utils {
 
     public static class SpawnEggUtils {
 
-        // Use your plugin instance appropriately here; for example, if you have a static instance reference in your main class:
         private static final NamespacedKey eggKey = new NamespacedKey(Block4Block.getInstance(), "black_bear_spawn_egg");
 
         public static ItemStack getRandomSpawnEgg(Map<Character, Integer> letterBonuses) {

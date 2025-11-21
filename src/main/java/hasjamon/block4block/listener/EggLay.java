@@ -23,9 +23,13 @@ public class EggLay implements Listener {
     public void onItemSpawn(ItemSpawnEvent e) {
         Item item = e.getEntity();
         ItemStack itemStack = item.getItemStack();
+        Material type = itemStack.getType();
+
+        // Check if it's any type of egg (regular, blue, or brown)
+        boolean isEgg = type == Material.EGG || type == Material.BLUE_EGG || type == Material.BROWN_EGG;
 
         // If it's an egg and wasn't dropped by a player: Chance to lay a random spawn egg instead
-        if (itemStack.getType() == Material.EGG && item.getThrower() == null && item.getPickupDelay() == 10) {
+        if (isEgg && item.getThrower() == null && item.getPickupDelay() == 10) {
             ChickenBonuses bonuses = utils.calcChickenBonuses(item);
             Map<Character, Integer> letterBonuses = bonuses.letterBonuses;
             int numNamedChickens = bonuses.numNamedChickens;
