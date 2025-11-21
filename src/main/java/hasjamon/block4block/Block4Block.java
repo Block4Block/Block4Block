@@ -42,26 +42,8 @@ public class Block4Block extends JavaPlugin {
         checkReflectionAvailability();
         cfg = new ConfigManager(); // Initializes config
 
-        // Force reload claim data to ensure it's fresh
-        cfg.reloadClaimData();
-
         // Log the config to verify if it's correctly loaded
         getLogger().info("Loaded claim-protection config: " + cfg.getClaimData().getStringList("claim-protection.protective-block-faces"));
-
-        // Debug: Verify claim data loaded correctly
-        getLogger().info("=== Loaded Claim Data on Startup ===");
-        FileConfiguration claimData = cfg.getClaimData();
-        int claimCount = 0;
-        for (String claimId : claimData.getKeys(false)) {
-            String members = claimData.getString(claimId + ".members");
-            if (members != null) {
-                int memberCount = members.split("\\n").length;
-                getLogger().info("Claim " + claimId + ": " + memberCount + " member(s)");
-                claimCount++;
-            }
-        }
-        getLogger().info("Total claims loaded: " + claimCount);
-        getLogger().info("=== End Claim Data Debug ===");
 
         populateKnownPlayers();
         // TODO: @bahm cache more config constants

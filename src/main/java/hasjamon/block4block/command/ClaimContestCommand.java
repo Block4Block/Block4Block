@@ -36,7 +36,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
 
     private final Block4Block plugin;
     private final FileConfiguration claimContestConfig;
-    // private final FileConfiguration claimDataConfig;
+    private final FileConfiguration claimDataConfig;
     private final ScoreboardManager scoreboardManager;
     private final BukkitScheduler scheduler;
     private final PluginManager pluginManager;
@@ -120,7 +120,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     public ClaimContestCommand(Block4Block plugin) {
         this.plugin = Objects.requireNonNull(plugin, "Plugin cannot be null");
         this.claimContestConfig = plugin.cfg.getClaimContest();
-        // this.claimDataConfig = plugin.cfg.getClaimData();
+        this.claimDataConfig = plugin.cfg.getClaimData();
         this.scoreboardManager = Bukkit.getScoreboardManager();
         this.scheduler = Bukkit.getScheduler();
         this.pluginManager = Bukkit.getPluginManager();
@@ -129,7 +129,7 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
         this.PROXIMITY_RADIUS_CHUNKS = plugin.getConfig().getInt("claim-width") + plugin.getConfig().getInt("claim-contest-radius");
 
         Objects.requireNonNull(this.claimContestConfig, "ClaimContest config cannot be null");
-        // Objects.requireNonNull(this.claimDataConfig, "ClaimData config cannot be null");
+        Objects.requireNonNull(this.claimDataConfig, "ClaimData config cannot be null");
         Objects.requireNonNull(this.scoreboardManager, "ScoreboardManager cannot be null");
         Objects.requireNonNull(this.scheduler, "Scheduler cannot be null");
         Objects.requireNonNull(this.pluginManager, "PluginManager cannot be null");
@@ -239,13 +239,6 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
             e.printStackTrace();
             return true;
         }
-    }
-
-    /**
-     * Gets a fresh reference to claimData config to avoid stale data issues
-     */
-    private FileConfiguration getClaimDataConfig() {
-        return plugin.cfg.getClaimData();
     }
 
     // --- Subcommand Handlers ---
@@ -1399,24 +1392,15 @@ public class ClaimContestCommand implements CommandExecutor, TabCompleter, Liste
     // Helper method to get all members of a claim
     private List<String> getClaimMembers(String claimId) {
         if (claimId == null || claimId.isEmpty()) return Collections.emptyList();
-
-        // Get fresh config reference instead of using cached field
-        FileConfiguration claimDataConfig = getClaimDataConfig();
-
         String membersString = claimDataConfig.getString(claimId + ".members");
-
         if (membersString == null || membersString.isEmpty()) {
-            plugin.getLogger().warning("No members found for claim: " + claimId);
             return Collections.emptyList();
         }
-
-        List<String> members = Arrays.stream(membersString.split("\\n"))
+        // Split by newline and filter out empty lines
+        return Arrays.stream(membersString.split("\\n")) // Assumes members are separated by newlines in the config
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
-
-        plugin.getLogger().fine("Loaded " + members.size() + " members for claim " + claimId);
-        return members;
     }
 
     // Helper method to get the primary claimant (first member)
