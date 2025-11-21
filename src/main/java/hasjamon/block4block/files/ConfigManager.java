@@ -20,7 +20,7 @@ public class ConfigManager {
     private final Block4Block plugin = Block4Block.getPlugin(Block4Block.class);
     private final ConsoleCommandSender consoleSender = Bukkit.getServer().getConsoleSender();
     private final File claimDataFile = new File(this.plugin.getDataFolder(), "claimdata.yml");
-    private final FileConfiguration claimDataCfg = YamlConfiguration.loadConfiguration(claimDataFile);
+    private FileConfiguration claimDataCfg = YamlConfiguration.loadConfiguration(claimDataFile);
     private final File hintSettingsFile = new File(this.plugin.getDataFolder(), "hintsettings.yml");
     private final FileConfiguration hintSettingsCfg = YamlConfiguration.loadConfiguration(hintSettingsFile);
     private final File ignoreListsFile = new File(this.plugin.getDataFolder(), "ignorelists.yml");
@@ -48,6 +48,7 @@ public class ConfigManager {
                 consoleSender.sendMessage("Failed to create data folder.");
 
         saveConfigAsDefault();
+        reloadClaimData();
         saveClaimData();
         saveHintSettings();
         saveIgnoreLists();
@@ -76,15 +77,30 @@ public class ConfigManager {
     }
 
     public FileConfiguration getClaimData() {
+        // Reload if not yet loaded
+        if (this.claimDataCfg == null) {
+            reloadClaimData();
+        }
         return this.claimDataCfg;
     }
 
+    public void reloadClaimData() {
+        this.claimDataCfg = YamlConfiguration.loadConfiguration(this.claimDataFile);
+        int claimCount = this.claimDataCfg.getKeys(false).size();
+        consoleSender.sendMessage(ChatColor.AQUA + "Reloaded claimdata.yml - " + claimCount + " claims loaded");
+    }
+
     public void saveClaimData() {
+        if (this.claimDataCfg == null) {
+            consoleSender.sendMessage(ChatColor.RED + "Cannot save claimdata.yml - config is null!");
+            return;
+        }
         try {
             this.claimDataCfg.save(this.claimDataFile);
             consoleSender.sendMessage(ChatColor.AQUA + "Claim data has been saved to claimdata.yml");
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to save claim data to claimdata.yml");
+            e.printStackTrace();
         }
     }
 

@@ -3,6 +3,7 @@ package hasjamon.block4block.command;
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -24,6 +25,62 @@ public class ClaimFixCommand implements CommandExecutor {
     }
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
+        // === NEW: Debug command ===
+        if (args.length > 0 && args[0].equalsIgnoreCase("debug")) {
+            if (!sender.isOp()) {
+                sender.sendMessage(ChatColor.RED + "No permission!");
+                return true;
+            }
+
+            FileConfiguration claimData = plugin.cfg.getClaimData();
+            sender.sendMessage(ChatColor.GOLD + "=== Claim Data Debug ===");
+
+            Set<String> allClaimIDs = claimData.getKeys(false);
+            int validClaimCount = 0;
+            int corruptedClaimCount = 0;
+
+            for (String claimId : allClaimIDs) {
+                String members = claimData.getString(claimId + ".members");
+                sender.sendMessage(ChatColor.YELLOW + "Claim: " + ChatColor.WHITE + claimId);
+
+                if (members != null && !members.isEmpty()) {
+                    String[] memberArray = members.split("\\n");
+                    sender.sendMessage(ChatColor.GRAY + "  Members (" + memberArray.length + "):");
+                    for (String member : memberArray) {
+                        String trimmed = member.trim();
+                        if (!trimmed.isEmpty()) {
+                            sender.sendMessage(ChatColor.GRAY + "    - " + trimmed);
+                        }
+                    }
+                    validClaimCount++;
+                } else {
+                    sender.sendMessage(ChatColor.RED + "  NO MEMBERS! (Corrupted)");
+                    corruptedClaimCount++;
+                }
+
+                // Show location info
+                double x = claimData.getDouble(claimId + ".location.X");
+                double y = claimData.getDouble(claimId + ".location.Y");
+                double z = claimData.getDouble(claimId + ".location.Z");
+                sender.sendMessage(ChatColor.GRAY + "  Location: " + x + ", " + y + ", " + z);
+            }
+
+            sender.sendMessage(ChatColor.GOLD + "=== Summary ===");
+            sender.sendMessage(ChatColor.GREEN + "Valid claims: " + validClaimCount);
+            if (corruptedClaimCount > 0) {
+                sender.sendMessage(ChatColor.RED + "Corrupted claims: " + corruptedClaimCount);
+            }
+            sender.sendMessage(ChatColor.YELLOW + "Total: " + allClaimIDs.size() + " claims");
+
+            sender.sendMessage(ChatColor.GREEN + "Forcing save and reload...");
+            plugin.cfg.saveClaimData();
+            plugin.cfg.reloadClaimData();
+            sender.sendMessage(ChatColor.GREEN + "Done!");
+
+            return true;
+        }
+
+        // === Original claimfix confirm command ===
         if(args.length > 0 && args[0].equalsIgnoreCase("confirm")){
             FileConfiguration claimData = plugin.cfg.getClaimData();
             FileConfiguration masterBooks = plugin.cfg.getMasterBooks();
@@ -109,6 +166,10 @@ public class ClaimFixCommand implements CommandExecutor {
             }
         }
 
+        // Show usage if no valid args
+        sender.sendMessage(ChatColor.YELLOW + "Usage:");
+        sender.sendMessage(ChatColor.GRAY + "  /claimfix confirm " + ChatColor.WHITE + "- Fix corrupted claims");
+        sender.sendMessage(ChatColor.GRAY + "  /claimfix debug " + ChatColor.WHITE + "- Debug claim data");
         return false;
     }
 
