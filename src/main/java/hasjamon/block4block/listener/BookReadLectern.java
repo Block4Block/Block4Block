@@ -133,7 +133,8 @@ public class BookReadLectern implements Listener {
             lectern.update();
 
             if (isClaimed && isClaimBlock && members != null) {
-                claimData.set(claimID + ".members", members);
+                String membersString = String.join("\n", members); // Convert to String
+                claimData.set(claimID + ".members", membersString);
                 plugin.cfg.saveClaimData();
             }
 

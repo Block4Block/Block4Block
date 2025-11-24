@@ -30,7 +30,29 @@ public class ClaimFixCommand implements CommandExecutor {
 
             if(plugin.cfg.backupClaimData() && plugin.cfg.backupOfflineClaimNotifications() && plugin.cfg.backupMasterBooks()) {
                 Set<String> allClaimIDs = claimData.getKeys(false);
+                int fixedMembersCount = 0;
 
+                // Fix corrupted members data structure
+                for (String cID : allClaimIDs) {
+                    Object membersObj = claimData.get(cID + ".members");
+
+                    // Check if members is stored as a List instead of a String
+                    if (membersObj instanceof List) {
+                        @SuppressWarnings("unchecked")
+                        List<String> membersList = (List<String>) membersObj;
+                        String membersString = String.join("\n", membersList);
+                        claimData.set(cID + ".members", membersString);
+                        fixedMembersCount++;
+                        sender.sendMessage("Fixed corrupted members data for claim " + cID);
+                    }
+                }
+
+                if (fixedMembersCount > 0) {
+                    plugin.cfg.saveClaimData();
+                    sender.sendMessage("Fixed " + fixedMembersCount + " corrupted claim(s) with invalid members data structure.");
+                }
+
+                // Original claim validation logic
                 for (String cID : allClaimIDs) {
                     double x = claimData.getDouble(cID + ".location.X");
                     double y = claimData.getDouble(cID + ".location.Y");
@@ -67,6 +89,7 @@ public class ClaimFixCommand implements CommandExecutor {
                     }
                 }
 
+                // Fix master book copies
                 for (String mbook : masterBooks.getKeys(false)) {
                     if(!mbook.equalsIgnoreCase("next-id")) {
                         List<String> copies = masterBooks.getStringList(mbook + ".copies-on-lecterns");
@@ -105,6 +128,7 @@ public class ClaimFixCommand implements CommandExecutor {
                 plugin.cfg.saveOfflineClaimNotifications();
                 plugin.cfg.saveMasterBooks();
                 utils.updateClaimCount();
+                sender.sendMessage("Claim fix complete!");
                 return true;
             }
         }
