@@ -151,6 +151,7 @@ public class Block4Block extends JavaPlugin {
         pluginManager.registerEvents(new BookPlaceTake(this, claimContestCommandInstance), this);
         pluginManager.registerEvents(new BlockBreak(this), this);
         pluginManager.registerEvents(new LecternBreak(this), this);
+        pluginManager.registerEvents(new EntityDeath(), this);
         // Register BookReadLectern only if ProtocolLib is enabled
         if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
             pluginManager.registerEvents(new BookReadLectern(this), this);
