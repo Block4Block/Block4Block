@@ -518,35 +518,60 @@ public class utils {
 
         if (requiresBlock) {
             Material requiredType = b.getType();
+            List<Material> acceptedTypes = new ArrayList<>();
 
-            ConfigurationSection substitutions = plugin.getConfig().getConfigurationSection("b4b-substitutions");
-            if (substitutions != null && substitutions.contains(requiredType.name()))
-                requiredType = Material.valueOf(substitutions.getString(requiredType.name()));
+            // Check for "add" substitutions (original + substitutes)
+            ConfigurationSection addSubstitutions = plugin.getConfig().getConfigurationSection("b4b-substitutions-add");
+            if (addSubstitutions != null && addSubstitutions.contains(requiredType.name())) {
+                acceptedTypes.add(requiredType); // Keep original
+                List<String> subs = addSubstitutions.getStringList(requiredType.name());
+                for (String sub : subs) {
+                    acceptedTypes.add(Material.valueOf(sub));
+                }
+            }
+            // Check for "replace" substitutions (only substitutes, not original)
+            else {
+                ConfigurationSection replaceSubstitutions = plugin.getConfig().getConfigurationSection("b4b-substitutions-replace");
+                if (replaceSubstitutions != null && replaceSubstitutions.contains(requiredType.name())) {
+                    // Don't add original type, only substitutes
+                    List<String> subs = replaceSubstitutions.getStringList(requiredType.name());
+                    for (String sub : subs) {
+                        acceptedTypes.add(Material.valueOf(sub));
+                    }
+                } else {
+                    // No substitutions at all, use the original type
+                    acceptedTypes.add(requiredType);
+                }
+            }
 
-            if (p.getInventory().getItemInOffHand().getType() == requiredType) {
+            // Now check if player has ANY of the accepted types
+            Material foundType = null;
+
+            if (acceptedTypes.contains(p.getInventory().getItemInOffHand().getType())) {
+                foundType = p.getInventory().getItemInOffHand().getType();
                 p.getInventory().getItemInOffHand().setAmount(p.getInventory().getItemInOffHand().getAmount() - 1);
             } else {
-                boolean itemInInventory = false;
                 for (int i = 0; i < 9; i++) {
                     ItemStack item = p.getInventory().getItem(i);
-                    if (item != null) {
-                        if (item.getType() == requiredType) {
-                            item.setAmount(item.getAmount() - 1);
-                            itemInInventory = true;
-                            break;
-                        }
+                    if (item != null && acceptedTypes.contains(item.getType())) {
+                        item.setAmount(item.getAmount() - 1);
+                        foundType = item.getType();
+                        break;
                     }
                 }
+            }
 
-                if (!itemInInventory) {
-                    String message = chat(isFreeToBreakInClaim ?
-                            "&cClaim &athe area or spend &c" + requiredType + " &afrom your hotbar to break this!" :
-                            "&aSpend &c" + requiredType + " &afrom your hotbar to break this!");
-                    e.setCancelled(true);
-                    p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
-                    plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, false, isFreeToBreakInClaim));
-                    return;
-                }
+            if (foundType == null) {
+                String acceptedTypesStr = acceptedTypes.stream()
+                        .map(Material::name)
+                        .collect(Collectors.joining(" or "));
+                String message = chat(isFreeToBreakInClaim ?
+                        "&cClaim &athe area or spend &c" + acceptedTypesStr + " &afrom your hotbar to break this!" :
+                        "&aSpend &c" + acceptedTypesStr + " &afrom your hotbar to break this!");
+                e.setCancelled(true);
+                p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, false, isFreeToBreakInClaim));
+                return;
             }
 
             plugin.pluginManager.callEvent(new B4BlockBreakEvent(p, b, true, isFreeToBreakInClaim));
