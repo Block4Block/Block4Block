@@ -512,6 +512,16 @@ public class utils {
         return false;
     }
 
+    private static List<String> getSubstitutes(ConfigurationSection section, String key) {
+        Object raw = section.get(key);
+        if (raw instanceof List<?> list) {
+            return list.stream().map(String::valueOf).collect(Collectors.toList());
+        } else if (raw != null) {
+            return Collections.singletonList(String.valueOf(raw));
+        }
+        return Collections.emptyList();
+    }
+
     public static void b4bCheck(Player p, Block b, BlockBreakEvent e, List<?> lootDisabledTypes, boolean requiresBlock, boolean isFreeToBreakInClaim) {
         // Are drops disabled for this block type
         boolean noloot = lootDisabledTypes.contains(b.getType().toString());
@@ -524,7 +534,7 @@ public class utils {
             ConfigurationSection addSubstitutions = plugin.getConfig().getConfigurationSection("b4b-substitutions-add");
             if (addSubstitutions != null && addSubstitutions.contains(requiredType.name())) {
                 acceptedTypes.add(requiredType); // Keep original
-                List<String> subs = addSubstitutions.getStringList(requiredType.name());
+                List<String> subs = getSubstitutes(addSubstitutions, requiredType.name());
                 for (String sub : subs) {
                     acceptedTypes.add(Material.valueOf(sub));
                 }
@@ -534,7 +544,7 @@ public class utils {
                 ConfigurationSection replaceSubstitutions = plugin.getConfig().getConfigurationSection("b4b-substitutions-replace");
                 if (replaceSubstitutions != null && replaceSubstitutions.contains(requiredType.name())) {
                     // Don't add original type, only substitutes
-                    List<String> subs = replaceSubstitutions.getStringList(requiredType.name());
+                    List<String> subs = getSubstitutes(replaceSubstitutions, requiredType.name());
                     for (String sub : subs) {
                         acceptedTypes.add(Material.valueOf(sub));
                     }
