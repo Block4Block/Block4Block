@@ -202,8 +202,14 @@ public class QuestManager implements Listener {
         if (reveal != null) {
             String title = reveal.getString("title", "");
             String subtitle = reveal.getString("subtitle", "");
-            if (!title.isEmpty() || !subtitle.isEmpty())
-                p.sendTitle(utils.chat(title), utils.chat(subtitle), 10, 70, 20);
+            if (!title.isEmpty() || !subtitle.isEmpty()) {
+                // A second later, so the claim messages and sounds of placing the book do not cover it.
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (!p.isOnline()) return;
+                    p.sendTitle(utils.chat(title), utils.chat(subtitle), 10, 100, 30);
+                    p.playSound(p.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+                }, 20L);
+            }
             String actionbar = reveal.getString("actionbar");
             if (actionbar != null) p.sendActionBar(net.kyori.adventure.text.Component.text(utils.chat(actionbar)));
             for (String line : reveal.getStringList("messages")) p.sendMessage(utils.chat(line));
@@ -280,9 +286,38 @@ public class QuestManager implements Listener {
             s.lastProgressAt = System.currentTimeMillis();
             s.nudged.clear();
         }
-        s.bar.setTitle(utils.chat("&e" + text));
-        s.bar.setProgress(Math.max(0.0, Math.min(1.0, idx / (double) steps.size())));
+        int[] hn = haveNeed(p, steps.get(idx));
+        s.bar.setTitle(utils.chat("&e" + label(text, hn)));
+        double within = hn[1] > 0 ? Math.min(1.0, hn[0] / (double) hn[1]) : 0.0;
+        s.bar.setProgress(Math.max(0.0, Math.min(1.0, (idx + within) / steps.size())));
         if (!s.bar.getPlayers().contains(p)) s.bar.addPlayer(p);
+    }
+
+    /** {have, need} for a step that counts something, else {0, 0}. */
+    private int[] haveNeed(Player p, Map<?, ?> step) {
+        Map<String, Object> c = sub(step, "complete");
+        String on = str(c, "on");
+        if (("craft".equals(on) || "pickup".equals(on)) && c.get("count") instanceof Number && str(c, "source_entity") == null) {
+            Material m = Material.matchMaterial(String.valueOf(c.get("item")));
+            int need = ((Number) c.get("count")).intValue();
+            if (m == null) return new int[]{0, 0};
+            int have = p.getStatistic("craft".equals(on) ? Statistic.CRAFT_ITEM : Statistic.PICKUP, m);
+            return new int[]{Math.min(have, need), need};
+        }
+        if ("has_items".equals(on) && c.get("items") instanceof List) {
+            List<?> items = (List<?>) c.get("items");
+            int have = 0;
+            for (Object o : items) {
+                Material m = Material.matchMaterial(String.valueOf(o));
+                if (m != null && p.getInventory().contains(m)) have++;
+            }
+            return new int[]{have, items.size()};
+        }
+        return new int[]{0, 0};
+    }
+
+    private static String label(String text, int[] haveNeed) {
+        return haveNeed[1] > 1 ? text + " (" + haveNeed[0] + "/" + haveNeed[1] + ")" : text;
     }
 
     // ---- periodic checks (statistics, inventory, stuck help) -------------------------------
@@ -296,6 +331,7 @@ public class QuestManager implements Listener {
             String id = displayed(p);
             Session s = sessions.get(p.getUniqueId());
             if (id == null || s == null) continue;
+            refresh(p);   // keeps the counts on the bar current
             applyStuckHelp(p, id, s, now);
         }
     }
@@ -313,6 +349,9 @@ public class QuestManager implements Listener {
                 Material m = Material.matchMaterial(str(c, "item"));
                 int count = c.get("count") instanceof Number ? ((Number) c.get("count")).intValue() : 1;
                 ok = m != null && p.getStatistic(Statistic.CRAFT_ITEM, m) >= count;
+            } else if ("pickup".equals(on) && c.get("count") instanceof Number && str(c, "source_entity") == null) {
+                Material m = Material.matchMaterial(str(c, "item"));
+                ok = m != null && p.getStatistic(Statistic.PICKUP, m) >= ((Number) c.get("count")).intValue();
             } else if ("has_items".equals(on)) {
                 Object items = c.get("items");
                 ok = items instanceof List && !((List<?>) items).isEmpty();
@@ -338,7 +377,7 @@ public class QuestManager implements Listener {
             catch (NumberFormatException ignored) { }
         }
         long waited = (now - s.lastProgressAt) / 1000;
-        String text = str(steps.get(idx), "text");
+        String text = label(str(steps.get(idx), "text"), haveNeed(p, steps.get(idx)));
         boolean first = true;
         for (Map.Entry<Integer, String> e : byTime.entrySet()) {
             if (waited < e.getKey()) break;
@@ -420,6 +459,11 @@ public class QuestManager implements Listener {
             Material m = Material.matchMaterial(String.valueOf(c.get("item")));
             if (m == null || stack.getType() != m) continue;
             String need = str(c, "source_entity");
+            if (need == null && c.get("count") instanceof Number) {
+                // Counted by the pickup statistic, which updates after the event.
+                Bukkit.getScheduler().runTask(plugin, () -> { checkPolled(p, id); refresh(p); });
+                continue;
+            }
             if (need != null && (src == null || !src.type.name().equalsIgnoreCase(need))) continue;
             advance(p, id);
         }

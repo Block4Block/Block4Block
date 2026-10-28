@@ -1873,7 +1873,7 @@ spawn-egg-weights:
   ENDER_DRAGON_SPAWN_EGG: 0
 
 # Questlines shown on a boss bar. A step says what to do and never why; the reason is the reveal.
-# complete."on" (quoted: a bare on is a boolean in YAML): pickup (item, optional source_entity) | craft (item, optional count) | has_items (items)
+# complete."on" (quoted: a bare on is a boolean in YAML): pickup (item, optional count or source_entity) | craft (item, optional count) | has_items (items)
 #              | write_book (contains: words, {player} is the player's name) | claim_book_placed
 # stuck: seconds without progress -> text. The first entry is added to the boss bar ("where"), later ones are
 #        shown once on the action bar. The step text itself never changes.
@@ -1888,10 +1888,10 @@ questlines:
     unlock_on_complete: [claim_bossbar]
     steps:
       - text: "Collect sugar cane"
-        complete: { "on": pickup, item: SUGAR_CANE }
+        complete: { "on": pickup, item: SUGAR_CANE, count: 12 }
         stuck: { "300": "near water", "600": "Sugar cane grows on riverbanks and beaches." }
       - text: "Kill a cow"
-        complete: { "on": pickup, item: LEATHER }
+        complete: { "on": pickup, item: LEATHER, count: 4 }
         stuck: { "300": "open grassland", "600": "Cows live on grass; look for fields." }
       - text: "Craft 4 books"
         complete: { "on": craft, item: BOOK, count: 4 }
