@@ -241,7 +241,7 @@ public final class ServerTooltips implements PacketListener {
         if (!sent.equals(expected)) {
             misses.incrementAndGet();
             if (missesLogged.getAndIncrement() < 20)
-                plugin.getLogger().info("Tooltip hash mismatch on " + hs.getItem().getName() + ": client sent lore hash "
+                plugin.getLogger().warning("Tooltip hash mismatch on " + hs.getItem().getName() + ": client sent lore hash "
                         + sent + ", expected " + expected + " (kind " + kind + ")");
             return hs;
         }
@@ -254,9 +254,6 @@ public final class ServerTooltips implements PacketListener {
     private ItemStack strip(ItemStack item) {
         if (item == null || item.isEmpty()) return item;
         List<Component> lines = currentLore(item);
-        if (!lines.isEmpty() && stripLogged.getAndIncrement() < 20)
-            plugin.getLogger().info("Creative stack with lore: " + lines.size() + " line(s), first=\""
-                    + plain(lines.get(0)) + "\", ours=" + isOurs(lines.get(0)));
         if (lines.size() != 1 || !isOurs(lines.get(0))) return item;
         ItemStack copy = item.copy();
         copy.unsetComponent(ComponentTypes.LORE);
@@ -266,14 +263,8 @@ public final class ServerTooltips implements PacketListener {
         Map<ComponentType<?>, Optional<?>> patches = new LinkedHashMap<>(old.getPatches());
         patches.remove(ComponentTypes.LORE);
         copy.setComponents(new com.github.retrooper.packetevents.protocol.component.PatchableComponentMap(old.getBase(), patches));
-        if (patchLogged.getAndIncrement() < 5)
-            plugin.getLogger().info("Stripped creative stack " + copy.getType().getName() + ": patches=" + patches.keySet());
         return copy;
     }
-
-    private final java.util.concurrent.atomic.AtomicInteger patchLogged = new java.util.concurrent.atomic.AtomicInteger();
-
-    private final java.util.concurrent.atomic.AtomicInteger stripLogged = new java.util.concurrent.atomic.AtomicInteger();
 
     /**
      * Is this lore line ours? Compared by text, not by object: the line comes back from the client decoded from NBT, so
