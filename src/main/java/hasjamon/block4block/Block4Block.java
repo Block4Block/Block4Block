@@ -24,6 +24,7 @@ public class Block4Block extends JavaPlugin {
     public ConfigManager cfg;
     private static Block4Block instance;
     private ClaimVisual claimVisual;
+    public hasjamon.block4block.quest.QuestManager quests;
 
     // --- Field for the single ClaimContestCommand instance ---
     private ClaimContestCommand claimContestCommandInstance;
@@ -49,6 +50,8 @@ public class Block4Block extends JavaPlugin {
         claimVisual = new ClaimVisual(this);
         claimContestCommandInstance = new ClaimContestCommand(this);
         registerEvents(); // Registers all the listeners
+        quests = new hasjamon.block4block.quest.QuestManager(this);
+        pluginManager.registerEvents(quests, this);
         setCommandExecutors(); // Registers all the commands
 
         // Register ClaimVisualCommand
@@ -66,6 +69,11 @@ public class Block4Block extends JavaPlugin {
         utils.gracePeriod = this.getConfig().getInt("b4b-grace-period");
         if (this.getConfig().getBoolean("enable-claim-maps"))
             addMapRenderers();
+    }
+
+    @Override
+    public void onDisable() {
+        if (quests != null) quests.shutdown();
     }
 
     private void checkReflectionAvailability() {
