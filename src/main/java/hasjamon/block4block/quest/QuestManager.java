@@ -175,6 +175,7 @@ public class QuestManager implements Listener {
         progress.set(path(p, id, "step"), 0);
         markDirty();
         log(p, id, "start", 0);
+        saveIfDirty();   // a kill or crash must not lose the start: the next join would count them as an old player
         refresh(p);
     }
 
@@ -196,6 +197,7 @@ public class QuestManager implements Listener {
         }
         List<String> unlocks = q == null ? List.of() : q.getStringList("unlock_on_complete");
         for (String u : unlocks) unlock(p, u);
+        saveIfDirty();
         refresh(p);
         if (unlocks.contains("claim_bossbar"))
             utils.updateBossBar(p, utils.getClaimID(p.getLocation()));
@@ -218,6 +220,7 @@ public class QuestManager implements Listener {
         progress.set(path(p, id, "step"), next);
         markDirty();
         log(p, id, "step", next);
+        saveIfDirty();
         if (next >= steps.size()) finish(p, id);
         else refresh(p);
     }
@@ -348,6 +351,7 @@ public class QuestManager implements Listener {
                 progress.set(id + ".grandfathered", true);
                 unlock(p, "claim_bossbar");
                 markDirty();
+                saveIfDirty();
             } else {
                 for (String q : questlineIds()) {
                     ConfigurationSection start = questline(q).getConfigurationSection("start");
