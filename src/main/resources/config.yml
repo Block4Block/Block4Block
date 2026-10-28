@@ -9,6 +9,15 @@
 block-stonecutter: true
 # Should all coordinates in messages show as [hidden] instead for all players, regardless of their /coords settings
 hide-coords-globally: false
+# Adds a client-only line to block items: "Block for Block", "Free to Break" (blacklisted-blocks) or
+# "Free in Claims" (blacklisted-claim-blocks). Needs the PacketEvents plugin; without it this is skipped.
+# The server's real items are never changed. Run /b4btooltips reload after editing the texts or the lists.
+server-tooltips:
+  enabled: true
+  text:
+    block-for-block: "Block for Block"
+    free-to-break: "Free to Break"
+    free-in-claims: "Free in Claims"
 # Should B4B (spending blocks to break blocks) apply globally or only for players intruding on others' claims
 only-apply-b4b-to-intruders: false
 # Allow players to break blocks in others' claims

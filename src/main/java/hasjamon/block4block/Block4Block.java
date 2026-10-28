@@ -69,6 +69,16 @@ public class Block4Block extends JavaPlugin {
         utils.gracePeriod = this.getConfig().getInt("b4b-grace-period");
         if (this.getConfig().getBoolean("enable-claim-maps"))
             addMapRenderers();
+        if (pluginManager.isPluginEnabled("packetevents"))
+            hasjamon.block4block.tooltips.TooltipsBootstrap.enable(this);
+        else
+            getLogger().info("PacketEvents not found - skipping server-side tooltips.");
+    }
+
+    @Override
+    public void onDisable() {
+        if (pluginManager.isPluginEnabled("packetevents"))
+            hasjamon.block4block.tooltips.TooltipsBootstrap.disable();
     }
 
     private void checkReflectionAvailability() {
