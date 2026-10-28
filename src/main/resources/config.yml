@@ -1873,13 +1873,13 @@ spawn-egg-weights:
   ENDER_DRAGON_SPAWN_EGG: 0
 
 # Questlines shown on a boss bar. A step says what to do and never why; the reason is the reveal.
-# complete.on: pickup (item, optional source_entity) | craft (item, optional count) | has_items (items)
+# complete."on" (quoted: a bare on is a boolean in YAML): pickup (item, optional source_entity) | craft (item, optional count) | has_items (items)
 #              | write_book (contains: words, {player} is the player's name) | claim_book_placed
 # stuck: seconds without progress -> text. The first entry is added to the boss bar ("where"), later ones are
 #        shown once on the action bar. The step text itself never changes.
 questlines:
   claim:
-    start: { on: first_join }
+    start: { "on": first_join }
     reveal_on_complete:
       title: "&6This land is yours."
       subtitle: "&7...until someone breaks in."
@@ -1888,29 +1888,29 @@ questlines:
     unlock_on_complete: [claim_bossbar]
     steps:
       - text: "Collect sugar cane"
-        complete: { on: pickup, item: SUGAR_CANE }
+        complete: { "on": pickup, item: SUGAR_CANE }
         stuck: { "300": "near water", "600": "Sugar cane grows on riverbanks and beaches." }
       - text: "Kill a cow"
-        complete: { on: pickup, item: LEATHER }
+        complete: { "on": pickup, item: LEATHER }
         stuck: { "300": "open grassland", "600": "Cows live on grass; look for fields." }
       - text: "Craft 4 books"
-        complete: { on: craft, item: BOOK, count: 4 }
+        complete: { "on": craft, item: BOOK, count: 4 }
         stuck: { "300": "a book is paper and leather", "600": "Craft 3 paper from sugar cane, then add leather." }
       - text: "Craft a bookshelf"
-        complete: { on: craft, item: BOOKSHELF }
+        complete: { "on": craft, item: BOOKSHELF }
         stuck: { "300": "books and planks", "600": "A bookshelf is 6 planks and 3 books." }
       - text: "Craft a lectern"
-        complete: { on: craft, item: LECTERN }
+        complete: { "on": craft, item: LECTERN }
         stuck: { "300": "a bookshelf and slabs", "600": "A lectern is a bookshelf over 4 wooden slabs." }
       - text: "Catch an ink sac and a feather"
-        complete: { on: has_items, items: [INK_SAC, FEATHER] }
+        complete: { "on": has_items, items: [INK_SAC, FEATHER] }
         stuck: { "300": "rivers and oceans", "600": "Squid live in rivers and oceans; chickens drop feathers." }
       - text: "Craft a book and quill"
-        complete: { on: craft, item: WRITABLE_BOOK }
+        complete: { "on": craft, item: WRITABLE_BOOK }
         stuck: { "300": "a book, an ink sac and a feather" }
       - text: "Write \"claim\" and your name in it"
-        complete: { on: write_book, contains: [claim, "{player}"] }
+        complete: { "on": write_book, contains: [claim, "{player}"] }
         stuck: { "300": "open the book and write both words" }
       - text: "Place the book on the lectern"
-        complete: { on: claim_book_placed }
+        complete: { "on": claim_book_placed }
         stuck: { "300": "place the lectern, then use the book on it" }

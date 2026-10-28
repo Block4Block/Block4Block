@@ -358,6 +358,8 @@ public class QuestManager implements Listener {
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
         UUID id = p.getUniqueId();
+        plugin.getLogger().info("[quest] join " + p.getName() + " playedBefore=" + p.hasPlayedBefore()
+                + " known=" + progress.contains(id.toString()) + " questlines=" + questlineIds());
         if (!progress.contains(id.toString())) {
             if (p.hasPlayedBefore()) {
                 // Here before questlines existed: nothing to teach, and they keep the claim bar.
