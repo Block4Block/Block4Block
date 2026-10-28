@@ -21,8 +21,6 @@ public class ConfigManager {
     private final ConsoleCommandSender consoleSender = Bukkit.getServer().getConsoleSender();
     private final File claimDataFile = new File(this.plugin.getDataFolder(), "claimdata.yml");
     private final FileConfiguration claimDataCfg = YamlConfiguration.loadConfiguration(claimDataFile);
-    private final File hintSettingsFile = new File(this.plugin.getDataFolder(), "hintsettings.yml");
-    private final FileConfiguration hintSettingsCfg = YamlConfiguration.loadConfiguration(hintSettingsFile);
     private final File ignoreListsFile = new File(this.plugin.getDataFolder(), "ignorelists.yml");
     private final FileConfiguration ignoreListsCfg = YamlConfiguration.loadConfiguration(ignoreListsFile);
     private final File claimContestFile = new File(this.plugin.getDataFolder(), "claimcontest.yml");
@@ -49,7 +47,6 @@ public class ConfigManager {
 
         saveConfigAsDefault();
         saveClaimData();
-        saveHintSettings();
         saveIgnoreLists();
         saveClaimContest();
         saveComplimentaryBedUsage();
@@ -99,19 +96,6 @@ public class ConfigManager {
         } catch (IOException e) {
             consoleSender.sendMessage(ChatColor.RED + "Failed to back up claim data to " + backupName);
             return false;
-        }
-    }
-
-    public FileConfiguration getHintSettings() {
-        return this.hintSettingsCfg;
-    }
-
-    public void saveHintSettings() {
-        try {
-            this.hintSettingsCfg.save(this.hintSettingsFile);
-            consoleSender.sendMessage(ChatColor.AQUA + "Hint settings have been saved to hintsettings.yml");
-        } catch (IOException e) {
-            consoleSender.sendMessage(ChatColor.RED + "Failed to save hint settings to hintsettings.yml");
         }
     }
 

@@ -24,8 +24,6 @@ public class Block4Block extends JavaPlugin {
     public ConfigManager cfg;
     private static Block4Block instance;
     private ClaimVisual claimVisual;
-    private List<?> hints;
-    private int nextHint = 0;
 
     // --- Field for the single ClaimContestCommand instance ---
     private ClaimContestCommand claimContestCommandInstance;
@@ -52,7 +50,6 @@ public class Block4Block extends JavaPlugin {
         claimContestCommandInstance = new ClaimContestCommand(this);
         registerEvents(); // Registers all the listeners
         setCommandExecutors(); // Registers all the commands
-        setupHints(); // Prepares hints and starts broadcasting them
 
         // Register ClaimVisualCommand
         if (getCommand("claimvisual") != null) {
@@ -81,37 +78,8 @@ public class Block4Block extends JavaPlugin {
         }
     }
 
-    private void setupHints() {
-        hints = getConfig().getList("hints");
-        long interval = getConfig().getLong("seconds-between-hints");
-        boolean hintsEnabled = getConfig().getBoolean("hints-enabled");
-
-        // Shuffle hints, then show a hint every interval seconds
-        if (hints != null && hintsEnabled) {
-            Collections.shuffle(hints);
-            getServer().getScheduler().scheduleSyncRepeatingTask(this, this::showHint, 0, 20 * interval);
-        }
-    }
-
-    private void showHint() {
-        if (++nextHint >= hints.size())
-            nextHint = 0;
-
-        String hint = (String) hints.get(nextHint);
-        FileConfiguration hintSettings = this.cfg.getHintSettings();
-
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            String pUUID = p.getUniqueId().toString();
-            String pSettings = hintSettings.getString(pUUID);
-
-            if (pSettings == null || pSettings.equals("on"))
-                p.sendMessage(utils.chat(hint));
-        }
-    }
-
     private void setCommandExecutors() {
         PluginCommand dieCmd = this.getCommand("die");
-        PluginCommand hintsCmd = this.getCommand("hints");
         PluginCommand helpCmd = this.getCommand("b4bhelp");
         PluginCommand ignoreCmd = this.getCommand("ignore");
         PluginCommand unignoreCmd = this.getCommand("unignore");
@@ -124,7 +92,6 @@ public class Block4Block extends JavaPlugin {
         PluginCommand claimVisualCmd = this.getCommand("claimvisual");
 
         if (dieCmd != null) dieCmd.setExecutor(new DieCommand());
-        if (hintsCmd != null) hintsCmd.setExecutor(new HintsCommand(this));
         if (helpCmd != null) helpCmd.setExecutor(new HelpCommand(this));
         if (ignoreCmd != null && unignoreCmd != null) {
             IgnoreCommand cmd = new IgnoreCommand(this);

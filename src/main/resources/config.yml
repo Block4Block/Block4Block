@@ -13,10 +13,6 @@ hide-coords-globally: false
 only-apply-b4b-to-intruders: false
 # Allow players to break blocks in others' claims
 can-break-in-others-claims: true
-# Show hints 
-hints-enabled: true
-# Time between hints
-seconds-between-hints: 600
 # Minimum time between intruder alerts
 seconds-between-intruder-alerts: 60
 # Minimum time between lava immunity messages
@@ -105,38 +101,7 @@ lectern-message-settings:
 
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:
-  - "&cWelcome! There are 5 things you should know about Block4Block to get started:"
-  - "1) BEWARE! &7Most blocks will require you to have them and spend one from your hotbar to break them."
-  - "2) GET STARTED &7with free-to-break blocks such as logs, ores, crafting tables, ladders, and torches."
-  - "3) GET CREATIVE &7by luring creepers into giving you stone, killing pigs for dirt, and placing torches under falling gravel and sand."
-  - "4) GET THROUGH THE NIGHT &7with your complimentary bed received at world spawn. 24 hour cooldown."
-  - "5) LEARN MORE &7by reading advancement descriptions. Press L now and take a look!"
-  - "§aWe hope you enjoy the challenge!"
-
-# Hints that are shuffled at server start and shown one by one
-hints:
-  - "&6Hint #0: &eJoin the discussion on Discord: &1&nhttps://discord.gg/EQptDp8RUA﻿"
-  - "&6Hint #1: &eOres, Leaves and Logs can be broken normally. Logs are a good choice for temporary blocks when building!"
-  - "&6Hint #2: &ePigs are dirty so they drop dirt now!"
-  - "&6Hint #3: &eGrass blocks can be hard to break, but there are several ways to turn them into dirt blocks. Try a hoe or a solid block!"
-  - "&6Hint #4: &eNatural ravines and caves are great places to find ore and go deep underground."
-  - "&6Hint #5: &eSkeletons are cold as stone, so they drop stone now! A skeleton farm will help when mining."
-  - "&6Hint #6: &eStone will drop cobblestone as normal. You can smelt it back into stone and recycle it!"
-  - "&6Hint #7: &eWhen breaking stone it has a 10% chance of dropping double the cobblestone! Smelt it for stone profits!"
-  - "&6Hint #8: &eYou can prevent others from placing blocks within an area by claiming it! Write a book with \"claim\" and your name in it, then place it on a lectern!"
-  - "&6Hint #9: &eMake it hard for people to break in! Protect your claim by surrounding it with rare blocks."
-  - "&6Hint #10: &eType /hints off to stop hints from appearing."
-  - "&6Hint #11: &eType /b4bhelp to open an inventory with help on block4block changes."
-  - "&6Hint #12: &eFishing can no longer give enchanted items, but may give some cool vanity items."
-  - "&6Hint #13: &eYou can type /bed once a day to get a bed!"
-  - "&6Hint #14: &eWhen placing blocks, there is a 5 second grace period where all players can remove them normally."
-  - "&6Hint #15: &ePress L to open advancements - they're a great way to learn about Block4Block as you play!"
-  - "&6Hint #16: &eThe lectern is protected as long as at least one of its 4 adjacent sides isn't open. Bottom and Top are excluded."
-  - "&6Hint #17: &eThe 4 sides of the lectern can be further protected by stacking gravity affected blocks on top of the protecting blocks, letting you protect with thousands of blocks!"
-  - "&6Hint #18: &eSand, Gravel and Concrete Powder are all blocks affected by gravity. The concrete can be in 16 different colors. That's 18 different blocks to protect with!"
-  - "&6Hint #19: &eMake sure to not have any water near your Concrete Powder that is protecting your claim, else they may stop being powder and be stuck solid in the air!"
-  - "&6Hint #20: &eTo gain Netherrack, you must break Nylium. You can Bonemeal Netherrack near crimson and warped Nylium to spread the Nylium."
-  - "&6Hint #?: &eSheep are colourful and so are blocks!"
+  - "&6Welcome to Block4Block."
 
 claim-protection:
   # Directions from which a claim lectern can be protected. Enum: NORTH, SOUTH, EAST, WEST, UP, DOWN
