@@ -94,16 +94,29 @@ public class QuestManager implements Listener {
 
     // ---- config ---------------------------------------------------------------------
 
+    /**
+     * The questlines section. The plugin never writes a config.yml, so its values come from the defaults in the jar,
+     * and getConfigurationSection returns an empty section for a default one; read the defaults directly then.
+     */
+    private ConfigurationSection questlines() {
+        ConfigurationSection s = plugin.getConfig().getConfigurationSection("questlines");
+        if (s != null && !s.getKeys(false).isEmpty()) return s;
+        org.bukkit.configuration.Configuration defaults = plugin.getConfig().getDefaults();
+        return defaults == null ? null : defaults.getConfigurationSection("questlines");
+    }
+
     private ConfigurationSection questline(String id) {
-        return plugin.getConfig().getConfigurationSection("questlines." + id);
+        ConfigurationSection all = questlines();
+        return all == null ? null : all.getConfigurationSection(id);
     }
 
     private List<Map<?, ?>> steps(String id) {
-        return plugin.getConfig().getMapList("questlines." + id + ".steps");
+        ConfigurationSection q = questline(id);
+        return q == null ? List.of() : q.getMapList("steps");
     }
 
     private Set<String> questlineIds() {
-        ConfigurationSection s = plugin.getConfig().getConfigurationSection("questlines");
+        ConfigurationSection s = questlines();
         return s == null ? Set.of() : s.getKeys(false);
     }
 
