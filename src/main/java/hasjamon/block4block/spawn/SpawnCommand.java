@@ -18,13 +18,18 @@ public class SpawnCommand implements CommandExecutor {
         if (args.length == 0) return usage(sender, label);
         switch (args[0].toLowerCase()) {
             case "info":
-                sender.sendMessage("Dynamic spawn: " + spawn.info());
+                for (String line : spawn.info()) sender.sendMessage(line);
                 return true;
             case "next":
-                sender.sendMessage("Next spawn: " + spawn.next());
+                for (String line : spawn.next()) sender.sendMessage(line);
                 return true;
             case "move":
-                sender.sendMessage(spawn.moveNow() ? "Spawn moved. " + spawn.info() : "No cell qualified; spawn stays.");
+                if (spawn.moveNow()) {
+                    sender.sendMessage("Spawn moved.");
+                    for (String line : spawn.info()) sender.sendMessage(line);
+                } else {
+                    sender.sendMessage("No cell qualified; spawn stays where it is.");
+                }
                 return true;
             case "pause":
                 spawn.setPaused(true);

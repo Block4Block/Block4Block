@@ -266,14 +266,15 @@ public class DynamicSpawn implements Listener {
     }
 
     /** The next cell after (s, out) that is clear of claims and inside the border; spends from skips[0]. */
-    private Plan candidateAfter(World w, long s, boolean out, int[] skips) {
+    private Plan candidateAfter(World w, long s, boolean out, int[] skips, List<String> why) {
         while (skips[0]-- > 0) {
             long[] a = advance(w, s, out);
             s = a[0];
             out = a[1] == 1;
             int[] cell = cellOfStep(s);
             if (s == step) continue;   // turning around must not land back in the cell spawn is in now
-            if (nearClaim(cell[0], cell[1]) || !insideBorder(w, cell[0], cell[1])) continue;
+            if (nearClaim(cell[0], cell[1])) { skipped(why, cell, "a claim is in or next to it"); continue; }
+            if (!insideBorder(w, cell[0], cell[1])) { skipped(why, cell, "it is outside the world border"); continue; }
             Plan p = new Plan();
             p.step = s;
             p.outward = out;
@@ -283,18 +284,27 @@ public class DynamicSpawn implements Listener {
     }
 
     /** The next spawn: the first cell that qualifies and has a safe standing spot, within max-skips-per-move steps. */
+    private void skipped(List<String> why, int[] cell, String reason) {
+        if (why != null && why.size() < 12) why.add("cell " + cell[0] + "," + cell[1] + ": " + reason);
+    }
+
     private Plan choose(World w) {
+        return choose(w, null);
+    }
+
+    private Plan choose(World w, List<String> why) {
         int[] skips = {Math.max(1, cfgInt("max-skips-per-move", 200))};
         long s = step;
         boolean out = outward;
         Plan c;
-        while ((c = candidateAfter(w, s, out, skips)) != null) {
+        while ((c = candidateAfter(w, s, out, skips, why)) != null) {
             int[] cell = cellOfStep(c.step);
             Location spot = safeSpot(w, cell[0], cell[1]);
             if (spot != null) {
                 c.spot = spot;
                 return c;
             }
+            skipped(why, cell, "no safe place to stand");
             s = c.step;
             out = c.outward;
         }
@@ -390,7 +400,7 @@ public class DynamicSpawn implements Listener {
 
     private void prepare(World w) {
         preparing = true;
-        Plan c = candidateAfter(w, step, outward, new int[]{Math.max(1, cfgInt("max-skips-per-move", 200))});
+        Plan c = candidateAfter(w, step, outward, new int[]{Math.max(1, cfgInt("max-skips-per-move", 200))}, null);
         if (c == null) { preparing = false; return; }
         int[] cell = cellOfStep(c.step);
         int size = cellBlocks();
@@ -429,23 +439,48 @@ public class DynamicSpawn implements Listener {
 
     // ---- ops (see SpawnCommand) ------------------------------------------------------------------------------
 
-    public String info() {
-        World w = world();
-        int[] cell = cellOfStep(step);
-        Location cur = w == null ? null : w.getSpawnLocation();
-        return "cell " + cell[0] + "," + cell[1] + ", ring " + SpawnWalker.ringOf(step) + ", " + (outward ? "outward" : "inward")
-                + ", next move " + nextMoveAt + (paused ? ", PAUSED" : "") + ", used since last move: " + usedSinceMove
-                + (cur == null ? "" : ", spawn " + cur.getBlockX() + "," + cur.getBlockY() + "," + cur.getBlockZ());
+    private String when(OffsetDateTime t) {
+        Duration d = Duration.between(OffsetDateTime.now(), t);
+        long mins = Math.max(0, d.toMinutes());
+        String in = mins >= 120 ? (mins / 60) + " hours" : mins + " minutes";
+        return t.format(java.time.format.DateTimeFormatter.ofPattern("d MMM, HH:mm")) + " (in " + in + ")";
     }
 
-    public String next() {
+    private String where(Location l) {
+        return l.getBlockX() + ", " + l.getBlockY() + ", " + l.getBlockZ();
+    }
+
+    /** Plain-language lines for an op; one per line. */
+    public List<String> info() {
         World w = world();
-        if (w == null) return "world not found";
-        Plan p = choose(w);
-        if (p == null) return "no cell qualifies within the skip limit";
-        int[] cell = cellOfStep(p.step);
-        return "cell " + cell[0] + "," + cell[1] + " (ring " + SpawnWalker.ringOf(p.step) + ", " + (p.outward ? "outward" : "inward")
-                + ") at " + p.spot.getBlockX() + "," + p.spot.getBlockY() + "," + p.spot.getBlockZ();
+        int[] cell = cellOfStep(step);
+        List<String> out = new ArrayList<>();
+        out.add("Spawn is now at " + (w == null ? "?" : where(w.getSpawnLocation())) + ".");
+        out.add("It is in cell " + cell[0] + "," + cell[1] + ", ring " + SpawnWalker.ringOf(step) + " of the spiral, and the walk is going "
+                + (outward ? "away from" : "back towards") + " the centre.");
+        out.add(paused ? "Moves are PAUSED." : "Next move: " + when(nextMoveAt) + ".");
+        out.add(usedSinceMove ? "A player has used this spawn since the last move, so the next move will happen."
+                : "Nobody has used this spawn since the last move, so the next scheduled move will be skipped.");
+        return out;
+    }
+
+    public List<String> next() {
+        World w = world();
+        List<String> out = new ArrayList<>();
+        if (w == null) { out.add("The spawn world was not found."); return out; }
+        List<String> why = new ArrayList<>();
+        Plan p = choose(w, why);
+        if (p == null) {
+            out.add("No cell qualifies within the skip limit; spawn would stay where it is.");
+        } else {
+            int[] cell = cellOfStep(p.step);
+            out.add("The next spawn would be in cell " + cell[0] + "," + cell[1] + " (ring " + SpawnWalker.ringOf(p.step) + "), at " + where(p.spot) + ".");
+        }
+        if (!why.isEmpty()) {
+            out.add("Skipped on the way:");
+            for (String line : why) out.add(" - " + line);
+        }
+        return out;
     }
 
     public boolean moveNow() {
