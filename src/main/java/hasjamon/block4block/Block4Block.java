@@ -52,6 +52,7 @@ public class Block4Block extends JavaPlugin {
         registerEvents(); // Registers all the listeners
         quests = new hasjamon.block4block.quest.QuestManager(this);
         pluginManager.registerEvents(quests, this);
+        if (getCommand("b4bquest") != null) getCommand("b4bquest").setExecutor(new hasjamon.block4block.quest.QuestCommand(quests));
         setCommandExecutors(); // Registers all the commands
 
         // Register ClaimVisualCommand

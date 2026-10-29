@@ -58,6 +58,7 @@ public class QuestManager implements Listener {
 
     private final Map<UUID, Session> sessions = new HashMap<>();
     private final Map<UUID, ItemSource> itemSources = new LinkedHashMap<>();
+    private final Set<UUID> playerDropped = new LinkedHashSet<>();
     private long deathTick = -1;
     private org.bukkit.Location deathLoc;
     private EntityType deathType;
@@ -85,6 +86,34 @@ public class QuestManager implements Listener {
         utils.claimBarHidden = this::claimBarHidden;
     }
 
+    /** op tools: see where a player is, skip a step, or start the questlines over. */
+    public String adminStatus(Player p) {
+        StringBuilder sb = new StringBuilder();
+        for (String id : questlineIds()) {
+            sb.append(id).append(": ").append(isDone(p, id) ? "done" : isStarted(p, id) ? "step " + stepIndex(p, id) + "/" + steps(id).size() : "not started").append("; ");
+        }
+        return sb + "claim bar hidden: " + claimBarHidden(p);
+    }
+
+    public void adminSkip(Player p) {
+        String id = displayed(p);
+        if (id != null) advance(p, id);
+    }
+
+    public void adminReset(Player p) {
+        progress.set(p.getUniqueId().toString(), null);
+        Session s = sessions.get(p.getUniqueId());
+        if (s != null) { s.bar.removeAll(); s.shownKey = ""; }
+        markDirty();
+        for (String q : questlineIds()) {
+            ConfigurationSection start = questline(q).getConfigurationSection("start");
+            if (start != null && "first_join".equals(start.getString("on"))) startQuestline(p, q);
+        }
+        saveIfDirty();
+        refresh(p);
+        utils.updateBossBar(p, utils.getClaimID(p.getLocation()));
+    }
+
     public void shutdown() {
         utils.claimBarHidden = p -> false;
         for (Session s : sessions.values()) s.bar.removeAll();
@@ -95,14 +124,30 @@ public class QuestManager implements Listener {
     // ---- config ---------------------------------------------------------------------
 
     /**
-     * The questlines section. The plugin never writes a config.yml, so its values come from the defaults in the jar,
-     * and getConfigurationSection returns an empty section for a default one; read the defaults directly then.
+     * The questlines section, read from the jar's config.yml (and from a config.yml in the data folder if there is
+     * one with questlines in it). The plugin's own getConfig() cannot be used: it writes no file, so its values live
+     * in the defaults, where getConfigurationSection hands back an empty section and getString ignores the tree.
      */
     private ConfigurationSection questlines() {
-        ConfigurationSection s = plugin.getConfig().getConfigurationSection("questlines");
-        if (s != null && !s.getKeys(false).isEmpty()) return s;
-        org.bukkit.configuration.Configuration defaults = plugin.getConfig().getDefaults();
-        return defaults == null ? null : defaults.getConfigurationSection("questlines");
+        if (questlinesCfg == null) questlinesCfg = loadQuestConfig();
+        return questlinesCfg.getConfigurationSection("questlines");
+    }
+
+    private YamlConfiguration questlinesCfg;
+
+    private YamlConfiguration loadQuestConfig() {
+        YamlConfiguration cfg = new YamlConfiguration();
+        try (java.io.InputStream in = plugin.getResource("config.yml")) {
+            if (in != null) cfg.loadFromString(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            plugin.getLogger().warning("Could not read the questlines from the jar: " + e.getMessage());
+        }
+        File override = new File(plugin.getDataFolder(), "config.yml");
+        if (override.exists()) {
+            YamlConfiguration o = YamlConfiguration.loadConfiguration(override);
+            if (o.isConfigurationSection("questlines")) cfg.set("questlines", o.get("questlines"));
+        }
+        return cfg;
     }
 
     private ConfigurationSection questline(String id) {
@@ -155,6 +200,29 @@ public class QuestManager implements Listener {
 
     private void markDirty() { dirty = true; }
 
+    /**
+     * Called when a step becomes the current one: counted steps start from zero, and a craft step measures only what
+     * the player crafts from now on (an earlier craft, or a previous run, must not skip it).
+     */
+    private void initStep(Player p, String id, int idx) {
+        progress.set(path(p, id, "count"), 0);
+        progress.set(path(p, id, "base"), null);
+        List<Map<?, ?>> steps = steps(id);
+        if (idx < 0 || idx >= steps.size()) return;
+        Map<String, Object> c = sub(steps.get(idx), "complete");
+        if ("craft".equals(str(c, "on"))) {
+            Material m = Material.matchMaterial(String.valueOf(c.get("item")));
+            if (m != null) progress.set(path(p, id, "base"), p.getStatistic(Statistic.CRAFT_ITEM, m));
+        }
+        markDirty();
+    }
+
+    private int craftedSince(Player p, String id, Material m) {
+        String key = path(p, id, "base");
+        if (!progress.contains(key)) { progress.set(key, p.getStatistic(Statistic.CRAFT_ITEM, m)); markDirty(); }
+        return Math.max(0, p.getStatistic(Statistic.CRAFT_ITEM, m) - progress.getInt(key));
+    }
+
     private void saveIfDirty() {
         if (!dirty) return;
         try {
@@ -186,6 +254,7 @@ public class QuestManager implements Listener {
         if (questline(id) == null || isStarted(p, id)) return;
         progress.set(path(p, id, "started"), System.currentTimeMillis());
         progress.set(path(p, id, "step"), 0);
+        initStep(p, id, 0);
         markDirty();
         log(p, id, "start", 0);
         saveIfDirty();   // a kill or crash must not lose the start: the next join would count them as an old player
@@ -207,6 +276,7 @@ public class QuestManager implements Listener {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     if (!p.isOnline()) return;
                     p.sendTitle(utils.chat(title), utils.chat(subtitle), 10, 100, 30);
+                    plugin.getLogger().info("[quest] " + p.getName() + " reveal title sent");
                     p.playSound(p.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
                 }, 20L);
             }
@@ -237,6 +307,7 @@ public class QuestManager implements Listener {
             if (actionbar != null) p.sendActionBar(net.kyori.adventure.text.Component.text(utils.chat(actionbar)));
         }
         progress.set(path(p, id, "step"), next);
+        initStep(p, id, next);
         markDirty();
         log(p, id, "step", next);
         saveIfDirty();
@@ -286,7 +357,7 @@ public class QuestManager implements Listener {
             s.lastProgressAt = System.currentTimeMillis();
             s.nudged.clear();
         }
-        int[] hn = haveNeed(p, steps.get(idx));
+        int[] hn = haveNeed(p, id, steps.get(idx));
         s.bar.setTitle(utils.chat("&e" + label(text, hn)));
         double within = hn[1] > 0 ? Math.min(1.0, hn[0] / (double) hn[1]) : 0.0;
         s.bar.setProgress(Math.max(0.0, Math.min(1.0, (idx + within) / steps.size())));
@@ -294,14 +365,14 @@ public class QuestManager implements Listener {
     }
 
     /** {have, need} for a step that counts something, else {0, 0}. */
-    private int[] haveNeed(Player p, Map<?, ?> step) {
+    private int[] haveNeed(Player p, String id, Map<?, ?> step) {
         Map<String, Object> c = sub(step, "complete");
         String on = str(c, "on");
         if (("craft".equals(on) || "pickup".equals(on)) && c.get("count") instanceof Number && str(c, "source_entity") == null) {
             Material m = Material.matchMaterial(String.valueOf(c.get("item")));
             int need = ((Number) c.get("count")).intValue();
             if (m == null) return new int[]{0, 0};
-            int have = p.getStatistic("craft".equals(on) ? Statistic.CRAFT_ITEM : Statistic.PICKUP, m);
+            int have = "craft".equals(on) ? craftedSince(p, id, m) : progress.getInt(path(p, id, "count"), 0);
             return new int[]{Math.min(have, need), need};
         }
         if ("has_items".equals(on) && c.get("items") instanceof List) {
@@ -348,10 +419,7 @@ public class QuestManager implements Listener {
             if ("craft".equals(on)) {
                 Material m = Material.matchMaterial(str(c, "item"));
                 int count = c.get("count") instanceof Number ? ((Number) c.get("count")).intValue() : 1;
-                ok = m != null && p.getStatistic(Statistic.CRAFT_ITEM, m) >= count;
-            } else if ("pickup".equals(on) && c.get("count") instanceof Number && str(c, "source_entity") == null) {
-                Material m = Material.matchMaterial(str(c, "item"));
-                ok = m != null && p.getStatistic(Statistic.PICKUP, m) >= ((Number) c.get("count")).intValue();
+                ok = m != null && craftedSince(p, id, m) >= count;
             } else if ("has_items".equals(on)) {
                 Object items = c.get("items");
                 ok = items instanceof List && !((List<?>) items).isEmpty();
@@ -377,7 +445,7 @@ public class QuestManager implements Listener {
             catch (NumberFormatException ignored) { }
         }
         long waited = (now - s.lastProgressAt) / 1000;
-        String text = label(str(steps.get(idx), "text"), haveNeed(p, steps.get(idx)));
+        String text = label(str(steps.get(idx), "text"), haveNeed(p, id, steps.get(idx)));
         boolean first = true;
         for (Map.Entry<Integer, String> e : byTime.entrySet()) {
             if (waited < e.getKey()) break;
@@ -443,6 +511,15 @@ public class QuestManager implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true)
+    public void onPlayerDrop(org.bukkit.event.player.PlayerDropItemEvent e) {
+        playerDropped.add(e.getItemDrop().getUniqueId());
+        if (playerDropped.size() > 2000) {
+            Iterator<UUID> it = playerDropped.iterator();
+            for (int i = 0; i < 500 && it.hasNext(); i++) { it.next(); it.remove(); }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
     public void onPickup(EntityPickupItemEvent e) {
         if (!(e.getEntity() instanceof Player)) return;
         Player p = (Player) e.getEntity();
@@ -460,8 +537,14 @@ public class QuestManager implements Listener {
             if (m == null || stack.getType() != m) continue;
             String need = str(c, "source_entity");
             if (need == null && c.get("count") instanceof Number) {
-                // Counted by the pickup statistic, which updates after the event.
-                Bukkit.getScheduler().runTask(plugin, () -> { checkPolled(p, id); refresh(p); });
+                // Counted by us, not by the statistic: items the player dropped and picked up again do not count.
+                if (playerDropped.contains(item.getUniqueId())) continue;
+                int got = stack.getAmount() - e.getRemaining();
+                int total = progress.getInt(path(p, id, "count"), 0) + Math.max(0, got);
+                progress.set(path(p, id, "count"), total);
+                markDirty();
+                if (total >= ((Number) c.get("count")).intValue()) advance(p, id);
+                else refresh(p);
                 continue;
             }
             if (need != null && (src == null || !src.type.name().equalsIgnoreCase(need))) continue;
