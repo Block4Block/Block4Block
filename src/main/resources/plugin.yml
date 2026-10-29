@@ -2,7 +2,7 @@ name: Block4Block
 main: hasjamon.block4block.Block4Block
 api-version: 1.21
 authors: [ HasJamOn, Bahm, gtg_cya ]
-softdepend: [ ProtocolLib ]
+softdepend: [ ProtocolLib, packetevents ]
 version: 4.5
 description: Block4Block plugin
 commands:
@@ -44,6 +44,10 @@ commands:
   claimvisual:
     description: Toggle claim visualization on or off
     usage: /claimvisual <on/off>
+  b4btooltips:
+    description: Reloads the server-side tooltips after editing config.yml.
+    usage: /<command> reload|status
+    permission: op
   b4bspawn:
     description: Shows or controls the dynamic world spawn.
     usage: /<command> info|next|move|pause|resume|center here
