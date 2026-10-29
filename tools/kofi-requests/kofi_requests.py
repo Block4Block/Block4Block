@@ -7,6 +7,7 @@ signs and named animals to /api/plugin/complete. Nothing here runs in game.
 
 Run:  python3 kofi_requests.py /path/to/config.json
 """
+import base64
 import hashlib
 import hmac
 import http.server
@@ -19,6 +20,7 @@ import sys
 import threading
 import time
 import urllib.parse
+from outputs import Outputs
 from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -40,6 +42,13 @@ DEFAULTS = {
     "item_types": {},
     # fallback: words in the item name that give the type
     "type_keywords": {"sign": ["sign"], "tree": ["tree", "cherry"], "animal": ["animal", "name an", "name a"]},
+    # Discord channel webhooks, one URL per file (secret). A missing file switches that output off.
+    "requests_webhook_file": "discord_requests_webhook.txt",
+    "announce_webhook_file": "discord_announce_webhook.txt",
+    "markers_file": "markers.jsonl",
+    # preferred stream windows (local time of tz_hours), the bot proposes the next two
+    "stream_windows": [{"day": "Sat", "time": "20:00"}, {"day": "Sun", "time": "20:00"}],
+    "tz_hours": 8,
 }
 
 
@@ -72,6 +81,7 @@ class Store:
             status TEXT, flag_reason TEXT, position REAL,
             active INTEGER DEFAULT 0, done_at TEXT, location TEXT, done_by TEXT)"""
         )
+        self.db.execute("CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT)")
         self.db.execute("CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, what TEXT)")
         self.db.commit()
 
@@ -144,7 +154,8 @@ class Service:
         self.plugin_secret = read_secret(cfg["plugin_secret_file"])
         self.bad_words = [w.strip().lower() for w in read_secret(cfg["bad_words_file"]).splitlines()]
         self.sessions = {}
-        self.notifier = None  # set by later steps (Discord)
+        self.notifier = Outputs(self).on_event
+        self.outputs = self.notifier.__self__
 
     # ---- intake -------------------------------------------------------
     def intake(self, payload):
@@ -218,10 +229,12 @@ class Service:
             "threshold_count": self.cfg["threshold_count"],
             "oldest_age_days": age_days,
             "stream_due": due,
+            "stream_at": self.outputs._meta_get("stream_at"),
+            "proposals": self.outputs.proposals() if due else [],
             "now": iso(),
         }
 
-    def action(self, name, rid):
+    def action(self, name, rid, slot=None):
         with self.store.lock:
             db = self.store.db
             row = db.execute("SELECT * FROM requests WHERE id=?", (rid,)).fetchone() if rid else None
@@ -236,6 +249,8 @@ class Service:
                 db.execute("UPDATE requests SET active=0, position=? WHERE id=?", (time.time() + 1e6, rid))
             elif name == "flag" and row:
                 db.execute("UPDATE requests SET status='flagged', active=0, flag_reason=COALESCE(flag_reason,'Flagged by owner') WHERE id=?", (rid,))
+            elif name == "schedule":
+                pass  # handled below, outside the queue lock
             elif name == "approve" and row:
                 db.execute("UPDATE requests SET status='queued', flag_reason=NULL WHERE id=?", (rid,))
             elif name == "refund" and row:
@@ -244,6 +259,8 @@ class Service:
                 return False
             db.commit()
             self.store.log("%s %s" % (name, rid or ""))
+        if name == "schedule":
+            return self.outputs.schedule(slot or "")
         if name == "done" and self.notifier:
             self.notifier("done", rid)
         return True
@@ -289,7 +306,7 @@ def make_handler(svc):
 
         def body(self):
             n = int(self.headers.get("Content-Length") or 0)
-            if n > 100000:
+            if n > 6000000:
                 return b""
             return self.rfile.read(n)
 
@@ -339,8 +356,21 @@ def make_handler(svc):
                     j = json.loads(raw or b"{}")
                 except ValueError:
                     return self.send(400, "bad json")
-                ok = svc.action(j.get("action"), j.get("id"))
+                ok = svc.action(j.get("action"), j.get("id"), j.get("slot"))
                 return self.send(200 if ok else 400, json.dumps({"ok": ok}), "application/json")
+            if path == "/api/screenshot":
+                if not self.authed():
+                    return self.send(401, "login")
+                try:
+                    j = json.loads(raw or b"{}")
+                    png = base64.b64decode(j.get("png", ""), validate=True)
+                    rid = int(j.get("id"))
+                except (ValueError, TypeError):
+                    return self.send(400, "bad json")
+                if not png.startswith(b"\x89PNG") or len(png) > 4000000:
+                    return self.send(400, "not a png")
+                svc.outputs.send_screenshot(rid, png)
+                return self.send(200, "{}", "application/json")
             if path == "/api/plugin/complete":
                 if not svc.plugin_secret or not hmac.compare_digest(self.headers.get("X-B4B-Secret", ""), svc.plugin_secret):
                     return self.send(403, "bad secret")
@@ -365,7 +395,7 @@ def load_config(path):
     base = os.path.dirname(os.path.abspath(path))
     with open(path, "r", encoding="utf-8") as f:
         cfg.update(json.load(f))
-    for k in ("db_path", "kofi_token_file", "dashboard_password_file", "plugin_secret_file", "bad_words_file"):
+    for k in ("db_path", "kofi_token_file", "dashboard_password_file", "plugin_secret_file", "bad_words_file", "requests_webhook_file", "announce_webhook_file", "markers_file"):
         if not os.path.isabs(cfg[k]):
             cfg[k] = os.path.join(base, cfg[k])
     return cfg
