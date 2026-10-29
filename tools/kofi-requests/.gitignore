@@ -1,0 +1,7 @@
+__pycache__/
+*.db
+kofi_token.txt
+dashboard_password.txt
+plugin_secret.txt
+bad_words.txt
+config.json

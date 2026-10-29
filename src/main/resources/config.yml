@@ -18,6 +18,14 @@ server-tooltips:
     block-for-block: "Block for Block"
     free-to-break: "Free to Break"
     free-in-claims: "Free in Claims"
+# Ko-fi requests: the plugin only reports a finished sign or a named animal to the request service
+# (tools/kofi-requests). Nothing appears in game. Off until the service and the secret file exist.
+kofi-requests:
+  enabled: false
+  url: "http://127.0.0.1:8765/api/plugin/complete"
+  secret-file: "plugins/Block4Block/kofi_plugin_secret.txt"
+  players:
+    - HasJamOn
 # Should B4B (spending blocks to break blocks) apply globally or only for players intruding on others' claims
 only-apply-b4b-to-intruders: false
 # Allow players to break blocks in others' claims

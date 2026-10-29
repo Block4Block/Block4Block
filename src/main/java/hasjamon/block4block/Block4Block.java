@@ -60,6 +60,8 @@ public class Block4Block extends JavaPlugin {
             pluginManager.registerEvents(dynamicSpawn, this);
             if (getCommand("b4bspawn") != null) getCommand("b4bspawn").setExecutor(new hasjamon.block4block.spawn.SpawnCommand(dynamicSpawn));
         }
+        hasjamon.block4block.requests.RequestReporter requestReporter = hasjamon.block4block.requests.RequestReporter.create(this);
+        if (requestReporter != null) pluginManager.registerEvents(requestReporter, this);
         setCommandExecutors(); // Registers all the commands
 
         // Register ClaimVisualCommand

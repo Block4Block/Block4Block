@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Block4Block requests</title>
+<style>
+:root{--bg:#111;--fg:#eee;--mut:#999;--card:#1b1b1b;--acc:#f0b429;--bad:#e5484d;--ok:#46a758}
+body{margin:0;background:var(--bg);color:var(--fg);font:18px system-ui,sans-serif;padding:20px}
+h2{font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin:28px 0 8px}
+.active{background:var(--card);border:2px solid var(--acc);border-radius:10px;padding:24px}
+.big{font-size:44px;line-height:1.2;white-space:pre-wrap;margin:8px 0}
+.row{background:var(--card);border-radius:8px;padding:10px 14px;margin:6px 0;display:flex;gap:12px;align-items:center}
+.row .t{flex:1;white-space:pre-wrap}
+button{font:inherit;padding:10px 16px;border:0;border-radius:8px;background:#333;color:var(--fg);cursor:pointer}
+button.p{background:var(--acc);color:#000}button.d{background:var(--bad)}button.g{background:var(--ok)}
+.mut{color:var(--mut)}.bar{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.due{color:#000;background:var(--acc);padding:2px 8px;border-radius:6px}
+</style></head><body>
+<div class="bar"><b>Requests</b><span id="count" class="mut"></span><span id="due"></span></div>
+<h2>Active</h2><div id="active" class="active mut">Nothing active. Press Next.</div>
+<div style="margin-top:10px"><button class="p" onclick="act('next')">Next</button></div>
+<h2>Flagged (needs your decision)</h2><div id="flagged"></div>
+<h2>Queue</h2><div id="queue"></div>
+<h2>Finished (latest 10)</h2><div id="done" class="mut"></div>
+<script>
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+async function act(a,id){await fetch('/api/action',{method:'POST',body:JSON.stringify({action:a,id:id})});load()}
+function kind(k){return {sign:'Sign',tree:'Cherry tree',animal:'Name an animal'}[k]||'Unknown'}
+async function load(){
+  const r=await fetch('/api/state'); if(r.status==401){location.reload();return}
+  const s=await r.json();
+  $('count').textContent=s.open_count+' of '+s.threshold_count+' queued'+(s.oldest_age_days!=null?' · oldest '+s.oldest_age_days.toFixed(1)+' days':'');
+  $('due').innerHTML=s.stream_due?'<span class="due">Time to plan a stream</span>':'';
+  const a=s.active;
+  $('active').className='active'+(a?'':' mut');
+  $('active').innerHTML=a?'<div class="mut">'+esc(a.buyer)+' · '+kind(a.kind)+'</div><div class="big">'+esc(a.text)+'</div>'
+    +'<button class="g" onclick="act(\'done\','+a.id+')">Done</button> <button onclick="act(\'skip\','+a.id+')">Skip</button> <button class="d" onclick="act(\'flag\','+a.id+')">Flag / Refund</button>':'Nothing active. Press Next.';
+  $('flagged').innerHTML=s.flagged.map(r=>'<div class="row"><div class="t"><b>'+esc(r.buyer)+'</b> · '+kind(r.kind)+' · <span class="mut">'+esc(r.flag_reason)+'</span><br>'+esc(r.text)+'</div><button class="g" onclick="act(\'approve\','+r.id+')">Approve</button><button class="d" onclick="act(\'refund\','+r.id+')">Refund</button></div>').join('')||'<span class="mut">None</span>';
+  $('queue').innerHTML=s.queued.map(r=>'<div class="row"><div class="t">'+esc(r.buyer)+' · '+kind(r.kind)+'<br>'+esc(r.text)+'</div></div>').join('')||'<span class="mut">Empty</span>';
+  $('done').innerHTML=s.done.map(r=>'<div>'+esc(r.buyer)+' · '+kind(r.kind)+' · '+esc(r.done_at)+(r.location?' · '+esc(r.location):'')+'</div>').join('')||'None yet';
+}
+load();setInterval(load,4000);
+</script></body></html>
