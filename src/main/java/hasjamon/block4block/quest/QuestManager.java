@@ -284,7 +284,7 @@ public class QuestManager implements Listener {
         refresh(p);
         if (directedCfg(id) != null) {
             progress.set(path(p, id, "spawns"), 0);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> { if (p.isOnline() && isActive(p, id)) spawnDirected(p, id, false); }, 40L);
+            directed.put(p.getUniqueId() + "|" + id, new Directed());
         }
     }
 
@@ -662,7 +662,13 @@ public class QuestManager implements Listener {
         long now = System.currentTimeMillis();
         for (String id : questlineIds()) {
             if (directedCfg(id) == null || !isActive(p, id)) continue;
+            // A questline waiting behind a newer one does not spawn anything: the player is not working on it now.
+            if (!id.equals(displayed(p))) continue;
             Directed d = directed.computeIfAbsent(p.getUniqueId() + "|" + id, k -> new Directed());
+            if (progress.getInt(path(p, id, "spawns"), 0) == 0) {
+                spawnDirected(p, id, false);   // the first one; tried again each pass until a hidden spot is found
+                continue;
+            }
             org.bukkit.entity.Entity cur = d.mob == null ? null : Bukkit.getEntity(d.mob);
             boolean alive = cur instanceof Mob && cur.isValid() && !cur.isDead();
             boolean engaged = alive && p.equals(((Mob) cur).getTarget());
@@ -697,7 +703,7 @@ public class QuestManager implements Listener {
             Directed d = directed.get(p.getUniqueId() + "|" + id);
             if (d == null || !d.diedToIt) continue;
             d.diedToIt = false;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> { if (p.isOnline() && isActive(p, id)) spawnDirected(p, id, true); }, 60L);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> { if (p.isOnline() && isActive(p, id) && id.equals(displayed(p))) spawnDirected(p, id, true); }, 60L);
         }
     }
 

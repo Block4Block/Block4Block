@@ -1935,10 +1935,3 @@ questlines:
         complete: { "on": pickup, item: DIRT, source_entity: PIG }
         reveal: { actionbar: "Pigs are dirty." }
         stuck: { "300": "open grassland", "600": "Pigs live on grass; look for fields and farms." }
-  surprise_gravity:
-    start: { "on": failed_break, blocks: [SAND, GRAVEL, RED_SAND] }
-    priority: high
-    steps:
-      - text: "Place a torch under it"
-        complete: { "on": pickup, items: [SAND, GRAVEL, RED_SAND] }
-        stuck: { "300": "under the block, not beside it", "600": "A falling block breaks on a torch and drops itself." }
