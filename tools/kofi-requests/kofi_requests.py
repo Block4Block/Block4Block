@@ -159,22 +159,32 @@ class Service:
         txn = payload.get("kofi_transaction_id") or payload.get("message_id")
         if not txn:
             return 400, "no transaction id"
-        item = (payload.get("shop_items") or [{}])[0]
-        kind = classify(self.cfg, item.get("direct_link_code"), item.get("variation_name") or item.get("name") or payload.get("tier_name") or "", payload.get("message"))
         text, discord, code = parse_message(payload.get("message") or "")
-        reason = auto_check(self.cfg, self.bad_words, kind, text)
+        # One request per ordered item and per quantity; a payload with no items still makes one.
+        units = []
+        for item in (payload.get("shop_items") or [{}]):
+            try:
+                qty = max(1, min(int(item.get("quantity") or 1), 10))
+            except (TypeError, ValueError):
+                qty = 1
+            kind = classify(self.cfg, item.get("direct_link_code"), item.get("variation_name") or item.get("name") or payload.get("tier_name") or "", payload.get("message"))
+            units.extend([kind] * qty)
         with self.store.lock:
-            if self.store.db.execute("SELECT 1 FROM requests WHERE txn=?", (txn,)).fetchone():
+            if self.store.db.execute("SELECT 1 FROM requests WHERE txn=? OR txn LIKE ?", (txn, txn + "#%")).fetchone():
                 return 200, "duplicate"
-            pos = time.time()
-            self.store.db.execute(
-                "INSERT INTO requests(txn,buyer,is_public,kind,text,amount,currency,paid_at,discord,support_code,status,flag_reason,position)"
-                " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (txn, payload.get("from_name") or "Someone", 1 if payload.get("is_public", True) else 0, kind, text,
-                 str(payload.get("amount") or ""), payload.get("currency") or "", payload.get("timestamp") or iso(),
-                 discord, code, "flagged" if reason else "queued", reason, pos),
-            )
-            self.store.log("Request %s from %s: %s" % (txn, payload.get("from_name"), "flagged: " + reason if reason else "queued"))
+            # Keep the payload's shape (never the email) so the first real Commission can be read back.
+            safe = {k: v for k, v in payload.items() if k not in ("email", "verification_token", "shipping")}
+            self.store.log("payload " + json.dumps(safe)[:2000])
+            for i, kind in enumerate(units):
+                reason = auto_check(self.cfg, self.bad_words, kind, text)
+                self.store.db.execute(
+                    "INSERT INTO requests(txn,buyer,is_public,kind,text,amount,currency,paid_at,discord,support_code,status,flag_reason,position)"
+                    " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (txn if len(units) == 1 else "%s#%d" % (txn, i + 1), payload.get("from_name") or "Someone", 1 if payload.get("is_public", True) else 0, kind, text,
+                     str(payload.get("amount") or ""), payload.get("currency") or "", payload.get("timestamp") or iso(),
+                     discord, code, "flagged" if reason else "queued", reason, time.time() + i * 1e-3),
+                )
+                self.store.log("Request %s from %s: %s" % (txn, payload.get("from_name"), "flagged: " + reason if reason else "queued"))
             self.store.db.commit()
         if self.notifier:
             self.notifier("intake", txn)

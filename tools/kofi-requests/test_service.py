@@ -71,6 +71,17 @@ check("discord and code parsed out", r6["text"] == "Sir Moo" and r6["discord"] =
 check("unknown item flagged", kofi("t7", "nope", "text") == 200 and svc.rows("txn='t7'")[0]["status"] == "flagged")
 check("donation is not a request", kofi("t8", "x", "thanks", typ="Donation") == 200 and not svc.rows("txn='t8'"))
 
+# several items and quantities
+def kofi_multi(txn, items):
+    d = {"verification_token": "TOK", "type": "Shop Order", "kofi_transaction_id": txn, "from_name": "Pat", "is_public": True,
+         "message": "Hi", "amount": "3", "currency": "USD", "timestamp": k.iso(), "shop_items": items, "email": "x@y.z"}
+    body = urllib.parse.urlencode({"data": json.dumps(d)}).encode()
+    return urllib.request.urlopen(urllib.request.Request(base + "/hooks/kofi", body)).status
+check("quantity 2 makes two requests", kofi_multi("m1", [{"direct_link_code": "animalcode", "quantity": 2}]) == 200 and len(svc.rows("txn LIKE 'm1#%'")) == 2)
+check("repeat of a multi order is ignored", kofi_multi("m1", [{"direct_link_code": "animalcode", "quantity": 2}]) == 200 and len(svc.rows("txn LIKE 'm1#%'")) == 2)
+check("email never stored", not any("x@y.z" in r["what"] for r in map(dict, svc.store.db.execute("SELECT what FROM events"))))
+svc.store.db.execute("DELETE FROM requests WHERE txn LIKE 'm1#%'"); svc.store.db.commit()
+
 # dashboard login
 opener = urllib.request.build_opener(NoRedirect)
 try:

@@ -1,0 +1,23 @@
+const mineflayer = require("mineflayer");
+const Vec3 = require("vec3");
+const bot = mineflayer.createBot({ host: "127.0.0.1", port: 25570, username: "HasJamOn", auth: "offline", version: "1.21.10" });
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+bot.on("message", m => console.log("MSG " + m.toString()));
+bot.once("spawn", async () => {
+  await sleep(2000);
+  bot.chat("/gamemode creative"); await sleep(500);
+  bot.chat("/give HasJamOn oak_sign 2"); bot.chat("/give HasJamOn name_tag 1"); await sleep(1000);
+  const sign = bot.inventory.items().find(i => i.name === "oak_sign");
+  await bot.equip(sign, "hand");
+  const bp = bot.entity.position.offset(Math.floor(Math.random()*6)+2, -1, 0).floored(); bot.chat(`/setblock ${bp.x} ${bp.y} ${bp.z} stone`); bot.chat(`/setblock ${bp.x} ${bp.y+1} ${bp.z} air`); await sleep(1000); const below = bot.blockAt(bp);
+  console.log("placing on " + below.name);
+  await bot.lookAt(below.position.offset(0.5, 1, 0.5));
+  if (bot.blockAt(below.position.offset(0,1,0)).name === 'air') await bot.placeBlock(below, new Vec3(0, 1, 0));
+  await sleep(500);
+  const sb = bot.blockAt(below.position.offset(0, 1, 0));
+  console.log("sign block " + sb.name);
+  bot.updateSign(sb, process.argv[2].replace(/\n/g, "\n"));
+  await sleep(2000);
+  bot.quit(); setTimeout(() => process.exit(0), 500);
+});
+setTimeout(() => process.exit(3), 40000);
