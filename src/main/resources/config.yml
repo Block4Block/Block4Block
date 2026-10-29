@@ -1882,7 +1882,7 @@ questlines:
     start: { "on": first_join }
     reveal_on_complete:
       title: "&6This land is yours."
-      subtitle: "&7...until someone breaks in."
+      subtitle: "&7Others can no longer place blocks here."
       messages:
         - "&6Join the community on Discord: &1&nhttps://discord.gg/EQptDp8RUA"
     unlock_on_complete: [claim_bossbar]

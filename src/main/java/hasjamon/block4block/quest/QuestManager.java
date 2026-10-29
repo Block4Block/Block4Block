@@ -58,7 +58,6 @@ public class QuestManager implements Listener {
 
     private final Map<UUID, Session> sessions = new HashMap<>();
     private final Map<UUID, ItemSource> itemSources = new LinkedHashMap<>();
-    private final Set<UUID> playerDropped = new LinkedHashSet<>();
     private long deathTick = -1;
     private org.bukkit.Location deathLoc;
     private EntityType deathType;
@@ -217,6 +216,13 @@ public class QuestManager implements Listener {
         markDirty();
     }
 
+    /** How many of a material the player carries now; it falls when they drop, lose or store it. */
+    private static int held(Player p, Material m) {
+        int n = 0;
+        for (ItemStack it : p.getInventory().getContents()) if (it != null && it.getType() == m) n += it.getAmount();
+        return n;
+    }
+
     private int craftedSince(Player p, String id, Material m) {
         String key = path(p, id, "base");
         if (!progress.contains(key)) { progress.set(key, p.getStatistic(Statistic.CRAFT_ITEM, m)); markDirty(); }
@@ -372,7 +378,7 @@ public class QuestManager implements Listener {
             Material m = Material.matchMaterial(String.valueOf(c.get("item")));
             int need = ((Number) c.get("count")).intValue();
             if (m == null) return new int[]{0, 0};
-            int have = "craft".equals(on) ? craftedSince(p, id, m) : progress.getInt(path(p, id, "count"), 0);
+            int have = "craft".equals(on) ? craftedSince(p, id, m) : held(p, m);
             return new int[]{Math.min(have, need), need};
         }
         if ("has_items".equals(on) && c.get("items") instanceof List) {
@@ -420,6 +426,9 @@ public class QuestManager implements Listener {
                 Material m = Material.matchMaterial(str(c, "item"));
                 int count = c.get("count") instanceof Number ? ((Number) c.get("count")).intValue() : 1;
                 ok = m != null && craftedSince(p, id, m) >= count;
+            } else if ("pickup".equals(on) && c.get("count") instanceof Number && str(c, "source_entity") == null) {
+                Material m = Material.matchMaterial(String.valueOf(c.get("item")));
+                ok = m != null && held(p, m) >= ((Number) c.get("count")).intValue();
             } else if ("has_items".equals(on)) {
                 Object items = c.get("items");
                 ok = items instanceof List && !((List<?>) items).isEmpty();
@@ -511,15 +520,6 @@ public class QuestManager implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onPlayerDrop(org.bukkit.event.player.PlayerDropItemEvent e) {
-        playerDropped.add(e.getItemDrop().getUniqueId());
-        if (playerDropped.size() > 2000) {
-            Iterator<UUID> it = playerDropped.iterator();
-            for (int i = 0; i < 500 && it.hasNext(); i++) { it.next(); it.remove(); }
-        }
-    }
-
-    @EventHandler(ignoreCancelled = true)
     public void onPickup(EntityPickupItemEvent e) {
         if (!(e.getEntity() instanceof Player)) return;
         Player p = (Player) e.getEntity();
@@ -537,14 +537,8 @@ public class QuestManager implements Listener {
             if (m == null || stack.getType() != m) continue;
             String need = str(c, "source_entity");
             if (need == null && c.get("count") instanceof Number) {
-                // Counted by us, not by the statistic: items the player dropped and picked up again do not count.
-                if (playerDropped.contains(item.getUniqueId())) continue;
-                int got = stack.getAmount() - e.getRemaining();
-                int total = progress.getInt(path(p, id, "count"), 0) + Math.max(0, got);
-                progress.set(path(p, id, "count"), total);
-                markDirty();
-                if (total >= ((Number) c.get("count")).intValue()) advance(p, id);
-                else refresh(p);
+                // Counted by what the player holds, checked once the item is in the inventory.
+                Bukkit.getScheduler().runTask(plugin, () -> { checkPolled(p, id); refresh(p); });
                 continue;
             }
             if (need != null && (src == null || !src.type.name().equalsIgnoreCase(need))) continue;
