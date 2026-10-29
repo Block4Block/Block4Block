@@ -115,11 +115,6 @@ public class HelpCommand implements CommandExecutor, Listener {
                 "§7Use signs to find back. "
 
         ));
-        inv.setItem(7, createItem(Material.RED_BED,
-                "§bCommand: §e/bed",
-                "§7Be given a bed.",
-                "§7Has a 24 hour cooldown."
-        ));
         inv.setItem(9, createItem(Material.SKELETON_SKULL,
                 "§aLoot: §eSkeletons drop stone",
                 "§7Stone is easiest obtained from skeletons.",

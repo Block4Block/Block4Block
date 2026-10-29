@@ -22,10 +22,6 @@ server-tooltips:
 only-apply-b4b-to-intruders: false
 # Allow players to break blocks in others' claims
 can-break-in-others-claims: true
-# Show hints 
-hints-enabled: true
-# Time between hints
-seconds-between-hints: 600
 # Minimum time between intruder alerts
 seconds-between-intruder-alerts: 60
 # Minimum time between lava immunity messages
@@ -114,38 +110,7 @@ lectern-message-settings:
 
 # Messages to be shown chronologically the first time a player joins the server
 welcome-messages:
-  - "&cWelcome! There are 5 things you should know about Block4Block to get started:"
-  - "1) BEWARE! &7Most blocks will require you to have them and spend one from your hotbar to break them."
-  - "2) GET STARTED &7with free-to-break blocks such as logs, ores, crafting tables, ladders, and torches."
-  - "3) GET CREATIVE &7by luring creepers into giving you stone, killing pigs for dirt, and placing torches under falling gravel and sand."
-  - "4) GET THROUGH THE NIGHT &7with your complimentary bed received at world spawn. 24 hour cooldown."
-  - "5) LEARN MORE &7by reading advancement descriptions. Press L now and take a look!"
-  - "§aWe hope you enjoy the challenge!"
-
-# Hints that are shuffled at server start and shown one by one
-hints:
-  - "&6Hint #0: &eJoin the discussion on Discord: &1&nhttps://discord.gg/EQptDp8RUA﻿"
-  - "&6Hint #1: &eOres, Leaves and Logs can be broken normally. Logs are a good choice for temporary blocks when building!"
-  - "&6Hint #2: &ePigs are dirty so they drop dirt now!"
-  - "&6Hint #3: &eGrass blocks can be hard to break, but there are several ways to turn them into dirt blocks. Try a hoe or a solid block!"
-  - "&6Hint #4: &eNatural ravines and caves are great places to find ore and go deep underground."
-  - "&6Hint #5: &eSkeletons are cold as stone, so they drop stone now! A skeleton farm will help when mining."
-  - "&6Hint #6: &eStone will drop cobblestone as normal. You can smelt it back into stone and recycle it!"
-  - "&6Hint #7: &eWhen breaking stone it has a 10% chance of dropping double the cobblestone! Smelt it for stone profits!"
-  - "&6Hint #8: &eYou can prevent others from placing blocks within an area by claiming it! Write a book with \"claim\" and your name in it, then place it on a lectern!"
-  - "&6Hint #9: &eMake it hard for people to break in! Protect your claim by surrounding it with rare blocks."
-  - "&6Hint #10: &eType /hints off to stop hints from appearing."
-  - "&6Hint #11: &eType /b4bhelp to open an inventory with help on block4block changes."
-  - "&6Hint #12: &eFishing can no longer give enchanted items, but may give some cool vanity items."
-  - "&6Hint #13: &eYou can type /bed once a day to get a bed!"
-  - "&6Hint #14: &eWhen placing blocks, there is a 5 second grace period where all players can remove them normally."
-  - "&6Hint #15: &ePress L to open advancements - they're a great way to learn about Block4Block as you play!"
-  - "&6Hint #16: &eThe lectern is protected as long as at least one of its 4 adjacent sides isn't open. Bottom and Top are excluded."
-  - "&6Hint #17: &eThe 4 sides of the lectern can be further protected by stacking gravity affected blocks on top of the protecting blocks, letting you protect with thousands of blocks!"
-  - "&6Hint #18: &eSand, Gravel and Concrete Powder are all blocks affected by gravity. The concrete can be in 16 different colors. That's 18 different blocks to protect with!"
-  - "&6Hint #19: &eMake sure to not have any water near your Concrete Powder that is protecting your claim, else they may stop being powder and be stuck solid in the air!"
-  - "&6Hint #20: &eTo gain Netherrack, you must break Nylium. You can Bonemeal Netherrack near crimson and warped Nylium to spread the Nylium."
-  - "&6Hint #?: &eSheep are colourful and so are blocks!"
+  - "&6Welcome to Block4Block."
 
 claim-protection:
   # Directions from which a claim lectern can be protected. Enum: NORTH, SOUTH, EAST, WEST, UP, DOWN
@@ -1915,3 +1880,80 @@ spawn-egg-weights:
   BLACK_BEAR_SPAWN_EGG: 1
   WITHER_SPAWN_EGG: 0
   ENDER_DRAGON_SPAWN_EGG: 0
+
+# Questlines shown on a boss bar. A step says what to do and never why; the reason is the reveal.
+# complete."on" (quoted: a bare on is a boolean in YAML): pickup (item, optional count or source_entity) | craft (item, optional count) | has_items (items)
+#              | write_book (contains: words, {player} is the player's name) | claim_book_placed
+# stuck: seconds without progress -> text. The first entry is added to the boss bar ("where"), later ones are
+#        shown once on the action bar. The step text itself never changes.
+questlines:
+  claim:
+    start: { "on": first_join }
+    reveal_on_complete:
+      title: "&6This land is yours."
+      subtitle: "&7Others can no longer place blocks here."
+      messages:
+        - "&6Join the community on Discord: &1&nhttps://discord.gg/EQptDp8RUA"
+    unlock_on_complete: [claim_bossbar]
+    steps:
+      - text: "Collect sugar cane"
+        complete: { "on": pickup, item: SUGAR_CANE, count: 12 }
+        stuck: { "300": "near water", "600": "Sugar cane grows on riverbanks and beaches." }
+      - text: "Kill a cow"
+        complete: { "on": pickup, item: LEATHER, count: 4 }
+        stuck: { "300": "open grassland", "600": "Cows live on grass; look for fields." }
+      - text: "Craft 4 books"
+        complete: { "on": craft, item: BOOK, count: 4 }
+        stuck: { "300": "a book is paper and leather", "600": "Craft 3 paper from sugar cane, then add leather." }
+      - text: "Craft a bookshelf"
+        complete: { "on": craft, item: BOOKSHELF }
+        stuck: { "300": "books and planks", "600": "A bookshelf is 6 planks and 3 books." }
+      - text: "Craft a lectern"
+        complete: { "on": craft, item: LECTERN }
+        stuck: { "300": "a bookshelf and slabs", "600": "A lectern is a bookshelf over 4 wooden slabs." }
+      - text: "Kill a squid"
+        complete: { "on": has_items, items: [INK_SAC] }
+        stuck: { "300": "rivers and oceans", "600": "Squid live in rivers and oceans." }
+      - text: "Kill a chicken"
+        complete: { "on": has_items, items: [FEATHER] }
+        stuck: { "300": "farms and villages", "600": "Chickens wander near farms and villages." }
+      - text: "Craft a book and quill"
+        complete: { "on": craft, item: WRITABLE_BOOK }
+        stuck: { "300": "a book, an ink sac and a feather" }
+      - text: "Write \"claim\" and your name in it"
+        complete: { "on": write_book, contains: [claim, "{player}"] }
+        stuck: { "300": "open the book and write both words" }
+      - text: "Place the book on the lectern"
+        complete: { "on": claim_book_placed }
+        stuck: { "300": "place the lectern, then use the book on it" }
+
+  surprise_stone:
+    start: { "on": failed_break, blocks: [STONE, COBBLESTONE, DEEPSLATE] }
+    priority: high
+    directed_spawn: { entity: SKELETON, max: 3 }
+    steps:
+      - text: "Kill a skeleton"
+        complete: { "on": pickup, item: STONE, source_entity: SKELETON }
+        reveal: { actionbar: "Bones of stone." }
+        stuck: { "300": "in the dark", "600": "Skeletons spawn at night and in caves." }
+  surprise_dirt:
+    start: { "on": failed_break, blocks: [DIRT, GRASS_BLOCK, COARSE_DIRT] }
+    priority: high
+    steps:
+      - text: "Kill a pig"
+        complete: { "on": pickup, item: DIRT, source_entity: PIG }
+        reveal: { actionbar: "Pigs are dirty." }
+        stuck: { "300": "open grassland", "600": "Pigs live on grass; look for fields and farms." }
+
+# Dynamic spawn: moves the world spawn across fresh land one claim cell at a time (a square spiral around the centre
+# cell), never into claims, turning around at the world border and at the centre. Replaces the DynamicSpawnPlugin:
+# remove that plugin when this is on. Ops: /b4bspawn info|next|move|pause|resume|center here
+dynamic-spawn:
+  enabled: true
+  world: world
+  interval: 1d             # 1h, 6h, 30m ...; a move only happens if somebody used the spawn since the last one
+  require-use: true
+  center: auto             # or { x: 0, z: 0 }
+  claim-buffer: 1          # cells kept free of claims around the new spawn
+  max-skips-per-move: 200
+  announce: true
