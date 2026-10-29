@@ -1935,3 +1935,16 @@ questlines:
         complete: { "on": pickup, item: DIRT, source_entity: PIG }
         reveal: { actionbar: "Pigs are dirty." }
         stuck: { "300": "open grassland", "600": "Pigs live on grass; look for fields and farms." }
+
+# Dynamic spawn: moves the world spawn across fresh land one claim cell at a time (a square spiral around the centre
+# cell), never into claims, turning around at the world border and at the centre. Replaces the DynamicSpawnPlugin:
+# remove that plugin when this is on. Ops: /b4bspawn info|next|move|pause|resume|center here
+dynamic-spawn:
+  enabled: true
+  world: world
+  interval: 1d             # 1h, 6h, 30m ...; a move only happens if somebody used the spawn since the last one
+  require-use: true
+  center: auto             # or { x: 0, z: 0 }
+  claim-buffer: 1          # cells kept free of claims around the new spawn
+  max-skips-per-move: 200
+  announce: true

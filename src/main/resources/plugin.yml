@@ -44,6 +44,10 @@ commands:
   claimvisual:
     description: Toggle claim visualization on or off
     usage: /claimvisual <on/off>
+  b4bspawn:
+    description: Shows or controls the dynamic world spawn.
+    usage: /<command> info|next|move|pause|resume|center here
+    permission: op
   b4bquest:
     description: Shows, skips or restarts a player's questlines.
     usage: /<command> status|skip|reset|start <questline> [player]
