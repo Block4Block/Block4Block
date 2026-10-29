@@ -46,5 +46,5 @@ commands:
     usage: /claimvisual <on/off>
   b4bquest:
     description: Shows, skips or restarts a player's questlines.
-    usage: /<command> status|skip|reset [player]
+    usage: /<command> status|skip|reset|start <questline> [player]
     permission: op

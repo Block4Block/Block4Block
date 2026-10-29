@@ -29,6 +29,19 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
+import hasjamon.block4block.events.B4BlockBreakEvent;
+import org.bukkit.FluidCollisionMode;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.Mob;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Skeleton;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -92,6 +105,10 @@ public class QuestManager implements Listener {
             sb.append(id).append(": ").append(isDone(p, id) ? "done" : isStarted(p, id) ? "step " + stepIndex(p, id) + "/" + steps(id).size() : "not started").append("; ");
         }
         return sb + "claim bar hidden: " + claimBarHidden(p);
+    }
+
+    public void adminStart(Player p, String id) {
+        startQuestline(p, id);
     }
 
     public void adminSkip(Player p) {
@@ -265,6 +282,10 @@ public class QuestManager implements Listener {
         log(p, id, "start", 0);
         saveIfDirty();   // a kill or crash must not lose the start: the next join would count them as an old player
         refresh(p);
+        if (directedCfg(id) != null) {
+            progress.set(path(p, id, "spawns"), 0);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> { if (p.isOnline() && isActive(p, id)) spawnDirected(p, id, false); }, 40L);
+        }
     }
 
     private void finish(Player p, String id) {
@@ -409,6 +430,7 @@ public class QuestManager implements Listener {
             Session s = sessions.get(p.getUniqueId());
             if (id == null || s == null) continue;
             refresh(p);   // keeps the counts on the bar current
+            directedTick(p);
             applyStuckHelp(p, id, s, now);
         }
     }
@@ -533,8 +555,7 @@ public class QuestManager implements Listener {
             if (idx >= steps.size()) continue;
             Map<String, Object> c = sub(steps.get(idx), "complete");
             if (!"pickup".equals(str(c, "on"))) continue;
-            Material m = Material.matchMaterial(String.valueOf(c.get("item")));
-            if (m == null || stack.getType() != m) continue;
+            if (!pickupMatches(c, stack.getType())) continue;
             String need = str(c, "source_entity");
             if (need == null && c.get("count") instanceof Number) {
                 // Counted by what the player holds, checked once the item is in the inventory.
@@ -591,5 +612,172 @@ public class QuestManager implements Listener {
             if (idx >= steps.size()) continue;
             if ("claim_book_placed".equals(str(sub(steps.get(idx), "complete"), "on"))) advance(p, id);
         }
+    }
+
+    // ---- surprise quests: started by a failed break ---------------------------------------------
+
+    @EventHandler
+    public void onFailedBreak(B4BlockBreakEvent e) {
+        if (e.success) return;
+        Player p = e.player;
+        for (String id : questlineIds()) {
+            ConfigurationSection start = questline(id).getConfigurationSection("start");
+            if (start == null || !"failed_break".equals(start.getString("on"))) continue;
+            if (!start.getStringList("blocks").contains(e.block.getType().name())) continue;
+            startQuestline(p, id);   // once per family: a started questline is never started again
+        }
+    }
+
+    private boolean pickupMatches(Map<String, Object> c, Material type) {
+        Object items = c.get("items");
+        if (items instanceof List) {
+            for (Object o : (List<?>) items) if (type == Material.matchMaterial(String.valueOf(o))) return true;
+            return false;
+        }
+        Material m = Material.matchMaterial(String.valueOf(c.get("item")));
+        return m != null && type == m;
+    }
+
+    // ---- directed spawns: a plain vanilla mob, only where and when it appears is chosen ----------
+
+    private static final class Directed {
+        UUID mob;
+        long lastAt = System.currentTimeMillis();
+        boolean diedToIt;
+        boolean tenMinutesDone;
+    }
+
+    private final Map<String, Directed> directed = new HashMap<>();
+
+    private ConfigurationSection directedCfg(String id) {
+        ConfigurationSection q = questline(id);
+        return q == null ? null : q.getConfigurationSection("directed_spawn");
+    }
+
+    private NamespacedKey ownerKey() {
+        return new NamespacedKey(plugin, "quest_owner");
+    }
+
+    private void directedTick(Player p) {
+        long now = System.currentTimeMillis();
+        for (String id : questlineIds()) {
+            if (directedCfg(id) == null || !isActive(p, id)) continue;
+            Directed d = directed.computeIfAbsent(p.getUniqueId() + "|" + id, k -> new Directed());
+            org.bukkit.entity.Entity cur = d.mob == null ? null : Bukkit.getEntity(d.mob);
+            boolean alive = cur instanceof Mob && cur.isValid() && !cur.isDead();
+            boolean engaged = alive && p.equals(((Mob) cur).getTarget());
+            if ((!alive || !engaged) && now - d.lastAt >= 120_000) spawnDirected(p, id, true);   // not engaged after 2 min
+            long started = progress.getLong(path(p, id, "started"));
+            if (!d.tenMinutesDone && now - started >= 600_000) {   // ignored for 10 min: one more, the text help is on the bar
+                d.tenMinutesDone = true;
+                spawnDirected(p, id, true);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerDeath(PlayerDeathEvent e) {
+        Player p = e.getEntity();
+        if (!(p.getLastDamageCause() instanceof EntityDamageByEntityEvent)) return;
+        org.bukkit.entity.Entity damager = ((EntityDamageByEntityEvent) p.getLastDamageCause()).getDamager();
+        if (damager instanceof Projectile && ((Projectile) damager).getShooter() instanceof org.bukkit.entity.Entity)
+            damager = (org.bukkit.entity.Entity) ((Projectile) damager).getShooter();
+        String owner = damager.getPersistentDataContainer().get(ownerKey(), PersistentDataType.STRING);
+        if (owner == null || !owner.equals(p.getUniqueId().toString())) return;
+        for (String id : questlineIds()) {
+            if (directedCfg(id) != null && isActive(p, id))
+                directed.computeIfAbsent(p.getUniqueId() + "|" + id, k -> new Directed()).diedToIt = true;
+        }
+    }
+
+    @EventHandler
+    public void onRespawn(PlayerRespawnEvent e) {
+        Player p = e.getPlayer();
+        for (String id : questlineIds()) {
+            Directed d = directed.get(p.getUniqueId() + "|" + id);
+            if (d == null || !d.diedToIt) continue;
+            d.diedToIt = false;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> { if (p.isOnline() && isActive(p, id)) spawnDirected(p, id, true); }, 60L);
+        }
+    }
+
+    /** Spawns one skeleton behind the player. Returns whether it did (limits and a missing safe spot say no). */
+    private boolean spawnDirected(Player p, String id, boolean closer) {
+        ConfigurationSection cfg = directedCfg(id);
+        if (cfg == null || p.getWorld().getEnvironment() != World.Environment.NORMAL) return false;
+        int max = cfg.getInt("max", 3);
+        int used = progress.getInt(path(p, id, "spawns"), 0);
+        if (used >= max) return false;   // at most 3 per player, ever
+        Location spot = findSpawnSpot(p, closer ? 8 : 10, closer ? 12 : 16, true);
+        if (spot == null) spot = findSpawnSpot(p, closer ? 8 : 10, closer ? 12 : 16, false);
+        if (spot == null) return false;
+        World w = p.getWorld();
+        boolean day = w.getTime() < 12300 || w.getTime() > 23850;
+        boolean sunlit = spot.getBlock().getLightFromSky() >= 12;
+        Skeleton sk = w.spawn(spot, Skeleton.class, mob -> {
+            mob.getPersistentDataContainer().set(ownerKey(), PersistentDataType.STRING, p.getUniqueId().toString());
+            if (mob.getEquipment() != null) {
+                if (mob.getEquipment().getItemInMainHand().getType().isAir())
+                    mob.getEquipment().setItemInMainHand(new ItemStack(Material.BOW));
+                // A daytime skeleton in the open wears a helmet so it does not burn, as natural ones do.
+                if (day && sunlit) {
+                    mob.getEquipment().setHelmet(new ItemStack(Material.LEATHER_HELMET));
+                    mob.getEquipment().setHelmetDropChance(0.085f);
+                }
+            }
+        });
+        Directed d = directed.computeIfAbsent(p.getUniqueId() + "|" + id, k -> new Directed());
+        d.mob = sk.getUniqueId();
+        d.lastAt = System.currentTimeMillis();
+        progress.set(path(p, id, "spawns"), used + 1);
+        markDirty();
+        log(p, id, "directed spawn " + (used + 1), stepIndex(p, id));
+        return true;
+    }
+
+    private static final Set<Material> BAD_FLOOR = EnumSet.of(Material.MAGMA_BLOCK, Material.CACTUS, Material.FIRE,
+            Material.SOUL_FIRE, Material.POWDER_SNOW, Material.CAMPFIRE, Material.SOUL_CAMPFIRE, Material.WATER,
+            Material.LAVA, Material.SWEET_BERRY_BUSH, Material.COBWEB);
+
+    /** A hidden standing spot 10 to 16 blocks away, outside the view cone (and without sight of the eyes if strict). */
+    private Location findSpawnSpot(Player p, int minD, int maxD, boolean strict) {
+        Location eye = p.getEyeLocation();
+        Vector look = eye.getDirection().setY(0);
+        if (look.lengthSquared() < 1e-4) look = new Vector(0, 0, 1);
+        look.normalize();
+        World w = p.getWorld();
+        java.util.concurrent.ThreadLocalRandom r = java.util.concurrent.ThreadLocalRandom.current();
+        Location best = null;
+        int bestSky = 99;
+        for (int i = 0; i < 80; i++) {
+            double dist = minD + r.nextDouble() * (maxD - minD);
+            double ang = r.nextDouble() * Math.PI * 2;
+            Vector dir = new Vector(Math.cos(ang), 0, Math.sin(ang));
+            if (dir.dot(look) > -0.342) continue;   // inside 110 degrees of where the player faces
+            int x = p.getLocation().getBlockX() + (int) Math.round(dir.getX() * dist);
+            int z = p.getLocation().getBlockZ() + (int) Math.round(dir.getZ() * dist);
+            Location spot = standingSpot(w, x, z, p.getLocation().getBlockY());
+            if (spot == null) continue;
+            if (plugin.cfg.getClaimData().contains(utils.getClaimID(spot))) continue;   // never inside a claim
+            if (strict) {
+                Vector to = spot.clone().add(0.0, 1.6, 0.0).toVector().subtract(eye.toVector());
+                RayTraceResult hit = w.rayTraceBlocks(eye, to.clone().normalize(), to.length(), FluidCollisionMode.NEVER, true);
+                if (hit == null) continue;   // a clear line to the eyes: it could be seen
+            }
+            int sky = spot.getBlock().getLightFromSky();   // prefer shade
+            if (sky < bestSky) { best = spot; bestSky = sky; }
+        }
+        return best;
+    }
+
+    private Location standingSpot(World w, int x, int z, int nearY) {
+        if (!w.isChunkLoaded(x >> 4, z >> 4)) return null;
+        for (int y = nearY + 6; y >= nearY - 8; y--) {
+            org.bukkit.block.Block floor = w.getBlockAt(x, y, z);
+            if (!floor.getType().isSolid() || BAD_FLOOR.contains(floor.getType())) continue;
+            if (!w.getBlockAt(x, y + 1, z).getType().isAir() || !w.getBlockAt(x, y + 2, z).getType().isAir()) continue;
+            return new Location(w, x + 0.5, y + 1, z + 0.5);
+        }
+        return null;
     }
 }

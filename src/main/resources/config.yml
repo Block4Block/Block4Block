@@ -1917,3 +1917,28 @@ questlines:
       - text: "Place the book on the lectern"
         complete: { "on": claim_book_placed }
         stuck: { "300": "place the lectern, then use the book on it" }
+
+  surprise_stone:
+    start: { "on": failed_break, blocks: [STONE, COBBLESTONE, DEEPSLATE] }
+    priority: high
+    directed_spawn: { entity: SKELETON, max: 3 }
+    steps:
+      - text: "Kill a skeleton"
+        complete: { "on": pickup, item: STONE, source_entity: SKELETON }
+        reveal: { actionbar: "Bones of stone." }
+        stuck: { "300": "in the dark", "600": "Skeletons spawn at night and in caves." }
+  surprise_dirt:
+    start: { "on": failed_break, blocks: [DIRT, GRASS_BLOCK, COARSE_DIRT] }
+    priority: high
+    steps:
+      - text: "Kill a pig"
+        complete: { "on": pickup, item: DIRT, source_entity: PIG }
+        reveal: { actionbar: "Pigs are dirty." }
+        stuck: { "300": "open grassland", "600": "Pigs live on grass; look for fields and farms." }
+  surprise_gravity:
+    start: { "on": failed_break, blocks: [SAND, GRAVEL, RED_SAND] }
+    priority: high
+    steps:
+      - text: "Place a torch under it"
+        complete: { "on": pickup, items: [SAND, GRAVEL, RED_SAND] }
+        stuck: { "300": "under the block, not beside it", "600": "A falling block breaks on a torch and drops itself." }
