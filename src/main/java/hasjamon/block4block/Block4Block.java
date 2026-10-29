@@ -24,8 +24,8 @@ public class Block4Block extends JavaPlugin {
     public ConfigManager cfg;
     private static Block4Block instance;
     private ClaimVisual claimVisual;
-    private List<?> hints;
-    private int nextHint = 0;
+    public hasjamon.block4block.quest.QuestManager quests;
+    public hasjamon.block4block.spawn.DynamicSpawn dynamicSpawn;
 
     // --- Field for the single ClaimContestCommand instance ---
     private ClaimContestCommand claimContestCommandInstance;
@@ -51,8 +51,16 @@ public class Block4Block extends JavaPlugin {
         claimVisual = new ClaimVisual(this);
         claimContestCommandInstance = new ClaimContestCommand(this);
         registerEvents(); // Registers all the listeners
+        quests = new hasjamon.block4block.quest.QuestManager(this);
+        pluginManager.registerEvents(quests, this);
+        if (getCommand("b4bquest") != null) getCommand("b4bquest").setExecutor(new hasjamon.block4block.quest.QuestCommand(quests));
+        utils.claimWidth = this.getConfig().getInt("claim-width");   // the spawn module reads it while it starts
+        dynamicSpawn = new hasjamon.block4block.spawn.DynamicSpawn(this);
+        if (dynamicSpawn.enabled()) {
+            pluginManager.registerEvents(dynamicSpawn, this);
+            if (getCommand("b4bspawn") != null) getCommand("b4bspawn").setExecutor(new hasjamon.block4block.spawn.SpawnCommand(dynamicSpawn));
+        }
         setCommandExecutors(); // Registers all the commands
-        setupHints(); // Prepares hints and starts broadcasting them
 
         // Register ClaimVisualCommand
         if (getCommand("claimvisual") != null) {
@@ -71,6 +79,11 @@ public class Block4Block extends JavaPlugin {
             addMapRenderers();
     }
 
+    @Override
+    public void onDisable() {
+        if (quests != null) quests.shutdown();
+    }
+
     private void checkReflectionAvailability() {
         try {
             MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
@@ -81,37 +94,8 @@ public class Block4Block extends JavaPlugin {
         }
     }
 
-    private void setupHints() {
-        hints = getConfig().getList("hints");
-        long interval = getConfig().getLong("seconds-between-hints");
-        boolean hintsEnabled = getConfig().getBoolean("hints-enabled");
-
-        // Shuffle hints, then show a hint every interval seconds
-        if (hints != null && hintsEnabled) {
-            Collections.shuffle(hints);
-            getServer().getScheduler().scheduleSyncRepeatingTask(this, this::showHint, 0, 20 * interval);
-        }
-    }
-
-    private void showHint() {
-        if (++nextHint >= hints.size())
-            nextHint = 0;
-
-        String hint = (String) hints.get(nextHint);
-        FileConfiguration hintSettings = this.cfg.getHintSettings();
-
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            String pUUID = p.getUniqueId().toString();
-            String pSettings = hintSettings.getString(pUUID);
-
-            if (pSettings == null || pSettings.equals("on"))
-                p.sendMessage(utils.chat(hint));
-        }
-    }
-
     private void setCommandExecutors() {
         PluginCommand dieCmd = this.getCommand("die");
-        PluginCommand hintsCmd = this.getCommand("hints");
         PluginCommand helpCmd = this.getCommand("b4bhelp");
         PluginCommand ignoreCmd = this.getCommand("ignore");
         PluginCommand unignoreCmd = this.getCommand("unignore");
@@ -124,7 +108,6 @@ public class Block4Block extends JavaPlugin {
         PluginCommand claimVisualCmd = this.getCommand("claimvisual");
 
         if (dieCmd != null) dieCmd.setExecutor(new DieCommand());
-        if (hintsCmd != null) hintsCmd.setExecutor(new HintsCommand(this));
         if (helpCmd != null) helpCmd.setExecutor(new HelpCommand(this));
         if (ignoreCmd != null && unignoreCmd != null) {
             IgnoreCommand cmd = new IgnoreCommand(this);

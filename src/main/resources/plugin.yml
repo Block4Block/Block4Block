@@ -10,9 +10,6 @@ commands:
     description: Use this command to kill yourself if you are stuck.
     usage: /<command>
     aliases: [ suicide, kill ]
-  hints:
-    description: Turns hints on/off.
-    usage: /<command> [on|off]
   b4bhelp:
     description: Shows an inventory with items that explain how Block4Block works.
     usage: /<command>
@@ -27,9 +24,6 @@ commands:
     description: Everything you need to start a Chunk Claim Contest.
     usage: Invalid command, see correct usage with /<command> help
     permission: op
-  bed:
-    description: A free bed. Can only be used once every 24 hours.
-    usage: /<command>
   welcome:
     description: Shows the welcome message.
     usage: /<command>
@@ -50,3 +44,11 @@ commands:
   claimvisual:
     description: Toggle claim visualization on or off
     usage: /claimvisual <on/off>
+  b4bspawn:
+    description: Shows or controls the dynamic world spawn.
+    usage: /<command> info|next|move|pause|resume|center here
+    permission: op
+  b4bquest:
+    description: Shows, skips or restarts a player's questlines.
+    usage: /<command> status|skip|reset|start <questline> [player]
+    permission: op

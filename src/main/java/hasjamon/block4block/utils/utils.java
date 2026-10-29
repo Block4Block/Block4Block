@@ -50,6 +50,8 @@ public class utils {
     public static final Map<OfflinePlayer, String> activeDisguises = new HashMap<>();
     public static final Map<Player, Long> lastPlayerMoves = new HashMap<>();
     public static final Map<Player, BossBar> bossBars = new HashMap<>();
+    /** Set by the quest module: the claim boss bar stays hidden until the claim questline is complete. */
+    public static java.util.function.Predicate<Player> claimBarHidden = p -> false;
     public static final Map<Location, Long> claimInvulnerabilityStartTick = new HashMap<>();
     public static final Set<String> knownPlayers = new HashSet<>();
     public static final Set<Material> nonProtectiveBlockTypes = new HashSet<>();
@@ -1263,6 +1265,7 @@ public class utils {
             @Override
             public void run() {
                 BossBar bossBar = bossBars.get(p);
+                bossBar.setVisible(!claimBarHidden.test(p));
                 FileConfiguration claimData = plugin.cfg.getClaimData();
                 boolean isClaimed = claimData.contains(currentClaimID);
 
