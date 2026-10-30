@@ -223,6 +223,7 @@ public class QuestManager implements Listener {
     private void initStep(Player p, String id, int idx) {
         progress.set(path(p, id, "count"), 0);
         progress.set(path(p, id, "base"), null);
+        progress.set(path(p, id, "picked"), null);
         List<Map<?, ?>> steps = steps(id);
         if (idx < 0 || idx >= steps.size()) return;
         Map<String, Object> c = sub(steps.get(idx), "complete");
@@ -231,6 +232,11 @@ public class QuestManager implements Listener {
             if (m != null) progress.set(path(p, id, "base"), p.getStatistic(Statistic.CRAFT_ITEM, m));
         }
         markDirty();
+    }
+
+    /** Count for a pickup step: the larger of what was picked up since the step began and what is carried now. */
+    private int pickedOrHeld(Player p, String id, Material m) {
+        return Math.max(progress.getInt(path(p, id, "picked")), held(p, m));
     }
 
     /** How many of a material the player carries now; it falls when they drop, lose or store it. */
@@ -399,7 +405,7 @@ public class QuestManager implements Listener {
             Material m = Material.matchMaterial(String.valueOf(c.get("item")));
             int need = ((Number) c.get("count")).intValue();
             if (m == null) return new int[]{0, 0};
-            int have = "craft".equals(on) ? craftedSince(p, id, m) : held(p, m);
+            int have = "craft".equals(on) ? craftedSince(p, id, m) : pickedOrHeld(p, id, m);
             return new int[]{Math.min(have, need), need};
         }
         if ("has_items".equals(on) && c.get("items") instanceof List) {
@@ -450,7 +456,7 @@ public class QuestManager implements Listener {
                 ok = m != null && craftedSince(p, id, m) >= count;
             } else if ("pickup".equals(on) && c.get("count") instanceof Number && str(c, "source_entity") == null) {
                 Material m = Material.matchMaterial(String.valueOf(c.get("item")));
-                ok = m != null && held(p, m) >= ((Number) c.get("count")).intValue();
+                ok = m != null && pickedOrHeld(p, id, m) >= ((Number) c.get("count")).intValue();
             } else if ("has_items".equals(on)) {
                 Object items = c.get("items");
                 ok = items instanceof List && !((List<?>) items).isEmpty();
@@ -558,7 +564,14 @@ public class QuestManager implements Listener {
             if (!pickupMatches(c, stack.getType())) continue;
             String need = str(c, "source_entity");
             if (need == null && c.get("count") instanceof Number) {
-                // Counted by what the player holds, checked once the item is in the inventory.
+                // Counted two ways, the larger wins: everything picked up since the step began, and what the
+                // player holds now. Checked once the item is in the inventory.
+                int taken = stack.getAmount() - e.getRemaining();
+                if (taken > 0) {
+                    String key = path(p, id, "picked");
+                    progress.set(key, progress.getInt(key) + taken);
+                    markDirty();
+                }
                 Bukkit.getScheduler().runTask(plugin, () -> { checkPolled(p, id); refresh(p); });
                 continue;
             }
