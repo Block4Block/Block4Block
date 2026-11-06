@@ -175,7 +175,7 @@ claim-explosion-immunity:
 
 # Blocks endermen aren't allowed to place inside claims
 enderman-place-in-claim-blacklist:
-  #- GRASS_BLOCK
+#- GRASS_BLOCK
 
 # Blocks destroyed by TNT explosions only drop if on this list
 # NOTE: If a block on this list has an inventory (e.g., CHEST), all items in the inventory will likewise be lost
@@ -479,10 +479,13 @@ blacklisted-claim-blocks:
   - GREEN_WALL_BANNER
   - RED_WALL_BANNER
   - BLACK_WALL_BANNER
+  - DRIED_KELP_BLOCK
   - IRON_BLOCK
   - GOLD_BLOCK
   - DIAMOND_BLOCK
   - EMERALD_BLOCK
+  - COAL_BLOCK
+  - BONE_BLOCK
   - HAY_BLOCK
   - LAPIS_BLOCK
   - ENCHANTING_TABLE
@@ -747,7 +750,7 @@ blacklisted-blocks:
 
 # Blocks with loot disabled on break
 no-loot-on-break:
-# 1.21.9 begins
+  # 1.21.9 begins
   - COPPER_CHEST
   - EXPOSED_COPPER_CHEST
   - WEATHERED_COPPER_CHEST
@@ -809,7 +812,7 @@ no-loot-on-break:
   - BAMBOO_SHELF
   - CRIMSON_SHELF
   - WARPED_SHELF
-# 1.21.9 end
+  # 1.21.9 end
   - CARVED_PUMPKIN
   - RESIN_BLOCK
   - RESIN_CLUMP
