@@ -56,3 +56,7 @@ commands:
     description: Shows, skips or restarts a player's questlines.
     usage: /<command> status|skip|reset|start <questline> [player]
     permission: op
+  b4bsupporter:
+    description: Grants or removes the Supporter cosmetics (chat prefix, claim-map colour) by hand.
+    usage: /<command> grant|remove|info|list|colors
+    permission: op

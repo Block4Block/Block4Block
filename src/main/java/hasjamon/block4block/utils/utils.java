@@ -1081,11 +1081,17 @@ public class utils {
 
         // --- 2) Build per‑chunk color map for all current chunks ---
         Map<String, Byte> chunkColor = new HashMap<>();
+        // A Supporter's own claims are drawn in the colour they chose, on the maps they made (cosmetic only).
+        Byte supporterColor = plugin.supporters != null ? plugin.supporters.claimColor(p.getUniqueId()) : null;
         for (String chunkID : claimsNow.keySet()) {
             Coords2D c = claimsNow.get(chunkID);
             // determine color
             String claimID = getClaimID(chunkID);
             boolean member = isMemberOfClaim(getMembers(claimID), p);
+            if (member && supporterColor != null) {
+                chunkColor.put(chunkID, supporterColor);
+                continue;
+            }
             String cfg = member ? "my-claims" : "others-claims";
             int r = plugin.getConfig().getInt("claim-map-colors." + cfg + ".r");
             int g = plugin.getConfig().getInt("claim-map-colors." + cfg + ".g");
