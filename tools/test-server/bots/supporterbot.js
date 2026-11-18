@@ -70,12 +70,12 @@ Promise.all([new Promise(r => owner.once("spawn", r)), new Promise(r => vet.once
   check("a non-op can't use /b4bsupporter", vetChat.some(l => /permission|unknown|I'm sorry/i.test(l)), vetChat.slice(-1)[0]);
 
   owner.chat("hello-before"); await sleep(1000);
-  check("no prefix before a grant", said("hello-before").length > 0 && !said("hello-before").some(l => l.includes("[Supporter]")), said("hello-before")[0]);
+  check("no prefix before a grant", said("hello-before").length > 0 && !said("hello-before").some(l => l.includes("✦")), said("hello-before")[0]);
 
   await cmd("/b4bsupporter grant HasJamOn prefix");
   owner.chat("hello-plain"); await sleep(1000);
   const plain = vetRaw.filter(l => l.includes("hello-plain")).join(" ");
-  check("prefix shows to other players after a grant", plain.includes("[Supporter]"), plain.slice(0, 160));
+  check("prefix shows to other players after a grant", plain.includes("✦"), plain.slice(0, 160));
   check("without a claim colour the tag is gold", /"gold"|§6/.test(plain));
   await cmd("/b4bsupporter grant HasJamOn claimcolor pink", 4000);
   owner.chat("hello-after"); await sleep(1000);
@@ -83,8 +83,8 @@ Promise.all([new Promise(r => owner.once("spawn", r)), new Promise(r => vet.once
   const colored = vetRaw.filter(l => l.includes("hello-after")).join(" ");
   // The tag stays gold; the name comes after it in the claim colour (#F27FA5, pink as the map shows it).
   const at = s => colored.toLowerCase().indexOf(s.toLowerCase());
-  check("with a claim colour the tag stays gold", at('"gold"') >= 0 && at('"gold"') < at("[Supporter]"), colored.slice(0, 200));
-  check("with a claim colour the name takes it (#F27FA5)", at("[Supporter]") < at("#F27FA5") && at("#F27FA5") < at("HasJamOn"));
+  check("with a claim colour the tag stays gold", at('"gold"') >= 0 && at('"gold"') < at("✦"), colored.slice(0, 200));
+  check("with a claim colour the name takes it (#F27FA5)", at("✦") < at("#F27FA5") && at("#F27FA5") < at("HasJamOn"));
   await cmd("/b4bsupporter grant HasJamOn claimcolor gold");
   check("gold is no longer a claim colour", ownerMsgs.some(l => l.startsWith("Pick a colour") && !l.includes("gold") && !l.includes("orange")));
   const granted = snap();
@@ -104,7 +104,7 @@ Promise.all([new Promise(r => owner.once("spawn", r)), new Promise(r => vet.once
   check("removing the colour restores the usual outline", diff(before, removed).length === 0, diff(before, removed).length + " pixels differ");
   await cmd("/b4bsupporter remove HasJamOn prefix");
   owner.chat("hello-removed"); await sleep(1000);
-  check("no prefix after removal", said("hello-removed").length > 0 && !said("hello-removed").some(l => l.includes("[Supporter]")), said("hello-removed")[0]);
+  check("no prefix after removal", said("hello-removed").length > 0 && !said("hello-removed").some(l => l.includes("✦")), said("hello-removed")[0]);
 
   // Leave a timed grant for the restart and expiry checks.
   await cmd("/b4bsupporter grant HasJamOn prefix 1");

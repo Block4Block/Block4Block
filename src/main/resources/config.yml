@@ -1969,8 +1969,9 @@ dynamic-spawn:
 # Supporter cosmetics (Ko-fi). Cosmetic only: nothing here changes gameplay (Minecraft Usage Guidelines).
 # Ops grant them with /b4bsupporter; grants are kept in supporters.yml.
 supporters:
-  # Shown before the name in chat; & colour codes. A Supporter with a claim colour gets the tag in that colour instead.
-  chat-prefix: "&6[Supporter]&r"
+  # Shown before the name in chat; & colour codes. The same for every supporter (the owner, SQ35: a gold star, not the
+  # word, to keep chat quiet); the name after it takes the supporter's claim colour.
+  chat-prefix: "&6✦&r"
   # Colours a Supporter can pick for their own claims on the claim maps they make, also used for their chat tag.
   # Each must stay easy to tell from my-claims green and others-claims red, also with red-green colour blindness:
   # gold and orange were taken out for that (on the map's palette they came within dE 10-19 of the red or green

@@ -77,7 +77,7 @@ public class SupporterPerks implements Listener {
 
     /** The chat tag, as config.yml sets it (gold by default), the same for every supporter. */
     public String chatPrefix() {
-        return utils.chat(plugin.getConfig().getString("supporters.chat-prefix", "&6[Supporter]&r"));
+        return utils.chat(plugin.getConfig().getString("supporters.chat-prefix", "&6✦&r"));
     }
 
     /** The chat colour for the supporter's name: their claim colour exactly as their map shows it, or null. */
