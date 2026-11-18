@@ -81,7 +81,10 @@ Promise.all([new Promise(r => owner.once("spawn", r)), new Promise(r => vet.once
   owner.chat("hello-after"); await sleep(1000);
   // Pink as the map shows it (palette 242,127,165): the tag must be that exact colour.
   const colored = vetRaw.filter(l => l.includes("hello-after")).join(" ");
-  check("with a claim colour the tag takes it (#F27FA5)", colored.includes("[Supporter]") && /f27fa5/i.test(colored), colored.slice(0, 160));
+  // The tag stays gold; the name comes after it in the claim colour (#F27FA5, pink as the map shows it).
+  const at = s => colored.toLowerCase().indexOf(s.toLowerCase());
+  check("with a claim colour the tag stays gold", at('"gold"') >= 0 && at('"gold"') < at("[Supporter]"), colored.slice(0, 200));
+  check("with a claim colour the name takes it (#F27FA5)", at("[Supporter]") < at("#F27FA5") && at("#F27FA5") < at("HasJamOn"));
   await cmd("/b4bsupporter grant HasJamOn claimcolor gold");
   check("gold is no longer a claim colour", ownerMsgs.some(l => l.startsWith("Pick a colour") && !l.includes("gold") && !l.includes("orange")));
   const granted = snap();

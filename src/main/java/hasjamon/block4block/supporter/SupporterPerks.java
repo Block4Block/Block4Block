@@ -75,22 +75,31 @@ public class SupporterPerks implements Listener {
 
     public List<String> colorNames() { return new ArrayList<>(colors().getKeys(false)); }
 
-    /** The chat tag; in the supporter's claim colour (exactly as their map shows it) when they have one. */
-    public String chatPrefix(UUID id) {
-        String prefix = utils.chat(plugin.getConfig().getString("supporters.chat-prefix", "&6[Supporter]&r"));
+    /** The chat tag, as config.yml sets it (gold by default), the same for every supporter. */
+    public String chatPrefix() {
+        return utils.chat(plugin.getConfig().getString("supporters.chat-prefix", "&6[Supporter]&r"));
+    }
+
+    /** The chat colour for the supporter's name: their claim colour exactly as their map shows it, or null. */
+    public String nameColor(UUID id) {
         Byte color = claimColor(id);
-        if (color == null) return prefix;
+        if (color == null) return null;
         @SuppressWarnings("deprecation") java.awt.Color shown = MapPalette.getColor(color);
-        return net.md_5.bungee.api.ChatColor.of(shown) + org.bukkit.ChatColor.stripColor(prefix) + org.bukkit.ChatColor.RESET;
+        return net.md_5.bungee.api.ChatColor.of(shown).toString();
     }
 
     // ---- chat ----------------------------------------------------------------------------------------------
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent e) {
-        if (!has(e.getPlayer().getUniqueId(), PREFIX)) return;
+        UUID id = e.getPlayer().getUniqueId();
+        String format = e.getFormat();
+        // The name (%1$s) takes the claim colour; the reset after it keeps the message itself uncoloured.
+        String nameColor = nameColor(id);
+        if (nameColor != null) format = format.replace("%1$s", nameColor + "%1$s" + org.bukkit.ChatColor.RESET);
         // The format is a String.format pattern: a literal % in the prefix has to be doubled.
-        e.setFormat(chatPrefix(e.getPlayer().getUniqueId()).replace("%", "%%") + " " + e.getFormat());
+        if (has(id, PREFIX)) format = chatPrefix().replace("%", "%%") + " " + format;
+        e.setFormat(format);
     }
 
     // ---- writing (ops, and later the Ko-fi service) ---------------------------------------------------------
