@@ -75,8 +75,13 @@ public class SupporterPerks implements Listener {
 
     public List<String> colorNames() { return new ArrayList<>(colors().getKeys(false)); }
 
-    public String chatPrefix() {
-        return utils.chat(plugin.getConfig().getString("supporters.chat-prefix", "&6[Supporter]&r"));
+    /** The chat tag; in the supporter's claim colour (exactly as their map shows it) when they have one. */
+    public String chatPrefix(UUID id) {
+        String prefix = utils.chat(plugin.getConfig().getString("supporters.chat-prefix", "&6[Supporter]&r"));
+        Byte color = claimColor(id);
+        if (color == null) return prefix;
+        @SuppressWarnings("deprecation") java.awt.Color shown = MapPalette.getColor(color);
+        return net.md_5.bungee.api.ChatColor.of(shown) + org.bukkit.ChatColor.stripColor(prefix) + org.bukkit.ChatColor.RESET;
     }
 
     // ---- chat ----------------------------------------------------------------------------------------------
@@ -85,7 +90,7 @@ public class SupporterPerks implements Listener {
     public void onChat(AsyncPlayerChatEvent e) {
         if (!has(e.getPlayer().getUniqueId(), PREFIX)) return;
         // The format is a String.format pattern: a literal % in the prefix has to be doubled.
-        e.setFormat(chatPrefix().replace("%", "%%") + " " + e.getFormat());
+        e.setFormat(chatPrefix(e.getPlayer().getUniqueId()).replace("%", "%%") + " " + e.getFormat());
     }
 
     // ---- writing (ops, and later the Ko-fi service) ---------------------------------------------------------

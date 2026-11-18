@@ -73,7 +73,7 @@ Promise.all([new Promise(r => owner.once("spawn", r)), new Promise(r => vet.once
   check("no prefix before a grant", said("hello-before").length > 0 && !said("hello-before").some(l => l.includes("[Supporter]")), said("hello-before")[0]);
 
   await cmd("/b4bsupporter grant HasJamOn prefix");
-  await cmd("/b4bsupporter grant HasJamOn claimcolor gold", 4000);
+  await cmd("/b4bsupporter grant HasJamOn claimcolor pink", 4000);
   owner.chat("hello-after"); await sleep(1000);
   check("prefix shows to other players after a grant", said("hello-after").some(l => l.includes("[Supporter]")), said("hello-after")[0]);
   const granted = snap();
@@ -86,7 +86,7 @@ Promise.all([new Promise(r => owner.once("spawn", r)), new Promise(r => vet.once
   await cmd("/b4bsupporter grant HasJamOn claimcolor rainbow");
   check("an unknown colour is refused", ownerMsgs.some(l => l.startsWith("Pick a colour")));
   await cmd("/b4bsupporter info HasJamOn");
-  check("info lists both perks", ownerMsgs.some(l => l.startsWith("HasJamOn: prefix, permanent; claim-color gold, permanent")), ownerMsgs.slice(-1)[0]);
+  check("info lists both perks", ownerMsgs.some(l => l.startsWith("HasJamOn: prefix, permanent; claim-color pink, permanent")), ownerMsgs.slice(-1)[0]);
 
   await cmd("/b4bsupporter remove HasJamOn claimcolor", 4000);
   const removed = snap();
