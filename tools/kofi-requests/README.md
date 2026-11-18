@@ -29,3 +29,4 @@ front for /hooks/kofi and /dashboard.
   1.5 s, crops to the centre 60%, shows a 10 s preview with Retake, then sends the picture to #requests. Cherry trees:
   Done starts a 3 s countdown first. OBS offline: the thank-you goes without a picture.
 - Tests: `python test_service.py`, `python test_outputs.py` (fake Discord on this PC).
+- Deploy: the server needs all three runtime files in `/opt/b4b-requests`: `kofi_requests.py`, `outputs.py` and `dashboard.html`. Without `outputs.py` the service stops at start (`No module named 'outputs'`) and Apache answers 503 (SQ26, 18 November).
