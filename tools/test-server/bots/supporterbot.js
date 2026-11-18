@@ -73,9 +73,17 @@ Promise.all([new Promise(r => owner.once("spawn", r)), new Promise(r => vet.once
   check("no prefix before a grant", said("hello-before").length > 0 && !said("hello-before").some(l => l.includes("[Supporter]")), said("hello-before")[0]);
 
   await cmd("/b4bsupporter grant HasJamOn prefix");
+  owner.chat("hello-plain"); await sleep(1000);
+  const plain = vetRaw.filter(l => l.includes("hello-plain")).join(" ");
+  check("prefix shows to other players after a grant", plain.includes("[Supporter]"), plain.slice(0, 160));
+  check("without a claim colour the tag is gold", /"gold"|§6/.test(plain));
   await cmd("/b4bsupporter grant HasJamOn claimcolor pink", 4000);
   owner.chat("hello-after"); await sleep(1000);
-  check("prefix shows to other players after a grant", said("hello-after").some(l => l.includes("[Supporter]")), said("hello-after")[0]);
+  // Pink as the map shows it (palette 242,127,165): the tag must be that exact colour.
+  const colored = vetRaw.filter(l => l.includes("hello-after")).join(" ");
+  check("with a claim colour the tag takes it (#F27FA5)", colored.includes("[Supporter]") && /f27fa5/i.test(colored), colored.slice(0, 160));
+  await cmd("/b4bsupporter grant HasJamOn claimcolor gold");
+  check("gold is no longer a claim colour", ownerMsgs.some(l => l.startsWith("Pick a colour") && !l.includes("gold") && !l.includes("orange")));
   const granted = snap();
   const changed = diff(before, granted);
   const newColors = [...new Set(changed.map(c => c[2]))], oldColors = [...new Set(changed.map(c => c[1]))];
