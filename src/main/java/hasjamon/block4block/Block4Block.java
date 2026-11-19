@@ -25,6 +25,7 @@ public class Block4Block extends JavaPlugin {
     private static Block4Block instance;
     private ClaimVisual claimVisual;
     public hasjamon.block4block.quest.QuestManager quests;
+    public hasjamon.block4block.supporter.SupporterPerks supporters;
     public hasjamon.block4block.spawn.DynamicSpawn dynamicSpawn;
 
     // --- Field for the single ClaimContestCommand instance ---
@@ -60,6 +61,15 @@ public class Block4Block extends JavaPlugin {
             pluginManager.registerEvents(dynamicSpawn, this);
             if (getCommand("b4bspawn") != null) getCommand("b4bspawn").setExecutor(new hasjamon.block4block.spawn.SpawnCommand(dynamicSpawn));
         }
+        supporters = new hasjamon.block4block.supporter.SupporterPerks(this);
+        pluginManager.registerEvents(supporters, this);
+        if (getCommand("b4bsupporter") != null) {
+            hasjamon.block4block.supporter.SupporterCommand supporterCmd = new hasjamon.block4block.supporter.SupporterCommand(supporters);
+            getCommand("b4bsupporter").setExecutor(supporterCmd);
+            getCommand("b4bsupporter").setTabCompleter(supporterCmd);
+        }
+        hasjamon.block4block.requests.RequestReporter requestReporter = hasjamon.block4block.requests.RequestReporter.create(this);
+        if (requestReporter != null) pluginManager.registerEvents(requestReporter, this);
         setCommandExecutors(); // Registers all the commands
 
         // Register ClaimVisualCommand

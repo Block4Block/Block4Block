@@ -18,6 +18,14 @@ server-tooltips:
     block-for-block: "Block for Block"
     free-to-break: "Free to Break"
     free-in-claims: "Free in Claims"
+# Ko-fi requests: the plugin only reports a finished sign or a named animal to the request service
+# (tools/kofi-requests). Nothing appears in game. Off until the service and the secret file exist.
+kofi-requests:
+  enabled: false
+  url: "http://127.0.0.1:8765/api/plugin/complete"
+  secret-file: "plugins/Block4Block/kofi_plugin_secret.txt"
+  players:
+    - HasJamOn
 # Should B4B (spending blocks to break blocks) apply globally or only for players intruding on others' claims
 only-apply-b4b-to-intruders: false
 # Allow players to break blocks in others' claims
@@ -1960,3 +1968,20 @@ dynamic-spawn:
   claim-buffer: 1          # cells kept free of claims around the new spawn
   max-skips-per-move: 200
   announce: true
+
+# Supporter cosmetics (Ko-fi). Cosmetic only: nothing here changes gameplay (Minecraft Usage Guidelines).
+# Ops grant them with /b4bsupporter; grants are kept in supporters.yml.
+supporters:
+  # Shown before the name in chat; & colour codes. The same for every supporter (the owner, SQ35: a gold star, not the
+  # word, to keep chat quiet); the name after it takes the supporter's claim colour.
+  chat-prefix: "&6✦&r"
+  # Colours a Supporter can pick for their own claims on the claim maps they make, also used for their chat tag.
+  # Each must stay easy to tell from my-claims green and others-claims red, also with red-green colour blindness:
+  # gold and orange were taken out for that (on the map's palette they came within dE 10-19 of the red or green
+  # for protanopia and deuteranopia). Check a new colour the same way before adding it.
+  claim-colors:
+    purple: { r: 160, g: 80, b: 255 }
+    pink: { r: 255, g: 120, b: 200 }
+    cyan: { r: 60, g: 220, b: 255 }
+    blue: { r: 60, g: 100, b: 255 }
+    white: { r: 255, g: 255, b: 255 }

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Block4Block requests</title>
+<style>
+:root{--bg:#111;--fg:#eee;--mut:#999;--card:#1b1b1b;--acc:#f0b429;--bad:#e5484d;--ok:#46a758}
+body{margin:0;background:var(--bg);color:var(--fg);font:18px system-ui,sans-serif;padding:20px}
+h2{font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin:28px 0 8px}
+.active{background:var(--card);border:2px solid var(--acc);border-radius:10px;padding:24px}
+.big{font-size:44px;line-height:1.2;white-space:pre-wrap;margin:8px 0}
+.row{background:var(--card);border-radius:8px;padding:10px 14px;margin:6px 0;display:flex;gap:12px;align-items:center}
+.row .t{flex:1;white-space:pre-wrap}
+button{font:inherit;padding:10px 16px;border:0;border-radius:8px;background:#333;color:var(--fg);cursor:pointer}
+button.p{background:var(--acc);color:#000}button.d{background:var(--bad)}button.g{background:var(--ok)}
+.mut{color:var(--mut)}.bar{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.due{color:#000;background:var(--acc);padding:2px 8px;border-radius:6px}
+#shot{display:none;position:fixed;right:20px;bottom:20px;background:var(--card);border:2px solid var(--acc);border-radius:10px;padding:14px;max-width:420px}
+#shot img{max-width:100%;border-radius:6px;display:block;margin-bottom:8px}
+#cd{font-size:64px;color:var(--acc)}
+input{font:inherit;padding:6px;background:#222;color:var(--fg);border:1px solid #444;border-radius:6px}
+</style></head><body>
+<div class="bar"><b>Requests</b><span id="count" class="mut"></span><span id="due"></span></div>
+<div id="stream" class="mut"></div>
+<h2>Active</h2><div id="active" class="active mut">Nothing active. Press Next.</div>
+<div style="margin-top:10px"><button class="p" onclick="act('next')">Next</button> <span id="cd"></span></div>
+<h2>Flagged (needs your decision)</h2><div id="flagged"></div>
+<h2>Queue</h2><div id="queue"></div>
+<h2>Finished (latest 10)</h2><div id="done" class="mut"></div>
+<h2>OBS screenshot</h2>
+<div class="mut">Stays in this browser only. OBS: Tools, WebSocket Server Settings, enable. <span id="obsState"></span></div>
+<div style="margin-top:8px">Port <input id="obsPort" size="5" value="4455"> Password <input id="obsPass" type="password" size="14"> Source <input id="obsSource" size="16" placeholder="Game Capture">
+<button onclick="saveObs()">Save</button> <button onclick="testObs()">Test</button></div>
+<div id="shot"><img id="shotImg" alt=""><div id="shotMsg" class="mut"></div><button onclick="retake()">Retake</button> <button class="p" onclick="sendNow()">Send now</button> <button onclick="cancelShot()">No picture</button></div>
+<script>
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+async function act(a,id,slot){const r=await fetch('/api/action',{method:'POST',body:JSON.stringify({action:a,id:id,slot:slot})});load();return r.ok}
+function kind(k){return {sign:'Sign',tree:'Cherry tree',animal:'Name an animal'}[k]||'Unknown'}
+function fmt(iso){return new Date(iso).toLocaleString([], {weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+
+// ---- trees: the owner looks at the tree during a 3 second countdown, then Done is sent
+function doneTree(id){let n=3;$('cd').textContent=n;const t=setInterval(()=>{n--;$('cd').textContent=n>0?n:'';if(n<=0){clearInterval(t);act('done',id)}},1000)}
+function doneBtn(a){return a.kind==='tree'?'doneTree('+a.id+')':'act(\'done\','+a.id+')'}
+
+// ---- OBS (WebSocket v5), spoken from this browser so the password never reaches the server
+const obsKey='b4bObs';
+function obsCfg(){try{return JSON.parse(localStorage.getItem(obsKey)||'{}')}catch(e){return {}}}
+function saveObs(){localStorage.setItem(obsKey,JSON.stringify({port:$('obsPort').value,pass:$('obsPass').value,source:$('obsSource').value}));$('obsState').textContent='Saved.'}
+(()=>{const c=obsCfg();if(c.port)$('obsPort').value=c.port;if(c.pass)$('obsPass').value=c.pass;if(c.source)$('obsSource').value=c.source})();
+async function sha(buf){return new Uint8Array(await crypto.subtle.digest('SHA-256',buf))}
+function b64(u8){let s='';u8.forEach(b=>s+=String.fromCharCode(b));return btoa(s)}
+async function obsScreenshot(){
+  const c=obsCfg();if(!c.source)throw new Error('no source name saved');
+  return new Promise((resolve,reject)=>{
+    let ws;try{ws=new WebSocket('ws://127.0.0.1:'+(c.port||4455))}catch(e){return reject(e)}
+    const timer=setTimeout(()=>{try{ws.close()}catch(e){};reject(new Error('OBS did not answer'))},6000);
+    const fail=e=>{clearTimeout(timer);reject(e)};
+    ws.onerror=()=>fail(new Error('OBS is not reachable'));
+    ws.onmessage=async ev=>{
+      const m=JSON.parse(ev.data);
+      if(m.op===0){
+        const id={rpcVersion:1};
+        if(m.d.authentication){
+          const enc=new TextEncoder();
+          const secret=b64(await sha(enc.encode((c.pass||'')+m.d.authentication.salt)));
+          id.authentication=b64(await sha(enc.encode(secret+m.d.authentication.challenge)));
+        }
+        ws.send(JSON.stringify({op:1,d:id}));
+      }else if(m.op===2){
+        ws.send(JSON.stringify({op:6,d:{requestType:'GetSourceScreenshot',requestId:'shot',requestData:{sourceName:c.source,imageFormat:'png',imageWidth:1920}}}));
+      }else if(m.op===7){
+        clearTimeout(timer);ws.close();
+        if(m.d.requestStatus&&m.d.requestStatus.result)resolve(m.d.responseData.imageData);else reject(new Error((m.d.requestStatus&&m.d.requestStatus.comment)||'OBS refused'));
+      }
+    };
+  });
+}
+// crop to the centre 60% of the frame: cuts chat, hotbar and coordinates shown at the edges
+function crop(dataUrl){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const w=im.width*0.6,h=im.height*0.6,cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(im,im.width*0.2,im.height*0.2,w,h,0,0,w,h);res(cv.toDataURL('image/png'))};im.onerror=()=>rej(new Error('bad image'));im.src=dataUrl})}
+async function testObs(){try{const d=await obsScreenshot();$('obsState').textContent='Works ('+Math.round(d.length/1000)+' kB).'}catch(e){$('obsState').textContent='Failed: '+e.message}}
+
+let shotFor=null,shotData=null,shotTimer=null;
+function showShot(){ $('shot').style.display='block'; $('shotImg').src=shotData; let n=10; $('shotMsg').textContent='Sending in '+n+' s'; clearInterval(shotTimer); shotTimer=setInterval(()=>{n--;$('shotMsg').textContent='Sending in '+n+' s';if(n<=0)sendNow()},1000)}
+async function takeShot(id){
+  shotFor=id;
+  try{ await new Promise(r=>setTimeout(r,1500)); shotData=await crop(await obsScreenshot()); showShot() }
+  catch(e){ $('obsState').textContent='No picture ('+e.message+'). The thank-you goes without one.'; shotFor=null }
+}
+function retake(){clearInterval(shotTimer);takeShot(shotFor)}
+function cancelShot(){clearInterval(shotTimer);$('shot').style.display='none';shotFor=null}
+async function sendNow(){
+  clearInterval(shotTimer);$('shot').style.display='none';
+  if(shotFor==null||!shotData)return;
+  await fetch('/api/screenshot',{method:'POST',body:JSON.stringify({id:shotFor,png:shotData.split(',')[1]})});
+  shotFor=null;shotData=null;
+}
+
+let seen=null;
+async function load(){
+  const r=await fetch('/api/state'); if(r.status==401){location.reload();return}
+  const s=await r.json();
+  $('count').textContent=s.open_count+' of '+s.threshold_count+' queued'+(s.oldest_age_days!=null?' · oldest '+s.oldest_age_days.toFixed(1)+' days':'');
+  $('due').innerHTML=s.stream_due&&!s.stream_at?'<span class="due">Time to plan a stream</span>':'';
+  if(s.stream_at){$('stream').innerHTML='Stream planned for <b>'+esc(fmt(Number(s.stream_at)*1000))+'</b>'}
+  else if(s.stream_due&&s.proposals.length){$('stream').innerHTML='Pick a stream time: '+s.proposals.map(p=>'<button class="p" onclick="act(\'schedule\',null,\''+p+'\')">'+esc(fmt(p))+'</button>').join(' ')}
+  else $('stream').textContent='';
+  const a=s.active;
+  $('active').className='active'+(a?'':' mut');
+  $('active').innerHTML=a?'<div class="mut">'+esc(a.buyer)+' · '+kind(a.kind)+'</div><div class="big">'+esc(a.text)+'</div>'
+    +'<button class="g" onclick="'+doneBtn(a)+'">Done</button> <button onclick="act(\'skip\','+a.id+')">Skip</button> <button class="d" onclick="act(\'flag\','+a.id+')">Flag / Refund</button>':'Nothing active. Press Next.';
+  $('flagged').innerHTML=s.flagged.map(r=>'<div class="row"><div class="t"><b>'+esc(r.buyer)+'</b> · '+kind(r.kind)+' · <span class="mut">'+esc(r.flag_reason)+'</span><br>'+esc(r.text)+'</div><button class="g" onclick="act(\'approve\','+r.id+')">Approve</button><button class="d" onclick="act(\'refund\','+r.id+')">Refund</button></div>').join('')||'<span class="mut">None</span>';
+  $('queue').innerHTML=s.queued.map(r=>'<div class="row"><div class="t">'+esc(r.buyer)+' · '+kind(r.kind)+'<br>'+esc(r.text)+'</div></div>').join('')||'<span class="mut">Empty</span>';
+  $('done').innerHTML=s.done.map(r=>'<div>'+esc(r.buyer)+' · '+kind(r.kind)+' · '+esc(r.done_at)+(r.location?' · '+esc(r.location):'')+'</div>').join('')||'None yet';
+  // a request finished since this page opened: take the picture
+  const ids=s.done.map(r=>r.id);
+  if(seen===null)seen=new Set(ids);
+  else{const fresh=ids.filter(i=>!seen.has(i));ids.forEach(i=>seen.add(i));if(fresh.length&&shotFor==null)takeShot(fresh[0])}
+}
+load();setInterval(load,4000);
+</script></body></html>
