@@ -25,6 +25,21 @@ public class PlayerJoin implements Listener {
         this.plugin = plugin;
     }
 
+    /**
+     * join-messages in config.yml: shown at every login, two seconds in so they land after the join lines.
+     * &amp; colour codes; web addresses become clickable.
+     */
+    private void sendJoinMessages(Player p) {
+        var lines = plugin.getConfig().getStringList("join-messages");
+        if (lines.isEmpty()) return;
+        var legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.builder()
+                .character('&').extractUrls().build();
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!p.isOnline()) return;
+            for (String line : lines) p.sendMessage(legacy.deserialize(line));
+        }, 40L);
+    }
+
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
@@ -32,6 +47,7 @@ public class PlayerJoin implements Listener {
         if (!p.hasPlayedBefore()) {
             utils.sendWelcomeMsg(p);
         }
+        sendJoinMessages(p);
 
         utils.knownPlayers.add(p.getName().toLowerCase());
         utils.populatePlayerClaimsIntruded(p);

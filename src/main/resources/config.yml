@@ -120,6 +120,11 @@ lectern-message-settings:
 welcome-messages:
   - "&6Welcome to Block4Block."
 
+# Messages shown to every player at every login, two seconds in. & colour codes; web addresses become clickable.
+# Leave the list empty ([]) to show nothing.
+join-messages:
+  - "&eNew: &6Block4Block Lectern&e, the companion game. Play it at &bhttps://b4block.org/companion/lectern.html"
+
 claim-protection:
   # Directions from which a claim lectern can be protected. Enum: NORTH, SOUTH, EAST, WEST, UP, DOWN
   protective-block-faces:
