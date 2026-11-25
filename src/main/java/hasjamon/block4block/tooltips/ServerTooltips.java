@@ -15,6 +15,10 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.recipe.data.MerchantOffer;
+import com.github.retrooper.packetevents.protocol.recipe.display.*;
+import com.github.retrooper.packetevents.protocol.recipe.display.slot.*;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCraftRecipeResponse;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRecipeBookAdd;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCreativeInventoryAction;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerMerchantOffers;
@@ -129,6 +133,22 @@ public final class ServerTooltips implements PacketListener {
             Player p = playerOf(e);
             for (MerchantOffer offer : w.getMerchantOffers()) offer.setOutputItem(decorate(offer.getOutputItem(), p));
             touched = true;
+        } else if (type == PacketType.Play.Server.RECIPE_BOOK_ADD) {
+            // The recipe book's previews: the client shows these items' tooltips when hovering a recipe.
+            var w = new WrapperPlayServerRecipeBookAdd(e);
+            Player p = playerOf(e);
+            for (var entry : w.getEntries()) {
+                var contents = entry.getContents();
+                contents.setDisplay(decorate(contents.getDisplay(), p));
+            }
+            touched = true;
+        } else if (type == PacketType.Play.Server.CRAFT_RECIPE_RESPONSE) {
+            // The ghost recipe laid into the crafting grid after clicking a recipe in the book.
+            var w = new WrapperPlayServerCraftRecipeResponse(e);
+            if (w.getRecipeDisplay() != null) {
+                w.setRecipeDisplay(decorate(w.getRecipeDisplay(), playerOf(e)));
+                touched = true;
+            }
         }
         if (touched) e.markForReEncode(true);
     }
@@ -230,6 +250,55 @@ public final class ServerTooltips implements PacketListener {
         return copy;
     }
 
+    /** A recipe's preview, with every block item in it decorated. Previews are display only: never clicked back. */
+    private RecipeDisplay<?> decorate(RecipeDisplay<?> d, Player p) {
+        if (d instanceof ShapedCraftingRecipeDisplay r) {
+            r.setIngredients(decorate(r.getIngredients(), p));
+            r.setResult(decorate(r.getResult(), p));
+        } else if (d instanceof ShapelessCraftingRecipeDisplay r) {
+            r.setIngredients(decorate(r.getIngredients(), p));
+            r.setResult(decorate(r.getResult(), p));
+        } else if (d instanceof FurnaceRecipeDisplay r) {
+            r.setIngredient(decorate(r.getIngredient(), p));
+            r.setResult(decorate(r.getResult(), p));
+        } else if (d instanceof StonecutterRecipeDisplay r) {
+            r.setInput(decorate(r.getInput(), p));
+            r.setResult(decorate(r.getResult(), p));
+        } else if (d instanceof SmithingRecipeDisplay r) {
+            r.setBase(decorate(r.getBase(), p));
+            r.setResult(decorate(r.getResult(), p));
+        }
+        return d;
+    }
+
+    private List<SlotDisplay<?>> decorate(List<SlotDisplay<?>> slots, Player p) {
+        List<SlotDisplay<?>> out = new ArrayList<>(slots.size());
+        for (SlotDisplay<?> s : slots) out.add(decorate(s, p));
+        return out;
+    }
+
+    /** A plain item slot can't carry lore, so a block item's slot becomes a one-item stack slot that can. */
+    private SlotDisplay<?> decorate(SlotDisplay<?> s, Player p) {
+        if (s instanceof ItemSlotDisplay i) {
+            if (kindOf(i.getItem()) == Kind.NONE) return s;
+            ItemStack stack = decorate(ItemStack.builder().type(i.getItem()).amount(1).build(), p);
+            return currentLore(stack).isEmpty() ? s : new ItemStackSlotDisplay(stack);
+        }
+        if (s instanceof ItemStackSlotDisplay i) {
+            i.setStack(decorate(i.getStack(), p));
+            return i;
+        }
+        if (s instanceof CompositeSlotDisplay c) {
+            c.setContents(decorate(c.getContents(), p));
+            return c;
+        }
+        if (s instanceof WithRemainderSlotDisplay w) {
+            w.setInput(decorate(w.getInput(), p));
+            return w;
+        }
+        return s;
+    }
+
     private HashedStack unhash(HashedStack hs, Player player) {
         if (player == null) return hs;
         Kind kind = kindOf(hs.getItem());
@@ -303,7 +372,15 @@ public final class ServerTooltips implements PacketListener {
         return s.kindOf.computeIfAbsent(type, t -> {
             String key = t.getName().toString();                       // "minecraft:dirt"
             Material m = Material.matchMaterial(key);
-            if (m == null || !m.isBlock()) return Kind.NONE;           // block items only, like the mod
+            if (m == null) return Kind.NONE;
+            if (!m.isBlock()) {
+                // An item that places a differently named block (redstone dust places redstone_wire, string places
+                // tripwire, seeds place crops) is judged by that block, which is what breaking it costs.
+                org.bukkit.inventory.ItemType it = m.asItemType();
+                if (it == null || !it.hasBlockType()) return Kind.NONE;    // not placeable: no line, like the mod
+                m = it.getBlockType().asMaterial();
+                if (m == null) return Kind.NONE;
+            }
             String id = m.name();
             if (s.freeToBreak.contains(id)) return Kind.FREE_TO_BREAK;
             if (s.freeInClaims.contains(id)) return Kind.FREE_IN_CLAIMS;
