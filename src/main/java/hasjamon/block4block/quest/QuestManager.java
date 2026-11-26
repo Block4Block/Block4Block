@@ -96,6 +96,15 @@ public class QuestManager implements Listener {
         Bukkit.getScheduler().runTaskTimer(plugin, this::tick, CHECK_TICKS, CHECK_TICKS);
         Bukkit.getScheduler().runTaskTimer(plugin, this::saveIfDirty, SAVE_TICKS, SAVE_TICKS);
         utils.claimBarHidden = this::claimBarHidden;
+        utils.claimBarShown = this::moveBarBelowClaimBar;
+    }
+
+    /** Boss bars stack in the order they reach the player: re-adding the quest bar puts it under the claim bar. */
+    private void moveBarBelowClaimBar(Player p) {
+        Session s = sessions.get(p.getUniqueId());
+        if (s == null || !s.bar.getPlayers().contains(p)) return;
+        s.bar.removePlayer(p);
+        s.bar.addPlayer(p);
     }
 
     /** op tools: see where a player is, skip a step, or start the questlines over. */
@@ -132,6 +141,7 @@ public class QuestManager implements Listener {
 
     public void shutdown() {
         utils.claimBarHidden = p -> false;
+        utils.claimBarShown = p -> { };
         for (Session s : sessions.values()) s.bar.removeAll();
         sessions.clear();
         saveIfDirty();
