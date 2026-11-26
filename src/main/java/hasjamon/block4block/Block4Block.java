@@ -1,6 +1,5 @@
 package hasjamon.block4block;
 
-import com.comphenix.protocol.utility.MinecraftReflection;
 import hasjamon.block4block.command.*;
 import hasjamon.block4block.files.ConfigManager;
 import hasjamon.block4block.listener.*;
@@ -102,8 +101,9 @@ public class Block4Block extends JavaPlugin {
 
     private void checkReflectionAvailability() {
         try {
-            MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
-        } catch (NoClassDefFoundError | NoSuchMethodException e) {
+            // The server's own player class (CraftPlayer); ProtocolLib is no longer needed to find it.
+            Class.forName(getServer().getClass().getPackageName() + ".entity.CraftPlayer").getDeclaredMethod("getProfile");
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
             utils.canUseReflection = false;
             getServer().getConsoleSender().sendMessage(
                     ChatColor.YELLOW + "Reflection is unavailable; some features have been disabled.");
@@ -151,12 +151,8 @@ public class Block4Block extends JavaPlugin {
         pluginManager.registerEvents(new BlockBreak(this), this);
         pluginManager.registerEvents(new LecternBreak(this), this);
         pluginManager.registerEvents(new EntityDeath(), this);
-        // Register BookReadLectern only if ProtocolLib is enabled
-        if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
-            pluginManager.registerEvents(new BookReadLectern(this), this);
-        } else {
-            this.getLogger().info("ProtocolLib not found - skipping BookReadLectern.");
-        }
+        // Master Book copies on lecterns; needs no ProtocolLib since 4.11.
+        pluginManager.registerEvents(new BookReadLectern(this), this);
         pluginManager.registerEvents(new BookEdit(this), this);
         pluginManager.registerEvents(new BlockPlace(this), this);
         if (this.getConfig().getBoolean("balance-lavacasting"))

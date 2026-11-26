@@ -22,9 +22,8 @@ import java.util.*;
 
 
 /*
- * NOTE: This class depends entirely on ProtocolLib.
- * TODO: Re-enable or test fully when ProtocolLib supports Minecraft 1.21.5.
- * As of now (version 5.4.0-SNAPSHOT-742), it only supports up to 1.21.3.
+ * Master Book copies on lecterns: an out-of-date copy is rewritten from its Master Book when read.
+ * Uses only Paper's API (no ProtocolLib since 4.11).
  */
 public class BookReadLectern implements Listener {
     private final Block4Block plugin;

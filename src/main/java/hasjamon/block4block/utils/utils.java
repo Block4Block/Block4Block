@@ -1,6 +1,5 @@
 package hasjamon.block4block.utils;
 
-import com.comphenix.protocol.utility.MinecraftReflection;
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
 import com.mojang.authlib.properties.Property;
@@ -921,7 +920,7 @@ public class utils {
 
         if (canUseReflection) {
             try {
-                Method refreshPlayerMethod = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("refreshPlayer");
+                Method refreshPlayerMethod = disguiser.getClass().getDeclaredMethod("refreshPlayer");
 
                 refreshPlayerMethod.setAccessible(true);
                 refreshPlayerMethod.invoke(disguiser);
