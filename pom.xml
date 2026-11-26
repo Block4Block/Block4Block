@@ -6,7 +6,7 @@
 
     <groupId>hasjamon.block4block</groupId>
     <artifactId>Block4Block</artifactId>
-    <version>4.10</version>
+    <version>4.11</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

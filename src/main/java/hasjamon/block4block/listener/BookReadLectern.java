@@ -1,12 +1,5 @@
 package hasjamon.block4block.listener;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.BlockPosition;
-import com.comphenix.protocol.wrappers.nbt.NbtCompound;
-import com.comphenix.protocol.wrappers.nbt.NbtFactory;
 
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.utils.utils;
@@ -35,12 +28,10 @@ import java.util.*;
  */
 public class BookReadLectern implements Listener {
     private final Block4Block plugin;
-    private final ProtocolManager protocolManager;
     private final Map<String, Boolean> processingLecterns = new HashMap<>();
 
     public BookReadLectern(Block4Block plugin) {
         this.plugin = plugin;
-        this.protocolManager = ProtocolLibrary.getProtocolManager();
     }
 
     @EventHandler
@@ -129,8 +120,6 @@ public class BookReadLectern implements Listener {
             }
 
             book.setItemMeta(meta);
-            lectern.getInventory().clear();
-            lectern.update();
 
             if (isClaimed && isClaimBlock && members != null) {
                 String membersString = String.join("\n", members); // Convert to String
@@ -138,37 +127,16 @@ public class BookReadLectern implements Listener {
                 plugin.cfg.saveClaimData();
             }
 
-            lectern.getInventory().setItem(0, book);
-            lectern.update();
-
-            // --- Send fake TILE_ENTITY_DATA packet ---
-            BlockPosition blockPos = new BlockPosition(
-                    lectern.getX(), lectern.getY(), lectern.getZ()
-            );
-
-            NbtCompound bookTag = (NbtCompound) NbtFactory.fromItemTag(book);
-            NbtCompound lecternNBT = NbtFactory.ofCompound("");
-            lecternNBT.put("id", "minecraft:lectern");
-            lecternNBT.put("x", lectern.getX());
-            lecternNBT.put("y", lectern.getY());
-            lecternNBT.put("z", lectern.getZ());
-            lecternNBT.put("Book", bookTag);
-            lecternNBT.put("HasBook", (byte) 1);
-            lecternNBT.put("page", 0);
-
-            PacketContainer packet = new PacketContainer(PacketType.Play.Server.TILE_ENTITY_DATA);
-            packet.getBlockPositionModifier().write(0, blockPos);
-            packet.getIntegers().write(0, 1); // action type
-            packet.getNbtModifier().write(0, lecternNBT);
-
-            try {
-                protocolManager.sendServerPacket(player, packet);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            // Write the updated book into the lectern through its snapshot. The old code cleared and refilled the live
+            // inventory, then called update(), which wrote this snapshot's old book back over it. It also sent the
+            // player a block entity packet through ProtocolLib, which has thrown since 1.18 changed that packet;
+            // opening the lectern below shows the player the updated book without it.
+            lectern.getSnapshotInventory().setItem(0, book);
+            lectern.update(true);
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                player.openInventory(lectern.getInventory());
+                if (lecternBlock.getState() instanceof Lectern current)
+                    player.openInventory(current.getInventory());
                 processingLecterns.remove(lecternKey);
             }, 1L);
         }

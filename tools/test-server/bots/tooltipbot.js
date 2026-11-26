@@ -2,7 +2,7 @@
 // Usage: node tooltipbot.js   (HasJamOn, op, on the test server)
 const mineflayer = require("mineflayer");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const bot = mineflayer.createBot({ host: "127.0.0.1", port: Number(process.env.B4B_PORT || 25570), username: "HasJamOn", auth: "offline", version: "1.21.10" });
+const bot = mineflayer.createBot({ host: "127.0.0.1", port: Number(process.env.B4B_PORT || 25570), username: "HasJamOn", auth: "offline", version: process.env.B4B_VERSION || "1.21.10" });
 // Setup commands go through the server console when B4B_CONSOLE names the file the server reads its input from
 // (so the bot needs no op); otherwise through chat as an op.
 const fs = require("fs");
@@ -20,6 +20,8 @@ bot.on("message", m => console.log("  [chat] " + m.toString()));
 
 bot.once("spawn", async () => {
   await sleep(3000);
+  // Take every recipe first: a player who already knows them gets no new recipe_book_add on "give".
+  run("recipe take HasJamOn *"); await sleep(1500);
   bookPackets.length = 0;
   run("recipe give HasJamOn *"); await sleep(3000);
   // Unlocked recipes reach the recipe book in recipe_book_add packets. Vanilla shows block results such as a crafting table there.
