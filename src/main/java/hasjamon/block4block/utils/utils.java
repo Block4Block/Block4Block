@@ -1,7 +1,8 @@
 package hasjamon.block4block.utils;
 
 import com.comphenix.protocol.utility.MinecraftReflection;
-import com.mojang.authlib.GameProfile;
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import com.mojang.authlib.properties.Property;
 import hasjamon.block4block.Block4Block;
 import hasjamon.block4block.events.B4BlockBreakEvent;
@@ -866,19 +867,16 @@ public class utils {
         updateBossBar(disguiser, claimID);
     }
 
-    public static Collection<Property> getTextures(OfflinePlayer p) {
-        if (canUseReflection) {
-            try {
-                Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
-                GameProfile gp = (GameProfile) getProfile.invoke(p);
+    // Skins are read and written through Paper's player profile, not the server's internal GameProfile:
+    // Recent Paper builds (1.21.10 build 130, 1.21.11) ship a read-only GameProfile with no getProperties().
+    public static Collection<Property> getTextures(Player p) {
+        Collection<Property> textures = new ArrayList<>();
 
-                return gp.getProperties().get("textures");
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                e.printStackTrace();
-            }
-        }
+        for (ProfileProperty prop : p.getPlayerProfile().getProperties())
+            if (prop.getName().equals("textures"))
+                textures.add(new Property(prop.getName(), prop.getValue(), prop.getSignature()));
 
-        return null;
+        return textures;
     }
 
     public static Collection<Property> getCachedTextures(OfflinePlayer p) {
@@ -894,17 +892,13 @@ public class utils {
     }
 
     public static void setTextures(Player p, Collection<Property> textures) {
-        if (canUseReflection) {
-            try {
-                Method getProfile = MinecraftReflection.getCraftPlayerClass().getDeclaredMethod("getProfile");
-                GameProfile gp = (GameProfile) getProfile.invoke(p);
+        PlayerProfile profile = p.getPlayerProfile();
 
-                gp.getProperties().removeAll("textures");
-                gp.getProperties().putAll("textures", textures);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                e.printStackTrace();
-            }
-        }
+        profile.removeProperty("textures");
+        for (Property prop : textures)
+            profile.setProperty(new ProfileProperty(prop.name(), prop.value(), prop.signature()));
+
+        p.setPlayerProfile(profile);
     }
 
     public static void updateTexturesForOthers(Player disguiser) {
