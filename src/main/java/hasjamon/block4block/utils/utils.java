@@ -53,6 +53,8 @@ public class utils {
     public static final Map<Player, BossBar> bossBars = new HashMap<>();
     /** Set by the quest module: the claim boss bar stays hidden until the claim questline is complete. */
     public static java.util.function.Predicate<Player> claimBarHidden = p -> false;
+    /** Set by the quest module: called when the claim bar appears, so the quest bar can move back underneath it. */
+    public static java.util.function.Consumer<Player> claimBarShown = p -> { };
     public static final Map<Location, Long> claimInvulnerabilityStartTick = new HashMap<>();
     public static final Set<String> knownPlayers = new HashSet<>();
     public static final Set<Material> nonProtectiveBlockTypes = new HashSet<>();
@@ -1258,6 +1260,7 @@ public class utils {
         // Check if the player has a boss bar, if not, add it
         if (!bossBars.containsKey(p)) {
             addBossBar(p);
+            claimBarShown.accept(p);
         }
 
         // Use Bukkit scheduler to delay the update by a small number of ticks (e.g., 20 ticks = 1 second)
@@ -1265,9 +1268,16 @@ public class utils {
             @Override
             public void run() {
                 BossBar bossBar = bossBars.get(p);
-                bossBar.setVisible(!claimBarHidden.test(p));
+                if (bossBar == null) return;
                 FileConfiguration claimData = plugin.cfg.getClaimData();
                 boolean isClaimed = claimData.contains(currentClaimID);
+                // Before the claim questline is done the bar only shows on claimed land, so players can tell they're in
+                // someone's claim; afterwards it shows everywhere.
+                boolean wasVisible = bossBar.isVisible();
+                bossBar.setVisible(isClaimed || !claimBarHidden.test(p));
+                // Showing the bar again puts it at the bottom; the quest bar moves back underneath so the claim bar
+                // stays on top.
+                if (bossBar.isVisible() && !wasVisible) claimBarShown.accept(p);
 
                 // If the claim is not claimed
                 if (!isClaimed) {
