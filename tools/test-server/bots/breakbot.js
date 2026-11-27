@@ -44,6 +44,29 @@ async function breakDandelion(at) {
   return /Test passed/.test(fs.readFileSync(process.env.B4B_LOG).slice(n).toString("utf8")) ? "golden_dandelion" : "air";
 }
 
+// The 26.2 blocks (SQ58, SQ59, SQ61, SQ64): sulfur, potent sulfur and the spike cost one and drop nothing; natural
+// cinnabar is Free in Claims. Placed with commands, broken with the pickaxe; the block and drops asked from the server.
+const v262 = !/^1\./.test(process.env.B4B_VERSION || "1.21.10") && !/^26\.1/.test(process.env.B4B_VERSION || "");
+async function serverHas(test) {
+  const n = fs.statSync(process.env.B4B_LOG).size;
+  run(test); await sleep(1200);
+  return /Test passed/.test(fs.readFileSync(process.env.B4B_LOG).slice(n).toString("utf8"));
+}
+async function breakNew(name, at) {
+  const state = name === "sulfur_spike" ? "[vertical_direction=up,thickness=tip]" : "";
+  run(`setblock ${at.x} ${at.y - 1} ${at.z} stone_bricks`); run(`setblock ${at.x} ${at.y} ${at.z} ${name}${state}`);
+  for (let i = 0; i < 50 && bot.blockAt(at)?.name !== name; i++) await sleep(100);
+  const pick = bot.inventory.items().find(i => i.name === "iron_pickaxe");
+  if (pick) await bot.equip(pick, "hand");
+  bar.length = 0;
+  try { await bot.dig(bot.blockAt(at), true); } catch (e) { console.log("dig: " + e.message); }
+  await sleep(1800);
+  const still = await serverHas(`execute if block ${at.x} ${at.y} ${at.z} minecraft:${name}`);
+  const dropped = await serverHas(`execute positioned ${at.x + 0.5} ${at.y} ${at.z + 0.5} if entity @e[type=item,distance=..2,nbt={Item:{id:"minecraft:${name}"}}]`);
+  run(`execute positioned ${at.x + 0.5} ${at.y} ${at.z + 0.5} run kill @e[type=item,distance=..2]`);
+  return { left: still ? name : "air", dropped };
+}
+
 async function breakStone(at) {
   run(`setblock ${at.x} ${at.y} ${at.z} stone`);
   for (let i = 0; i < 50 && bot.blockAt(at)?.name !== "stone"; i++) await sleep(100);
@@ -96,6 +119,20 @@ bot.once("spawn", async () => {
     check("Golden Dandelion outside a claim, none in the hotbar: refused", g === "golden_dandelion", g + "; " + bar.join(" | "));
   }
 
+  if (v262) {
+    const NEW = ["sulfur", "cinnabar", "sulfur_spike", "potent_sulfur"];
+    for (const [i, name] of NEW.entries()) {
+      run(`give VetBot ${name} 2`); await sleep(1200);
+      const r = await breakNew(name, p.offset(-3, 0, -3 + i));
+      check(`${name} outside a claim: costs one and drops nothing`, r.left === "air" && count(name) === 1 && !r.dropped, r.left + "; in inventory: " + count(name) + "; dropped: " + r.dropped);
+      run(`clear VetBot ${name}`); await sleep(800);
+    }
+    for (const [i, name] of ["sulfur", "cinnabar"].entries()) {
+      const r = await breakNew(name, p.offset(-4, 0, -3 + i));
+      check(`${name} outside a claim, none in the hotbar: refused`, r.left === name, r.left + "; " + bar.join(" | "));
+    }
+  }
+
   // Claim the area: a lectern with a claim book.
   const lec = p.offset(-2, 0, 0);
   run(`setblock ${lec.x} ${lec.y} ${lec.z} lectern`);
@@ -119,6 +156,15 @@ bot.once("spawn", async () => {
     const g = await breakDandelion(p.offset(2, 0, 3));
     const dropIn = await droppedAt(p.offset(2, 0, 3));
     check("Golden Dandelion inside your own claim: free, and it drops itself", g === "air" && dropIn, g + "; dropped: " + dropIn + "; " + bar.join(" | "));
+  }
+
+  if (v262) {
+    run("give VetBot cinnabar 2"); await sleep(1200);
+    let r = await breakNew("cinnabar", p.offset(3, 0, -3));
+    check("cinnabar inside your own claim: free, and it drops itself", r.left === "air" && count("cinnabar") === 2 && r.dropped, r.left + "; in inventory: " + count("cinnabar") + "; dropped: " + r.dropped);
+    run("give VetBot sulfur 2"); await sleep(1200);
+    r = await breakNew("sulfur", p.offset(3, 0, -2));
+    check("sulfur inside your own claim: still costs one and drops nothing", r.left === "air" && count("sulfur") === 1 && !r.dropped, r.left + "; in inventory: " + count("sulfur") + "; dropped: " + r.dropped);
   }
 
   console.log(pass + " of " + total + " checks passed.");
