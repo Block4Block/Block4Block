@@ -216,6 +216,7 @@ tnt-drops-enabled:
   - RED_BED
   - BLACK_BED
   - BED
+  - STRAW_BED # 26.3, like beds (SQ71)
 
 # Blocks that are exempt from Block4Block while in player's own claim
 blacklisted-claim-blocks:
@@ -627,6 +628,8 @@ blacklisted-claim-blocks:
   - RED_CONCRETE_STAIRS
   - BLACK_CONCRETE_SLAB
   - BLACK_CONCRETE_STAIRS
+  # 26.3: shelf mushroom, a utility block (SQ70)
+  - SHELF_MUSHROOM
 
 
 # Blocks that are exempt from Block4Block
@@ -804,6 +807,9 @@ blacklisted-blocks:
   - YELLOW_POPLAR_LEAVES
   - POPLAR_LOG
   - STRIPPED_POPLAR_LOG
+  # 26.3: poplar sapling like the other saplings, pale oak's left as it is (SQ68); straw bed like beds (SQ71)
+  - POPLAR_SAPLING
+  - STRAW_BED
 
 # Blocks with loot disabled on break
 no-loot-on-break:
@@ -1859,6 +1865,9 @@ no-loot-on-break:
   - BLACK_WOOL_SLAB
   - BLACK_CONCRETE_STAIRS
   - BLACK_WOOL_STAIRS
+  # 26.3: red shrub like flowers (SQ69); potted poplar sapling like the other potted saplings
+  - RED_SHRUB
+  - POTTED_POPLAR_SAPLING
 
 # Blocks that require different blocks to break (BlockToBreak: BlockToSpend)
 # Original block type still allowed PLUS these substitutes
