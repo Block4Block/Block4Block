@@ -425,6 +425,8 @@ blacklisted-claim-blocks:
   # Golden Dandelion (26.1): a utility object like the redstone ones (SQ53)
   - GOLDEN_DANDELION
   - POTTED_GOLDEN_DANDELION
+  # Cinnabar (26.2): can't be crafted or grown, so it is mined in your own claim (SQ64)
+  - CINNABAR
   - RAIL
   - POWERED_RAIL
   - DETECTOR_RAIL
@@ -1678,6 +1680,7 @@ no-loot-on-break:
   - CHISELED_SULFUR
   - POTENT_SULFUR
   - SULFUR_SPIKE
+  - CINNABAR
   - CINNABAR_STAIRS
   - CINNABAR_SLAB
   - CINNABAR_WALL
