@@ -425,6 +425,8 @@ blacklisted-claim-blocks:
   # Golden Dandelion (26.1): a utility object like the redstone ones (SQ53)
   - GOLDEN_DANDELION
   - POTTED_GOLDEN_DANDELION
+  # Cinnabar (26.2): can't be crafted or grown, so it is mined in your own claim (SQ64)
+  - CINNABAR
   - RAIL
   - POWERED_RAIL
   - DETECTOR_RAIL
@@ -1661,6 +1663,36 @@ no-loot-on-break:
   - POLISHED_TUFF_STAIRS
   - POLISHED_TUFF_SLAB
   - POLISHED_TUFF_WALL
+  # 26.2 begins: sulfur and its forms like tuff (SQ58), potent sulfur like magma (SQ59), the spike like pointed dripstone (SQ61),
+  # cinnabar's crafted forms like tuff's (natural cinnabar: SQ64)
+  - SULFUR
+  - SULFUR_STAIRS
+  - SULFUR_SLAB
+  - SULFUR_WALL
+  - POLISHED_SULFUR
+  - POLISHED_SULFUR_STAIRS
+  - POLISHED_SULFUR_SLAB
+  - POLISHED_SULFUR_WALL
+  - SULFUR_BRICKS
+  - SULFUR_BRICK_STAIRS
+  - SULFUR_BRICK_SLAB
+  - SULFUR_BRICK_WALL
+  - CHISELED_SULFUR
+  - POTENT_SULFUR
+  - SULFUR_SPIKE
+  - CINNABAR
+  - CINNABAR_STAIRS
+  - CINNABAR_SLAB
+  - CINNABAR_WALL
+  - POLISHED_CINNABAR
+  - POLISHED_CINNABAR_STAIRS
+  - POLISHED_CINNABAR_SLAB
+  - POLISHED_CINNABAR_WALL
+  - CINNABAR_BRICKS
+  - CINNABAR_BRICK_STAIRS
+  - CINNABAR_BRICK_SLAB
+  - CINNABAR_BRICK_WALL
+  - CHISELED_CINNABAR
   - WARPED_BUTTON
   - WARPED_DOOR
   - WARPED_FENCE
@@ -1877,6 +1909,7 @@ spawn-egg-weights:
   ZOMBIE_NAUTILUS_SPAWN_EGG: 10
   CAMEL_HUSK_SPAWN_EGG: 10
   PARCHED_SPAWN_EGG: 10
+  SULFUR_CUBE_SPAWN_EGG: 15 # 26.2 (SQ60)
   GUARDIAN_SPAWN_EGG: 10
   ENDERMAN_SPAWN_EGG: 10
   PIGLIN_SPAWN_EGG: 10
