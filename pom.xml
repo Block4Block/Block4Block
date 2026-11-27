@@ -6,7 +6,7 @@
 
     <groupId>hasjamon.block4block</groupId>
     <artifactId>Block4Block</artifactId>
-    <version>4.14</version>
+    <version>4.15</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -42,7 +42,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>26.2.build.135-stable</version>
+            <version>26.3.build.263-stable</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
