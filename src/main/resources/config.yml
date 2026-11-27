@@ -1865,9 +1865,10 @@ no-loot-on-break:
   - BLACK_WOOL_SLAB
   - BLACK_CONCRETE_STAIRS
   - BLACK_WOOL_STAIRS
-  # 26.3: red shrub like flowers (SQ69); potted poplar sapling like the other potted saplings
+  # 26.3: red shrub like flowers (SQ69); potted poplar sapling like the other potted saplings; shelf mushroom like the Golden Dandelion (SQ70)
   - RED_SHRUB
   - POTTED_POPLAR_SAPLING
+  - SHELF_MUSHROOM
 
 # Blocks that require different blocks to break (BlockToBreak: BlockToSpend)
 # Original block type still allowed PLUS these substitutes
