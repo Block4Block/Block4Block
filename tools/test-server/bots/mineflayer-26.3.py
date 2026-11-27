@@ -251,16 +251,36 @@ if old_line in s:
                             "yaw: newYaw, pitch: newPitch })")
     open(p, "w", encoding="utf8").write(s)
 
-# 26.3 kicks a client that sends two position packets before ending its tick ("Invalid move player packet": the
-# receivedPositionThisTick flag in ServerGamePacketListenerImpl, cleared only by the client's tick-end packet), and
-# mineflayer never sends a tick end. Send one after each movement packet, so each counts as its own tick.
+# 26.3 counts the client's ticks by its tick-end packet: a second position packet before one gets the client kicked
+# ("Invalid move player packet": receivedPositionThisTick in ServerGamePacketListenerImpl), and mining time is measured
+# in them, so a bot that never ends a tick can't finish breaking a block. mineflayer never sends one; end every physics
+# tick, after its movement packet.
 p = os.path.join(nm, "mineflayer", "lib", "plugins", "physics.js"); s = open(p, encoding="utf8").read()
-if "26.3: end the tick" not in s:
-    for packet in ("position", "look", "position_look"):
-        s = s.replace(f"    bot._client.write('{packet}', lastSent)\n",
-                      f"    bot._client.write('{packet}', lastSent)\n"
-                      f"    if (bot.version === '26.3') bot._client.write('tick_end', {{}})  // 26.3: end the tick\n", 1)
-    open(p, "w", encoding="utf8").write(s)
+END_TICK = "    if (bot.version === '26.3') bot._client.write('tick_end', {})  // 26.3: end the tick\n"
+s = s.replace("    bot._client.write('position', lastSent)\n" + END_TICK, "    bot._client.write('position', lastSent)\n")
+s = s.replace("    bot._client.write('look', lastSent)\n" + END_TICK, "    bot._client.write('look', lastSent)\n")
+s = s.replace("    bot._client.write('position_look', lastSent)\n" + END_TICK, "    bot._client.write('position_look', lastSent)\n")
+tick = "    if (shouldUsePhysics) {\n      updatePosition(now)\n    }\n  }\n"
+if END_TICK not in s and tick in s:
+    s = s.replace(tick, "    if (shouldUsePhysics) {\n      updatePosition(now)\n    }\n" + END_TICK + "  }\n", 1)
+    # The answers to a teleport are sent outside the physics tick, so they end a tick of their own.
+    for reply in ("        sendPacketPositionAndLook(delayedPos, delayedYaw, delayedPitch, delayedOnGround)\n",
+                  "    sendPacketPositionAndLook(pos, newYaw, newPitch, bot.entity.onGround)\n"):
+        indent = reply[:len(reply) - len(reply.lstrip())]
+        s = s.replace(reply, reply + indent + END_TICK.lstrip(), 1)
+open(p, "w", encoding="utf8").write(s)
+
+# 26.3 added CHANGE_DESTROY_DIRECTION as the second player action (ServerboundPlayerActionPacket$Action), so every
+# action after the first moved up one: abort is 2, finishing a dig 3, releasing a used item 6. mineflayer's "finish"
+# (2) read as an abort, and no block that takes time to break was ever broken.
+p = os.path.join(nm, "mineflayer", "lib", "plugins", "digging.js"); s = open(p, encoding="utf8").read()
+for old, new in (("status: 2, // finish digging", "status: bot.version === '26.3' ? 3 : 2, // finish digging (26.3: 3)"),
+                 ("status: 1, // cancel digging", "status: bot.version === '26.3' ? 2 : 1, // cancel digging (26.3: 2)")):
+    s = s.replace(old, new)
+open(p, "w", encoding="utf8").write(s)
+p = os.path.join(nm, "mineflayer", "lib", "plugins", "inventory.js"); s = open(p, encoding="utf8").read()
+s = s.replace("    const body = {\n      status: 5,\n", "    const body = {\n      status: bot.version === '26.3' ? 6 : 5,  // release use item (26.3: 6)\n", 1)
+open(p, "w", encoding="utf8").write(s)
 
 # mineflayer's position-sync handler reads x, y, z and a velocity; 26.3's packet holds a path (see above).
 p = os.path.join(nm, "mineflayer", "lib", "plugins", "entities.js"); s = open(p, encoding="utf8").read()

@@ -141,22 +141,27 @@ bot.once("spawn", async () => {
     }
   }
 
+  // The 26.3 checks all use one spot two blocks away: farther ones, past other test blocks, were ignored by 26.3.
+  const spot = p.offset(1, 0, -2);
   if (v263) {
     // Exempt, like pale oak's logs and leaves, the other saplings and beds: free to break with none in the hotbar.
     for (const [i, name] of ["poplar_log", "red_poplar_leaves", "poplar_sapling", "straw_bed"].entries()) {
       run(`clear VetBot ${name}`); await sleep(600);
-      const r = await breakNew(name, p.offset(-5, 0, -3 + 2 * i));
+      const r = await breakNew(name, spot);
       check(`${name} outside a claim: free to break`, r.left === "air", r.left + "; " + bar.join(" | "));
     }
+    // What they dropped would fill the hotbar, which the next checks pay from.
+    for (const drop of ["poplar_log", "poplar_sapling", "straw_bed", "stick", "apple"]) run(`clear VetBot ${drop}`);
+    await sleep(800);
     // Cost one, drop nothing: poplar's crafted forms, the wool and concrete slabs and stairs, the red shrub (SQ69),
     // and the shelf mushroom outside claims (SQ70).
     for (const [i, name] of ["poplar_planks", "white_wool_stairs", "white_concrete_slab", "red_shrub", "shelf_mushroom"].entries()) {
       run(`give VetBot ${name} 2`); await sleep(1200);
-      const r = await breakNew(name, p.offset(-6, 0, -3 + 2 * i));
+      const r = await breakNew(name, spot);
       check(`${name} outside a claim: costs one and drops nothing`, r.left === "air" && count(name) === 1 && !r.dropped, r.left + "; in inventory: " + count(name) + "; dropped: " + r.dropped);
       run(`clear VetBot ${name}`); await sleep(800);
     }
-    const r = await breakNew("red_shrub", p.offset(-7, 0, -3));
+    const r = await breakNew("red_shrub", spot);
     check("red_shrub outside a claim, none in the hotbar: refused", r.left === "red_shrub", r.left + "; " + bar.join(" | "));
   }
 
@@ -198,7 +203,7 @@ bot.once("spawn", async () => {
     // Free in Claims: the concrete slabs and stairs, like concrete, and the shelf mushroom (SQ70).
     for (const [i, name] of ["white_concrete_slab", "shelf_mushroom"].entries()) {
       run(`give VetBot ${name} 2`); await sleep(1200);
-      const r = await breakNew(name, p.offset(4, 0, -3 + 2 * i));
+      const r = await breakNew(name, spot);
       check(`${name} inside your own claim: free, and it drops itself`, r.left === "air" && count(name) === 2 && r.dropped, r.left + "; in inventory: " + count(name) + "; dropped: " + r.dropped);
       run(`clear VetBot ${name}`); await sleep(800);
     }
